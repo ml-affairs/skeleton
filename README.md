@@ -33,7 +33,7 @@ python -m skeleton run path/to/script.py
 Skeleton writes:
 
 ```text
-.skeleton/
+~/.skeleton/<application-name>/
   trace.jsonl
   snapshot.json
   workflow.md
@@ -73,7 +73,7 @@ Options:
 
 ```text
 --project-root PATH   Root used to decide which files are project-local.
---out-dir PATH        Output directory. Defaults to <project-root>/.skeleton.
+--out-dir PATH        Output directory. Defaults to ~/.skeleton/<application-name>.
 --include PATTERN     Only trace matching relative paths or module names.
 --exclude PATTERN     Exclude matching relative paths or module names.
 --max-events N        Stop writing trace events after N events.

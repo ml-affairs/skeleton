@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
@@ -58,6 +59,34 @@ class RunConfiguration:
 
 
 @dataclass(frozen=True)
+class OutputPathResolver:
+    """Resolves artifact output directories for traced applications."""
+
+    home_override: Path | None = None
+
+    def resolve(self, *, project_root: Path, requested_out_dir: Path | None) -> Path:
+        """Return the output directory for one Skeleton run."""
+        if requested_out_dir:
+            return requested_out_dir.resolve()
+        return self.skeleton_home / self._application_name(project_root)
+
+    @property
+    def skeleton_home(self) -> Path:
+        """Return the root directory used for implicit Skeleton artifacts."""
+        if self.home_override:
+            return self.home_override.resolve()
+        raw_home = os.environ.get("SKELETON_HOME")
+        if raw_home:
+            return Path(raw_home).expanduser().resolve()
+        return (Path.home() / ".skeleton").resolve()
+
+    @staticmethod
+    def _application_name(project_root: Path) -> str:
+        name = project_root.resolve().name
+        return name or "application"
+
+
+@dataclass(frozen=True)
 class RunCommand:
     """Executes ``skeleton run`` as a coordinated architecture replay pipeline."""
 
@@ -65,6 +94,7 @@ class RunCommand:
     runner: TargetScriptRunner = field(default_factory=TargetScriptRunner)
     report_writer: HtmlReportWriter = field(default_factory=HtmlReportWriter)
     workflow_writer: WorkflowNarrativeWriter = field(default_factory=WorkflowNarrativeWriter)
+    output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
 
     def execute(self, args: argparse.Namespace) -> int:
         """Run the target script and generate Skeleton artifacts."""
@@ -129,7 +159,7 @@ class RunCommand:
         if not project_root.is_dir():
             raise SystemExit(f"Project root is not a directory: {project_root}")
 
-        out_dir = (Path(args.out_dir) if args.out_dir else project_root / ".skeleton").resolve()
+        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=args.out_dir)
         return RunConfiguration(
             script=script,
             script_args=list(args.script_args),
