@@ -1,0 +1,49 @@
+[project]
+name = "skeleton"
+version = "0.1.0"
+description = "Replay and visualise the living architecture of a Python application."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+skeleton = "skeleton.cli:main"
+
+[dependency-groups]
+dev = [
+    "gitlint>=0.19.0",
+    "mypy>=1.19.0",
+    "pre-commit>=4.6.0",
+    "pytest>=9.1.1",
+    "ruff>=0.15.20",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.25,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "skeleton"
+module-root = ""
+
+[tool.ruff]
+line-length = 220
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN", "D", "PT", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["skeleton", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,85 @@
+name: Feature Request
+description: Propose a scoped improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What pain point should this solve and who is affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why now
+      description: Why is this the right incremental step now?
+      placeholder: |
+        - User need or reliability gap
+        - Repeated manual verification
+        - Follow-up needed to unblock a higher-level feature
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe concrete behavior, API surfaces, and user-visible contract changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Define done so reviewers can validate risk and behavior quickly.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is intentionally deferred or out of scope?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk Level
+      description: Choose based on runtime and integration impact.
+      options:
+        - "Low: cosmetic or local behavior change"
+        - "Medium: logic or behavior change with bounded impact"
+        - "High: trace schema, privacy, filesystem output, or integration-sensitive change"
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification Plan
+      description: How should this be validated? Include tests and manual checks.
+      placeholder: |
+        - make check
+        - pytest package/module...
+        - manual skeleton run ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: decomposition
+    attributes:
+      label: PR Decomposition
+      description: If this is larger than one PR, outline the safest sequence.
+      placeholder: |
+        1. Add tests or invariants
+        2. Implement minimal behavior change
+        3. Optional cleanup and docs
+    validations:
+      required: false

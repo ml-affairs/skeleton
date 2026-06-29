@@ -1,0 +1,94 @@
+name: Bug Report
+description: Report behavior that is broken or surprising.
+title: "fix: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Short summary of the bug, including observed impact.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact Level
+      description: How urgent is this for delivery safety and correctness?
+      options:
+        - "Low: cosmetic, local, no trace correctness risk"
+        - "Medium: local behavior, schema, or test regression risk"
+        - "High: privacy leak, broken runner, filesystem output, or integration risk"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected vs Actual Behavior
+      description: Describe expected behavior and what actually happened.
+      placeholder: |
+        Expected:
+        - ...
+        Actual:
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: List the smallest steps needed to reproduce the issue.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification already attempted
+      description: What validation did you run, if any?
+      placeholder: |
+        - make check
+        - pytest ...
+        - manual trace run ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python version, uv version, and relevant command flags.
+      placeholder: |
+        OS:
+        Python:
+        uv:
+        Command:
+        Flags:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste relevant logs or tracebacks.
+      render: text
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Definition of Done for this issue
+        - [ ] Root cause is clear.
+        - [ ] Fix keeps behavior unchanged outside the affected boundary.
+        - [ ] New or updated tests cover the failure mode.
+        - [ ] Static and formatting checks still pass (`make check`).

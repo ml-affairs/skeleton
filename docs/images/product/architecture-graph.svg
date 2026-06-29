@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Architecture graph</title>
+  <desc id="desc">Connected colored nodes representing runtime architecture relationships.</desc>
+  <rect width="96" height="96" rx="18" fill="#f8fbfc"/>
+  <path d="M31 31l19 15M65 30L50 46M50 46l10 22M50 46L29 67M65 30l12 25M60 68l17-13" fill="none" stroke="#0b1526" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="31" cy="31" r="10" fill="#7c3fe0" stroke="#0b1526" stroke-width="4"/>
+  <circle cx="65" cy="30" r="10" fill="#12a7b3" stroke="#0b1526" stroke-width="4"/>
+  <circle cx="50" cy="46" r="10" fill="#8a5be8" stroke="#0b1526" stroke-width="4"/>
+  <circle cx="29" cy="67" r="10" fill="#4b9ad4" stroke="#0b1526" stroke-width="4"/>
+  <circle cx="60" cy="68" r="10" fill="#f2a21b" stroke="#0b1526" stroke-width="4"/>
+  <circle cx="77" cy="55" r="10" fill="#f2a21b" stroke="#0b1526" stroke-width="4"/>
+</svg>
