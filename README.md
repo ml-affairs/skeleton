@@ -1,5 +1,10 @@
 # skeleton
 
+[![CI](https://github.com/ml-affairs/skeleton/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ml-affairs/skeleton/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/badge/coverage-77%25-yellowgreen)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 ![Skeleton: replay and visualise the living architecture of your code.](docs/images/readme.png)
 
 Skeleton is a developer-understanding tool, not a profiler. It runs a Python
