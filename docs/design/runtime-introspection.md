@@ -143,7 +143,7 @@ profile callback.
 This is the first non-invasive seam. The user runs:
 
 ```bash
-python -m skeleton run path/to/script.py
+python -m skeleton_replay run path/to/script.py
 ```
 
 The application source remains unchanged.

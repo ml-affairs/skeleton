@@ -7,7 +7,7 @@ Early design contract.
 Skeleton's stable v0 interface is the CLI:
 
 ```bash
-python -m skeleton run path/to/script.py
+python -m skeleton_replay run path/to/script.py
 ```
 
 The internals are already object-oriented, but most Python classes are not yet
@@ -38,7 +38,7 @@ Owns command parsing and dispatch for the `skeleton` executable.
 Use this only when embedding the current CLI behavior:
 
 ```python
-from skeleton.cli import CliApplication
+from skeleton_replay.cli import CliApplication
 
 exit_code = CliApplication().run(["run", "--no-open", "scripts/demo.py"])
 ```
@@ -76,7 +76,7 @@ The likely shape is:
 ```python
 from pathlib import Path
 
-from skeleton import TraceSession
+from skeleton_replay import TraceSession
 
 result = TraceSession(project_root=Path(".")).run_script(
     Path("scripts/replay_checkout.py"),
@@ -103,7 +103,7 @@ The stable object should:
 A second seam should run one Python callable directly:
 
 ```python
-from skeleton import TraceSession
+from skeleton_replay import TraceSession
 
 def checkout_scenario() -> None:
     service = build_checkout_service()

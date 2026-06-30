@@ -1,4 +1,4 @@
-from skeleton.safety import ValueSummariser
+from skeleton_replay.safety import ValueSummariser
 
 
 class Example:

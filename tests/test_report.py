@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from skeleton.reporting import HtmlReportWriter
+from skeleton_replay.reporting import HtmlReportWriter
 
 
 class TestHtmlReportWriter:

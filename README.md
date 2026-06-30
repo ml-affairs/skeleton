@@ -24,10 +24,20 @@ Skeleton produces runtime evidence in four complementary forms:
 | ![Workflow icon](docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
 | ![Replay icon](docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
 
+Package naming:
+
+```text
+Product name:  Skeleton
+PyPI package:  skeleton-replay
+Import name:   skeleton_replay
+CLI command:   skeleton
+```
+
 ## MVP workflow
 
 ```bash
-python -m skeleton run path/to/script.py
+pip install skeleton-replay
+skeleton run path/to/script.py
 ```
 
 Skeleton writes:
@@ -81,7 +91,7 @@ make where
 Run locally from the checkout:
 
 ```bash
-uv run python -m skeleton run examples/app.py
+uv run python -m skeleton_replay run examples/app.py
 ```
 
 Generate a stable local demo report:
@@ -115,7 +125,13 @@ make demo-no-open
 ## CLI
 
 ```bash
-python -m skeleton run [options] path/to/script.py [args...]
+skeleton run [options] path/to/script.py [args...]
+```
+
+The module entrypoint is also available:
+
+```bash
+python -m skeleton_replay run [options] path/to/script.py [args...]
 ```
 
 Options:
@@ -186,7 +202,7 @@ For more detail, see
 Skeleton currently runs a script path:
 
 ```bash
-python -m skeleton run scripts/replay_checkout.py
+python -m skeleton_replay run scripts/replay_checkout.py
 ```
 
 That script can drive any kind of Python code: CLI workflows, service objects,

@@ -5,8 +5,8 @@ from types import FrameType
 
 import pytest
 
-from skeleton.runtime import RuntimeTracer, TargetScriptRunner, TraceOptions
-from skeleton.runtime.events import Endpoint, TraceEvent
+from skeleton_replay.runtime import RuntimeTracer, TargetScriptRunner, TraceOptions
+from skeleton_replay.runtime.events import Endpoint, TraceEvent
 
 
 class SampleFrames:

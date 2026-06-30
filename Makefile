@@ -6,7 +6,7 @@ PYTHON_VERSION ?= $(shell test -f $(PYTHON_VERSION_FILE) && cat $(PYTHON_VERSION
 UV ?= $(shell if command -v uv >/dev/null 2>&1; then command -v uv; elif [ -x "$$HOME/.local/bin/uv" ]; then printf "%s\n" "$$HOME/.local/bin/uv"; else printf "uv\n"; fi)
 UV_CACHE_DIR ?= .uv-cache
 UV_RUN := UV_CACHE_DIR="$(UV_CACHE_DIR)" $(UV) run --python "$(PYTHON_VERSION)"
-PYTEST_COV_ARGS := --cov=skeleton --cov-report=term-missing --cov-report=xml --cov-fail-under=75
+PYTEST_COV_ARGS := --cov=skeleton_replay --cov-report=term-missing --cov-report=xml --cov-fail-under=75
 DEMO_PROJECT_ROOT ?= tests/fixtures/sample_project
 DEMO_SCRIPT ?= $(DEMO_PROJECT_ROOT)/app.py
 DEMO_OUT_DIR ?= tests/dev/.temp/skeleton-demo
@@ -84,11 +84,11 @@ where:
 
 demo: check-uv
 	@mkdir -p "$(DEMO_OUT_DIR)"
-	@SKELETON_OUT_DIR="$(DEMO_OUT_DIR)" $(UV_RUN) python -m skeleton run --project-root "$(DEMO_PROJECT_ROOT)" "$(DEMO_SCRIPT)"
+	@SKELETON_OUT_DIR="$(DEMO_OUT_DIR)" $(UV_RUN) python -m skeleton_replay run --project-root "$(DEMO_PROJECT_ROOT)" "$(DEMO_SCRIPT)"
 
 demo-no-open: check-uv
 	@mkdir -p "$(DEMO_OUT_DIR)"
-	@SKELETON_OUT_DIR="$(DEMO_OUT_DIR)" $(UV_RUN) python -m skeleton run --no-open --project-root "$(DEMO_PROJECT_ROOT)" "$(DEMO_SCRIPT)"
+	@SKELETON_OUT_DIR="$(DEMO_OUT_DIR)" $(UV_RUN) python -m skeleton_replay run --no-open --project-root "$(DEMO_PROJECT_ROOT)" "$(DEMO_SCRIPT)"
 
 commit-msg-example:
 	@printf "Valid semantic commit message examples:\n"

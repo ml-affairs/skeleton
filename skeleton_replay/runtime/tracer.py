@@ -12,9 +12,9 @@ from pathlib import Path
 from types import FrameType
 from typing import TextIO
 
-from skeleton.runtime.events import Endpoint, TraceEvent
-from skeleton.runtime.filters import TraceFilter
-from skeleton.safety import ValueSummariser
+from skeleton_replay.runtime.events import Endpoint, TraceEvent
+from skeleton_replay.runtime.filters import TraceFilter
+from skeleton_replay.safety import ValueSummariser
 
 
 @dataclass(frozen=True)

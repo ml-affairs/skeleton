@@ -8,10 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
-from skeleton.analysis import SnapshotBuilder, SnapshotMetrics
-from skeleton.interface import ColorMode, HtmlReportOpener, SkeletonConsole
-from skeleton.reporting import HtmlReportWriter, WorkflowNarrativeWriter
-from skeleton.runtime import TargetScriptRunner, TraceOptions, TraceResult
+from skeleton_replay.analysis import SnapshotBuilder, SnapshotMetrics
+from skeleton_replay.interface import ColorMode, HtmlReportOpener, SkeletonConsole
+from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
+from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
 
 
 class ReportOpener(Protocol):

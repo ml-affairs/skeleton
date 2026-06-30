@@ -21,7 +21,7 @@ repos:
         stages: [pre-commit]
       - id: pytest
         name: pytest
-        entry: .venv/bin/python -m pytest --cov=skeleton --cov-report=term-missing --cov-report=xml --cov-fail-under=75
+        entry: .venv/bin/python -m pytest --cov=skeleton_replay --cov-report=term-missing --cov-report=xml --cov-fail-under=75
         language: system
         pass_filenames: false
         stages: [pre-commit]

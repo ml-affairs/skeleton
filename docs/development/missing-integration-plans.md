@@ -30,13 +30,13 @@ The module is found on `sys.path` and executed as `__main__`. Today Skeleton
 expects a file path:
 
 ```bash
-python -m skeleton run scripts/demo.py
+skeleton run scripts/demo.py
 ```
 
 It does not yet accept:
 
 ```bash
-python -m skeleton run-module my_app.cli -- run-demo
+skeleton run-module my_app.cli -- run-demo
 ```
 
 ### Why It Matters
@@ -175,7 +175,7 @@ be a separate repository or package that:
 
 - defines an IDE action
 - reads the current module/content root
-- invokes `python -m skeleton run ...` or future Python API through the
+- invokes `skeleton run ...`, `python -m skeleton_replay run ...`, or future Python API through the
   configured interpreter
 - watches the generated artifact directory
 - opens the HTML report

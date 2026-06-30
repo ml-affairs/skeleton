@@ -14,7 +14,10 @@ Already present:
 - `pyproject.toml`
 - package metadata
 - MIT license
-- console script entrypoint: `skeleton = "skeleton.cli:main"`
+- PyPI distribution name: `skeleton-replay`
+- import package: `skeleton_replay`
+- console script entrypoints: `skeleton` and `skeleton-replay`
+- project URLs, keywords, and classifiers
 - `uv` build backend
 - pytest, Ruff, mypy, and coverage gate
 - GitHub Actions CI
@@ -26,11 +29,7 @@ Already present:
 
 ### Package Identity
 
-- confirm package name availability on PyPI
 - confirm owner/organization account
-- decide whether the import name remains `skeleton`
-- add classifiers to `pyproject.toml`
-- add project URLs: homepage, repository, issues, documentation
 - verify the long description renders on PyPI
 
 ### Public API
@@ -91,7 +90,7 @@ Already present:
 
 ## Release Checklist
 
-1. Update version in `pyproject.toml` and `skeleton/__init__.py`.
+1. Update version in `pyproject.toml` and `skeleton_replay/__init__.py`.
 2. Update README installation instructions.
 3. Run `make check`.
 4. Run `uv build`.

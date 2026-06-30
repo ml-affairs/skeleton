@@ -6,7 +6,7 @@ import ast
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from skeleton.runtime.filters import TraceFilter
+from skeleton_replay.runtime.filters import TraceFilter
 
 
 @dataclass(frozen=True)

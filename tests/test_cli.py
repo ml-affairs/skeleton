@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from skeleton.cli import CliApplication, OutputPathResolver, RunCommand
-from skeleton.interface import SkeletonConsole
+from skeleton_replay.cli import CliApplication, OutputPathResolver, RunCommand
+from skeleton_replay.interface import SkeletonConsole
 
 
 class RecordingReportOpener:

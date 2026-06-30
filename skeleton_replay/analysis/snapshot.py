@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from skeleton.analysis.static import StaticProjectScanner
-from skeleton.runtime.events import Endpoint, TraceEvent
+from skeleton_replay.analysis.static import StaticProjectScanner
+from skeleton_replay.runtime.events import Endpoint, TraceEvent
 
 JsonObject = dict[str, Any]
 

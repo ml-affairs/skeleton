@@ -1,14 +1,35 @@
 [project]
-name = "skeleton"
+name = "skeleton-replay"
 version = "0.1.0"
 description = "Replay and visualise the living architecture of a Python application."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 dependencies = []
+keywords = ["architecture", "tracing", "visualization", "runtime", "developer-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Debuggers",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/ml-affairs/skeleton"
+Repository = "https://github.com/ml-affairs/skeleton"
+Issues = "https://github.com/ml-affairs/skeleton/issues"
 
 [project.scripts]
-skeleton = "skeleton.cli:main"
+skeleton = "skeleton_replay.cli:main"
+"skeleton-replay" = "skeleton_replay.cli:main"
 
 [dependency-groups]
 dev = [
@@ -25,7 +46,7 @@ requires = ["uv_build>=0.11.25,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "skeleton"
+module-name = "skeleton_replay"
 module-root = ""
 
 [tool.ruff]
@@ -44,7 +65,7 @@ convention = "google"
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["skeleton", "tests"]
+files = ["skeleton_replay", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -52,7 +73,7 @@ addopts = "--basetemp=tests/dev/.temp/pytest"
 
 [tool.coverage.run]
 branch = true
-source = ["skeleton"]
+source = ["skeleton_replay"]
 
 [tool.coverage.report]
 show_missing = true

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from skeleton.analysis import SnapshotBuilder
-from skeleton.runtime import TargetScriptRunner, TraceOptions
+from skeleton_replay.analysis import SnapshotBuilder
+from skeleton_replay.runtime import TargetScriptRunner, TraceOptions
 
 
 class TestSnapshotBuilder:
