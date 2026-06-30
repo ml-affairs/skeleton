@@ -115,10 +115,10 @@ class TestHtmlReportWriter:
         assert "cytoscape@3.30.4" in html
         assert "architecture-call" in html
         assert "module shell" in html
-        assert "class shell" in html
+        assert "instance shell" in html
         assert '<span class="pill"><span class="schema method"></span>method</span>' in html
         assert '<span class="pill"><span class="schema function"></span>function</span>' in html
-        assert '<span class="pill"><span class="schema instance"></span>instance</span>' in html
+        assert '<span class="pill"><span class="schema instance"></span>instance shell</span>' in html
         assert "runtime call" in html
         assert "return value" in html
         assert "Node size combines observed call count" in html
@@ -129,20 +129,23 @@ class TestHtmlReportWriter:
         assert "let current = events.length ? 0 : -1" in html
         assert "renderEvent();" in html
         assert "let currentReplayMetrics = null" in html
-        assert "function classIdForFunction" in html
         assert "function parentForFunction" in html
         assert "function parentForActor" in html
         assert "function instanceForEndpoint" in html
         assert "function syncVisibilityToReplay" in html
         assert "function replayMetricsAt" in html
         assert "function applyReplayMetrics" in html
-        assert 'node.type === "module" || node.type === "class" ? "container" : ""' in html
+        assert 'node.type === "module" || node.type === "instance" ? "container" : ""' in html
         assert "parent: parentForFunction(node)" in html
         assert '"compound-sizing-wrt-labels": "include"' in html
+        assert "Modules contain runtime instances and functions" in html
+        assert "Instances contain the methods observed on that object" in html
         assert 'node[type = "function"]' in html
         assert '"border-style": "dashed"' in html
         assert 'node[type = "method"]' in html
         assert 'node[type = "instance"]' in html
+        assert 'node[type = "class"]' not in html
+        assert "class shell" not in html
         assert 'edge[type = "runtime-return"]' in html
         assert "const returnEdges" in html
         assert '"curve-style": "straight"' in html
@@ -151,7 +154,7 @@ class TestHtmlReportWriter:
         assert '"control-point-weights": 0.5' in html
         assert '"line-style": "solid"' in html
         assert '"line-style": "dashed"' in html
-        assert "renderedNodeIds.has(edge.source)" in html
+        assert "renderedNodeIds.has(source)" in html
         assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
         assert "return:${targetNode}->${sourceNode}" in html
         assert 'cy.elements().addClass("unseen")' in html

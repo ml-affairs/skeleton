@@ -47,11 +47,13 @@ summaries of arguments and return values.
 
 Skeleton is opinionated about what makes large Python systems understandable.
 It promotes explicit architectural actors, clear dependency direction, and I/O
-decoupled from business logic. Modules are visual shells, classes live inside
-the modules that define them, module-level public functions live inside their
-modules, and class methods live inside their classes. Entrypoints, services,
-repositories, adapters, and ports are roles or boundaries unless the codebase
-has a concrete object that owns that responsibility. See
+decoupled from business logic. Modules are visual shells, runtime object
+instances live inside the modules that define their classes, module-level public
+functions live inside their modules, and instance methods live inside the object
+that handled the call. Class definitions remain metadata, not runtime graph
+boxes. Entrypoints, services, repositories, adapters, and ports are roles or
+boundaries unless the codebase has a concrete object that owns that
+responsibility. See
 [`docs/design/software-design-principles.md`](docs/design/software-design-principles.md)
 for the design principles that guide the visual model.
 

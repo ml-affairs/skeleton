@@ -116,13 +116,14 @@ relationships into an interactive architecture replay.
   dependency inversion, ports and adapters, repositories/unit-of-work where
   persistence exists, dependency injection at composition roots, and I/O
   decoupled from business logic.
-- The report should preserve Python ownership visually. Modules are outer
-  shells. Classes live inside modules. Module-level public functions live inside
-  modules. Public class methods live inside classes. Do not show modules,
-  classes, functions, and methods as unrelated peers when the source code defines
-  containment.
+- The report should preserve runtime ownership visually. Modules are outer
+  shells. Runtime object instances live inside modules. Module-level public
+  functions live inside modules. Public instance methods live inside the object
+  instance observed at runtime. Class definitions are type metadata, not graph
+  boxes, unless a future feature deliberately models class objects as runtime
+  actors.
 - Replay should be evidence-progressive. Do not show the whole static graph at
-  time zero. As the user steps through events, reveal only the modules, classes,
+  time zero. As the user steps through events, reveal only the modules,
   instances, functions, methods, and call/return edges that have been observed up
   to that event. Stepping backward should hide future evidence again.
 - Replay metrics should be time-aware. Fan-in, fan-out, call count, edge width,

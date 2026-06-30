@@ -21,8 +21,8 @@ patterns and visual rules Skeleton should preserve as it grows.
 
 ## What Must Be True
 
-- Human users can see modules, classes, functions, instances, and runtime calls
-  as an interactive map.
+- Human users can see modules, runtime instances, functions, methods, and
+  runtime calls as an interactive map.
 - Human users can step forward and backward through observed events and see the
   caller, callee, safe arguments, safe returns, and changed graph context.
 - The same run produces machine-amenable text and JSON summaries that explain
@@ -49,7 +49,7 @@ The report should behave like an architecture workbench:
   the current replay position
 - selected node metadata with observed calls and examples
 - edge emphasis based on call count and current replay position
-- clear labels for modules, classes, public functions, and instances
+- clear labels for modules, runtime instances, public functions, and methods
 
 The graph is only useful when it remains explainable. Every visual element
 should map back to a stable node id, edge id, file path, and event id.

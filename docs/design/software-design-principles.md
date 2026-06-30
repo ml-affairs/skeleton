@@ -53,16 +53,18 @@ as an equal peer.
 Python's ownership hierarchy should be visible:
 
 - a module is the outer shell for code in a file or package namespace
-- a class lives inside the module that defines it
-- a method lives inside its owning class
+- a runtime object instance lives inside the module that defines its class
+- a method lives inside the runtime instance it was observed on
 - a module-level public function lives inside its module
 - call edges connect public functions and methods, with containment showing who
   owns those callables
 
 It should not flatten those levels into unrelated peers. If `service.py` defines
-`Greeter.greet`, the graph should show `service` as the outer shell, `Greeter`
-inside `service`, and `greet` inside `Greeter`. `greet` should not drift outside
-the class, and `Greeter` should not drift outside the module.
+`Greeter.greet` and the trace observes a `Greeter` object, the graph should show
+`service` as the outer shell, the concrete `Greeter@...` instance inside
+`service`, and `greet` inside that instance. `greet` should not drift outside the
+object that handled the call. The class definition remains useful metadata, but
+it is not the runtime actor.
 
 The same rule applies to entrypoints. `entrypoint`, `service`, `repository`, and
 `adapter` are often roles. They should usually appear as roles on actors unless
@@ -177,7 +179,8 @@ The report should distinguish:
 ## What Skeleton Should Avoid Encouraging
 
 - Treating every file, class, function, and instance as equal graph nodes.
-- Showing module and class peers when the module simply hosts the class.
+- Showing class boxes as runtime actors when the trace actually observed object
+  instances.
 - Making private helper calls look like architecture.
 - Normalizing direct database, filesystem, network, or environment access from
   domain logic.
@@ -190,12 +193,12 @@ The report should distinguish:
 Default actor graph:
 
 - Show modules as outer shells.
-- Show classes inside the modules that define them.
+- Show runtime object instances inside the modules that define their classes.
 - Show module-level public functions inside modules.
-- Show public class methods inside classes.
+- Show public instance methods inside the runtime instance observed on the call.
 - Show entrypoint, service, repository, adapter, and port as roles when possible.
 - Connect public functions and methods with runtime call edges.
-- Use containment to show module/class ownership rather than placing every
+- Use containment to show module/instance ownership rather than placing every
   entity at the same level.
 - Keep raw function and event evidence available in the inspector.
 
@@ -213,12 +216,12 @@ Replay:
 - Use developer language first: `CheckoutService.reserve_stock called
   InventoryRepository.get`.
 - Keep business-language inference optional and evidence-based.
-- Highlight the callable nodes and their containing module/class shells for the
+- Highlight the callable nodes and their containing module/instance shells for the
   current replay event.
 - Start from observed evidence, not from the final answer. At replay position
   zero, the graph should show only entities observed by the first event. As the
-  user steps forward, modules, classes, instances, functions, methods, calls, and
-  returns should appear when runtime evidence first mentions them.
+  user steps forward, modules, instances, functions, methods, calls, and returns
+  should appear when runtime evidence first mentions them.
 - Stepping backward should remove future evidence from the visible graph so the
   user can understand the workflow as it unfolded.
 - Fan-in, fan-out, call count, edge width, node size, first_seen, and last_seen

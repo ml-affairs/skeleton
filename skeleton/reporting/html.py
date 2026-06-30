@@ -221,11 +221,6 @@ class HtmlReportWriter:
       border-radius: 5px;
       background: rgba(20, 184, 166, 0.45);
     }
-    .schema.class {
-      color: var(--violet);
-      clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-      background: rgba(139, 92, 246, 0.62);
-    }
     .schema.instance {
       color: var(--cyan);
       transform: rotate(45deg);
@@ -551,8 +546,7 @@ class HtmlReportWriter:
           <div class="legend-title">Schemas</div>
           <div class="legend-grid">
             <span class="pill"><span class="schema module"></span>module shell</span>
-            <span class="pill"><span class="schema class"></span>class shell</span>
-            <span class="pill"><span class="schema instance"></span>instance</span>
+            <span class="pill"><span class="schema instance"></span>instance shell</span>
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
             <span class="pill"><span class="schema call"></span>runtime call</span>
@@ -564,7 +558,7 @@ class HtmlReportWriter:
         <section class="inspector">
           <div class="eyebrow" id="detail-kind">Architecture</div>
           <h2 id="detail-title">Runtime actors</h2>
-          <div class="node-kind" id="detail-summary">Modules contain classes and functions. Classes contain their methods. Calls connect the nested callable nodes.</div>
+          <div class="node-kind" id="detail-summary">Modules contain runtime instances and functions. Instances contain the methods observed on that object.</div>
           <div id="details"></div>
         </section>
         <section class="replay">
@@ -590,24 +584,14 @@ class HtmlReportWriter:
   <script>
     const snapshot = JSON.parse(document.getElementById("snapshot-data").textContent);
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
-    const rawEdges = snapshot.edges || [];
     const events = snapshot.events || [];
     const ownerMethods = new Map();
     const archEdgeCounts = new Map();
     const archAdjacency = new Map();
-    const moduleClassCounts = new Map();
     const actorRoles = new Map();
-    const classNodesById = new Set();
 
     document.getElementById("project-root").textContent = snapshot.project_root || "project";
     document.getElementById("event-count").textContent = String(snapshot.event_count || events.length || 0);
-
-    for (const node of rawNodes.values()) {
-      if (node.type === "class") classNodesById.add(node.id);
-      if (node.type === "class" && node.module) {
-        moduleClassCounts.set(node.module, (moduleClassCounts.get(node.module) || 0) + 1);
-      }
-    }
 
     function addActorRole(ownerId, role) {
       if (!ownerId) return;
@@ -621,19 +605,7 @@ class HtmlReportWriter:
 
     function isVisibleActor(node) {
       if (!node) return false;
-      return node.type === "module" || node.type === "class" || node.type === "instance";
-    }
-
-    function classIdForFunction(node) {
-      if (!node || node.type !== "function") return null;
-      if (node.class_name) return `class:${node.module}.${node.class_name}`;
-      const qualified = node.qualified_name || node.id.replace(/^function:/, "");
-      const modulePrefix = `${node.module}.`;
-      if (!qualified.startsWith(modulePrefix)) return null;
-      const localParts = qualified.slice(modulePrefix.length).split(".");
-      if (localParts.length < 2) return null;
-      const candidate = `class:${node.module}.${localParts[0]}`;
-      return classNodesById.has(candidate) ? candidate : null;
+      return node.type === "module" || node.type === "instance";
     }
 
     function moduleIdForName(moduleName) {
@@ -641,20 +613,20 @@ class HtmlReportWriter:
     }
 
     function parentForFunction(node) {
-      return classIdForFunction(node) || moduleIdForName(node.module);
+      return node.owner || moduleIdForName(node.module);
     }
 
     function parentForActor(node) {
-      if (node.type === "class") return moduleIdForName(node.module);
       if (node.type === "instance") {
-        return node.class_name ? `class:${node.module}.${node.class_name}` : moduleIdForName(node.module);
+        return moduleIdForName(node.module);
       }
       return undefined;
     }
 
     function ownerForEndpoint(endpoint) {
       if (!endpoint) return null;
-      if (endpoint.class_name) return `class:${endpoint.module}.${endpoint.class_name}`;
+      const instanceId = instanceForEndpoint(endpoint);
+      if (instanceId) return instanceId;
       return `module:${endpoint.module}`;
     }
 
@@ -666,21 +638,27 @@ class HtmlReportWriter:
     function ownerForNode(node) {
       if (!node || node.type === "entrypoint") return null;
       if (node.type === "instance") return node.id;
-      if (node.type === "class") return node.id;
       if (node.type === "module") return node.id;
-      return classIdForFunction(node) || moduleIdForName(node.module);
+      return node.owner || moduleIdForName(node.module);
     }
 
     function shellForNode(node) {
       if (!node || node.type === "entrypoint") return null;
-      if (node.type === "instance") return node.class_name ? `class:${node.module}.${node.class_name}` : moduleIdForName(node.module);
+      if (node.type === "instance") return node.id;
       return ownerForNode(node);
     }
 
     function ownerLabel(ownerId) {
       if (!ownerId) return "entrypoint";
       const node = rawNodes.get(ownerId);
-      return node?.label || ownerId.replace(/^(class|module):/, "");
+      if (node?.type === "instance") return instanceLabel(node);
+      return node?.label || ownerId.replace(/^(instance|module|method):/, "");
+    }
+
+    function instanceLabel(node) {
+      const objectId = String(node.object_id || node.id || "");
+      const suffix = objectId.includes("@") ? objectId.split("@").pop() : objectId.replace(/^instance:/, "");
+      return `${node.class_name || node.label || "instance"}@${suffix}`;
     }
 
     function addOwnerMethod(ownerId, methodId) {
@@ -710,17 +688,55 @@ class HtmlReportWriter:
       archAdjacency.get(target).incoming.add(source);
     }
 
-    for (const node of rawNodes.values()) {
-      if (node.type === "function") addOwnerMethod(ownerForNode(node), node.id);
+    const observedCallables = new Map();
+
+    function visualCallableId(endpoint) {
+      if (!endpoint) return null;
+      const instanceId = instanceForEndpoint(endpoint);
+      if (instanceId) return `method:${instanceId}:${endpoint.node_id}`;
+      return endpoint.node_id;
     }
+
+    function addObservedCallable(endpoint) {
+      if (!endpoint) return null;
+      const id = visualCallableId(endpoint);
+      if (!id) return null;
+      const sourceNode = rawNodes.get(endpoint.node_id) || {};
+      const owner = ownerForEndpoint(endpoint);
+      const node = observedCallables.get(id) || {
+        id,
+        source_node_id: endpoint.node_id,
+        owner,
+        parent: owner,
+        type: endpoint.instance_id ? "method" : "function",
+        label: endpoint.function || sourceNode.label || endpoint.node_id,
+        module: endpoint.module,
+        class_name: endpoint.class_name,
+        instance_id: endpoint.instance_id,
+        function: endpoint.function,
+        qualified_name: endpoint.qualified_name,
+        file: endpoint.file || sourceNode.file,
+        line: endpoint.line || sourceNode.line,
+        loc: sourceNode.loc,
+        fan_in: 0,
+        fan_out: 0,
+        call_count: 0,
+        arg_examples: sourceNode.arg_examples || [],
+        return_examples: sourceNode.return_examples || []
+      };
+      observedCallables.set(id, node);
+      addOwnerMethod(owner, id);
+      return id;
+    }
+
     for (const event of events) {
+      addObservedCallable(event.callee);
+      if (event.caller) addObservedCallable(event.caller);
       if (event.event_type !== "call") continue;
       const target = ownerForEndpoint(event.callee);
       if (!event.caller) addActorRole(target, "entrypoint");
       const source = ownerForEndpoint(event.caller);
       addArchEdge(source, target, event);
-      addOwnerMethod(target, event.callee.node_id);
-      if (event.caller) addOwnerMethod(source, event.caller.node_id);
     }
 
     function ownerMetric(ownerId, field) {
@@ -743,7 +759,7 @@ class HtmlReportWriter:
         return {
           data: {
             id: node.id,
-            label: node.label || node.id,
+            label: node.type === "instance" ? instanceLabel(node) : node.label || node.id,
             type: node.type,
             parent: parentForActor(node),
             roles: roles.join(", "),
@@ -755,10 +771,9 @@ class HtmlReportWriter:
             size: 42 + Math.min(54, callCount * 7 + degree * 9 + Math.min(18, loc / 3))
           },
           classes: [
-            node.type === "module" || node.type === "class" ? "container" : "",
+            node.type === "module" || node.type === "instance" ? "container" : "",
             node.type === "module" ? "module-container" : "",
-            node.type === "class" ? "class-container" : "",
-            node.type === "instance" ? "instance-node" : "",
+            node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
             "unseen"
           ].filter(Boolean).join(" ")
@@ -767,15 +782,25 @@ class HtmlReportWriter:
 
     const visibleActorIds = new Set(actorNodes.map((node) => node.data.id));
 
-    const methodNodes = Array.from(rawNodes.values())
-      .filter((node) => node.type === "function")
+    const methodNodes = Array.from(observedCallables.values())
       .map((node) => ({
         data: {
           id: node.id,
-          owner: ownerForNode(node),
+          owner: node.owner,
+          source_node_id: node.source_node_id,
           parent: parentForFunction(node),
           label: node.function || node.label || node.id,
-          type: classIdForFunction(node) ? "method" : "function",
+          type: node.type,
+          module: node.module,
+          class_name: node.class_name,
+          instance_id: node.instance_id,
+          function: node.function,
+          qualified_name: node.qualified_name,
+          file: node.file,
+          line: node.line,
+          loc: node.loc,
+          arg_examples: node.arg_examples,
+          return_examples: node.return_examples,
           call_count: Number(node.call_count || 0),
           fan_in: Number(node.fan_in || 0),
           fan_out: Number(node.fan_out || 0),
@@ -803,25 +828,45 @@ class HtmlReportWriter:
         }
       }));
 
-    const callEdges = rawEdges
-      .filter((edge) => renderedNodeIds.has(edge.source) && renderedNodeIds.has(edge.target))
-      .map((edge) => ({
-        data: {
-          id: `call:${edge.id}`,
-          source: edge.source,
-          target: edge.target,
-          type: "runtime-call",
-          weight: edge.call_count
-        },
-        classes: "unseen"
-      }));
+    const callEdgeCounts = new Map();
+    for (const event of events) {
+      if (event.event_type !== "call" || !event.caller) continue;
+      const source = visualCallableId(event.caller);
+      const target = visualCallableId(event.callee);
+      if (!source || !target || !renderedNodeIds.has(source) || !renderedNodeIds.has(target)) continue;
+      const key = `${source}->${target}`;
+      const record = callEdgeCounts.get(key) || {
+        source,
+        target,
+        call_count: 0,
+        first_seen: event.order,
+        last_seen: event.order
+      };
+      record.call_count += 1;
+      record.first_seen = Math.min(record.first_seen, event.order);
+      record.last_seen = Math.max(record.last_seen, event.order);
+      callEdgeCounts.set(key, record);
+    }
+
+    const callEdges = Array.from(callEdgeCounts.values()).map((edge) => ({
+      data: {
+        id: `call:${edge.source}->${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+        type: "runtime-call",
+        weight: edge.call_count,
+        first_seen: edge.first_seen,
+        last_seen: edge.last_seen
+      },
+      classes: "unseen"
+    }));
 
     const returnEdgeCounts = new Map();
     for (const event of events) {
       if (event.event_type !== "return" || !event.caller) continue;
-      const source = event.callee.node_id;
-      const target = event.caller.node_id;
-      if (!renderedNodeIds.has(source) || !renderedNodeIds.has(target)) continue;
+      const source = visualCallableId(event.callee);
+      const target = visualCallableId(event.caller);
+      if (!source || !target || !renderedNodeIds.has(source) || !renderedNodeIds.has(target)) continue;
       const key = `${source}->${target}`;
       const record = returnEdgeCounts.get(key) || {
         source,
@@ -898,17 +943,12 @@ class HtmlReportWriter:
           "border-color": "#5eead4",
           "shadow-color": "#38dce2"
         } },
-        { selector: 'node[type = "class"]', style: {
-          "shape": "hexagon",
-          "background-color": "#6d28d9",
-          "border-color": "#c4b5fd",
-          "shadow-color": "#8b5cf6"
-        } },
         { selector: 'node[type = "instance"]', style: {
-          "shape": "diamond",
-          "background-color": "#0891b2",
+          "shape": "round-rectangle",
+          "background-color": "#0e7490",
           "border-color": "#67e8f9",
-          "font-size": 9,
+          "background-opacity": 0.16,
+          "font-size": 12,
           "shadow-color": "#38dce2"
         } },
         { selector: ".role-entrypoint", style: {
@@ -1080,7 +1120,7 @@ class HtmlReportWriter:
     function revealEndpoint(endpoint) {
       if (!endpoint) return;
       revealShell(ownerForEndpoint(endpoint));
-      revealElement(endpoint.node_id);
+      revealElement(visualCallableId(endpoint));
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) revealElement(instanceId);
     }
@@ -1094,8 +1134,7 @@ class HtmlReportWriter:
     function revealShell(ownerId) {
       if (!ownerId) return;
       const node = rawNodes.get(ownerId);
-      if (node?.type === "class") revealElement(moduleIdForName(node.module));
-      if (node?.type === "instance") revealShell(shellForNode(node));
+      if (node?.type === "instance") revealElement(moduleIdForName(node.module));
       revealElement(ownerId);
     }
 
@@ -1146,8 +1185,10 @@ class HtmlReportWriter:
         const event = events[eventIndex];
         const targetOwner = ownerForEndpoint(event.callee);
         const sourceOwner = ownerForEndpoint(event.caller);
-        const targetCallable = callableMetric(event.callee.node_id);
-        const sourceCallable = event.caller ? callableMetric(event.caller.node_id) : null;
+        const targetCallableId = visualCallableId(event.callee);
+        const sourceCallableId = visualCallableId(event.caller);
+        const targetCallable = callableMetric(targetCallableId);
+        const sourceCallable = sourceCallableId ? callableMetric(sourceCallableId) : null;
         const targetActor = actorMetric(targetOwner);
         const sourceActor = actorMetric(sourceOwner);
         touch(targetActor, event.order);
@@ -1162,13 +1203,13 @@ class HtmlReportWriter:
             sourceActor.outgoing.add(targetOwner);
             targetActor.incoming.add(sourceOwner);
           }
-          if (event.caller) {
-            sourceCallable.outgoing.add(event.callee.node_id);
-            targetCallable.incoming.add(event.caller.node_id);
-            countEdge(`call:${event.caller.node_id}->${event.callee.node_id}`, event.order);
+          if (sourceCallableId && targetCallableId) {
+            sourceCallable.outgoing.add(targetCallableId);
+            targetCallable.incoming.add(sourceCallableId);
+            countEdge(`call:${sourceCallableId}->${targetCallableId}`, event.order);
           }
-        } else if (event.caller) {
-          countEdge(`return:${event.callee.node_id}->${event.caller.node_id}`, event.order);
+        } else if (sourceCallableId && targetCallableId) {
+          countEdge(`return:${targetCallableId}->${sourceCallableId}`, event.order);
         }
       }
 
@@ -1238,7 +1279,7 @@ class HtmlReportWriter:
     function showOverview() {
       document.getElementById("detail-kind").textContent = "Architecture";
       document.getElementById("detail-title").textContent = "Runtime actors";
-      document.getElementById("detail-summary").textContent = "Modules are outer shells. Classes and public callables are visually contained by the module or class that owns them.";
+      document.getElementById("detail-summary").textContent = "Modules are outer shells. Runtime instances and public callables appear inside the actor that owns them.";
       const topActors = actorNodes
         .map((node) => node.data)
         .sort((left, right) => (right.call_count + right.degree) - (left.call_count + left.degree))
@@ -1251,7 +1292,7 @@ class HtmlReportWriter:
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
           Entrypoint and service are roles on actors, not standalone actors.
-          Call edges connect public functions and methods inside their owning shells.
+          Call edges connect public functions and instance-owned methods inside their owning shells.
         </div></div>
       `;
       bindChipClicks();
@@ -1333,6 +1374,9 @@ class HtmlReportWriter:
       if (node.type === "function") {
         return { arg_examples: node.arg_examples || [], return_examples: node.return_examples || [] };
       }
+      if (node.type === "method") {
+        return { arg_examples: node.arg_examples || [], return_examples: node.return_examples || [] };
+      }
       return {
         methods: methods.map((method) => ({
           id: method.id,
@@ -1380,8 +1424,8 @@ class HtmlReportWriter:
       currentReplayMetrics = replayMetricsAt(current);
       applyReplayMetrics(currentReplayMetrics);
       syncVisibilityToReplay(current);
-      const sourceNode = event.caller ? event.caller.node_id : null;
-      const targetNode = event.callee.node_id;
+      const sourceNode = visualCallableId(event.caller);
+      const targetNode = visualCallableId(event.callee);
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
       const sourceInstance = instanceForEndpoint(event.caller);
       const targetInstance = instanceForEndpoint(event.callee);
@@ -1397,7 +1441,7 @@ class HtmlReportWriter:
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
       document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
-      showNode(targetNode);
+      if (targetNode) showNode(targetNode);
       focusCurrentElements();
       pulseCurrentElements();
     }
