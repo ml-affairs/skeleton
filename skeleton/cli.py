@@ -6,12 +6,19 @@ import argparse
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast
+from typing import Protocol, cast
 
 from skeleton.analysis import SnapshotBuilder, SnapshotMetrics
-from skeleton.interface import ColorMode, SkeletonConsole
+from skeleton.interface import ColorMode, HtmlReportOpener, SkeletonConsole
 from skeleton.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton.runtime import TargetScriptRunner, TraceOptions, TraceResult
+
+
+class ReportOpener(Protocol):
+    """Boundary for opening generated HTML reports."""
+
+    def open(self, report_path: Path) -> bool:
+        """Open a generated HTML report."""
 
 
 @dataclass(frozen=True)
@@ -26,6 +33,7 @@ class RunConfiguration:
     exclude: tuple[str, ...]
     max_events: int | None
     html_enabled: bool
+    open_report: bool
 
     @property
     def trace_path(self) -> Path:
@@ -68,6 +76,9 @@ class OutputPathResolver:
         """Return the output directory for one Skeleton run."""
         if requested_out_dir:
             return requested_out_dir.resolve()
+        raw_out_dir = os.environ.get("SKELETON_OUT_DIR")
+        if raw_out_dir:
+            return Path(raw_out_dir).expanduser().resolve()
         return self.skeleton_home / self._application_name(project_root)
 
     @property
@@ -95,6 +106,7 @@ class RunCommand:
     report_writer: HtmlReportWriter = field(default_factory=HtmlReportWriter)
     workflow_writer: WorkflowNarrativeWriter = field(default_factory=WorkflowNarrativeWriter)
     output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
+    report_opener: ReportOpener = field(default_factory=HtmlReportOpener)
 
     def execute(self, args: argparse.Namespace) -> int:
         """Run the target script and generate Skeleton artifacts."""
@@ -125,10 +137,16 @@ class RunCommand:
         self.workflow_writer.write(snapshot, config.workflow_path)
 
         report_path = None
+        report_opened = False
         if config.html_enabled:
             self.console.step("Rendering interactive HTML replay")
             self.report_writer.write(snapshot, config.report_path)
             report_path = config.report_path
+            if config.open_report:
+                self.console.step("Opening HTML replay")
+                report_opened = self.report_opener.open(config.report_path)
+                if not report_opened:
+                    self.console.warning(f"Could not open report automatically: {config.report_path}")
 
         event_count = result.event_count if result else metrics.event_count
         self.console.summary(
@@ -139,6 +157,7 @@ class RunCommand:
             snapshot_path=config.snapshot_path,
             workflow_path=config.workflow_path,
             report_path=report_path,
+            report_opened=report_opened,
         )
         if target_error:
             self.console.warning("Skeleton completed artifact generation, but the target script failed.")
@@ -169,6 +188,7 @@ class RunCommand:
             exclude=tuple(args.exclude or ()),
             max_events=args.max_events,
             html_enabled=not args.no_html,
+            open_report=not args.no_open and not args.no_html,
         )
 
     def _warn_if_script_is_outside_project(self, config: RunConfiguration) -> None:
@@ -217,6 +237,7 @@ class CliApplication:
         run_parser.add_argument("--exclude", action="append", default=[])
         run_parser.add_argument("--max-events", type=int, default=None)
         run_parser.add_argument("--no-html", action="store_true")
+        run_parser.add_argument("--no-open", action="store_true", help="Do not open report.html after generation.")
         run_parser.add_argument(
             "--color",
             choices=("auto", "always", "never"),

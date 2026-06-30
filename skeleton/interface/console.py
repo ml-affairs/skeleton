@@ -68,6 +68,7 @@ class SkeletonConsole:
         snapshot_path: Path,
         workflow_path: Path,
         report_path: Path | None,
+        report_opened: bool = False,
     ) -> None:
         """Render the final run summary."""
         self.write("")
@@ -82,7 +83,9 @@ class SkeletonConsole:
             f"{self._style('✓', self.theme.green)} Captured {self._style(str(event_count), self.theme.bold)} events across "
             f"{self._style(str(node_count), self.theme.bold)} nodes and {self._style(str(edge_count), self.theme.bold)} runtime edges."
         )
-        if report_path:
+        if report_path and report_opened:
+            self.write(f"{self._muted('Opened')} {report_path}")
+        elif report_path:
             self.write(f"{self._muted('Next')} open {report_path}")
 
     def write(self, message: str) -> None:

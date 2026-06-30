@@ -77,8 +77,20 @@ Options:
 --include PATTERN     Only trace matching relative paths or module names.
 --exclude PATTERN     Exclude matching relative paths or module names.
 --max-events N        Stop writing trace events after N events.
---no-html             Generate trace.jsonl and snapshot.json only.
+--no-html             Skip report.html generation and opening.
+--no-open             Do not open report.html after generation.
 ```
+
+Output location precedence:
+
+1. `--out-dir PATH`
+2. `SKELETON_OUT_DIR`
+3. `SKELETON_HOME/<application-name>`
+4. `~/.skeleton/<application-name>`
+
+When HTML generation is enabled, Skeleton opens `report.html` in your default
+browser at the end of the run. Use `--no-open` for CI, scripts, or headless
+environments.
 
 ## What gets traced
 
