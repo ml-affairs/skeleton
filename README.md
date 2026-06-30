@@ -181,6 +181,36 @@ not across processes or commits.
 For more detail, see
 [`docs/design/runtime-introspection.md`](docs/design/runtime-introspection.md).
 
+## Current scope and next integrations
+
+Skeleton currently runs a script path:
+
+```bash
+python -m skeleton run scripts/replay_checkout.py
+```
+
+That script can drive any kind of Python code: CLI workflows, service objects,
+batch jobs, web-app internals, or library calls. The application being traced
+does not need to be a CLI application, but v0 does need a script entrypoint that
+exercises the behavior.
+
+Planned integrations:
+
+- `run-module`: support module execution such as
+  `python -m my_app.cli run-demo`, exposed as something like
+  `skeleton run-module my_app.cli -- run-demo`.
+- pytest plugin: trace selected tests or test sessions, because tests often
+  encode real business workflows.
+- live web request tracing: trace one request or handler inside a running
+  FastAPI, Flask, Django, or Starlette app through middleware or a capture
+  context.
+- PyCharm plugin: a thin IDE frontend that invokes Skeleton with the configured
+  interpreter and opens the generated report.
+
+See [`docs/api/python-api.md`](docs/api/python-api.md),
+[`docs/development/missing-integration-plans.md`](docs/development/missing-integration-plans.md),
+and [`docs/development/pypi-release-plan.md`](docs/development/pypi-release-plan.md).
+
 ## Event schema
 
 Each line in `.skeleton/trace.jsonl` is a JSON object:

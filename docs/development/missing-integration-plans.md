@@ -1,0 +1,200 @@
+# Missing Integration Plans
+
+## Status
+
+Planning document.
+
+Skeleton currently traces Python scripts. That is enough for the MVP because any
+application can create a small scenario script that imports real code and drives
+one workflow. The next integration seams should make that less manual.
+
+## `python -m package.module`
+
+### What It Means
+
+Python can run an importable module as a program:
+
+```bash
+python -m package.module arg1 arg2
+```
+
+Examples:
+
+```bash
+python -m http.server 8000
+python -m pytest tests/test_checkout.py
+python -m my_app.cli run-demo
+```
+
+The module is found on `sys.path` and executed as `__main__`. Today Skeleton
+expects a file path:
+
+```bash
+python -m skeleton run scripts/demo.py
+```
+
+It does not yet accept:
+
+```bash
+python -m skeleton run-module my_app.cli -- run-demo
+```
+
+### Why It Matters
+
+Many Python projects expose behavior through package modules instead of script
+files. Supporting this makes Skeleton feel natural for modern package layouts.
+
+### Likely Shape
+
+```bash
+skeleton run-module my_app.cli -- run-demo
+```
+
+Implementation direction:
+
+- add a `run-module` command
+- resolve project root and `sys.path`
+- use `runpy.run_module(module_name, run_name="__main__")`
+- preserve module arguments in `sys.argv`
+- write the same trace, snapshot, workflow, and report artifacts
+
+## Pytest Plugin
+
+### What It Means
+
+A pytest plugin would let users trace tests or selected test scenarios without
+creating separate runner scripts.
+
+Possible usage:
+
+```bash
+pytest tests/test_checkout.py --skeleton --skeleton-out-dir .skeleton/checkout
+```
+
+or:
+
+```bash
+pytest -m skeleton_replay
+```
+
+### Why It Matters
+
+Tests already encode business workflows. A pytest integration would let teams
+turn existing acceptance tests, service tests, or integration tests into
+architecture replays.
+
+### Likely Shape
+
+First slice:
+
+- pytest options: `--skeleton`, `--skeleton-out-dir`, `--skeleton-project-root`
+- trace one full pytest session or one selected test file
+- emit artifacts after pytest finishes
+- preserve pytest's exit code
+
+Later slices:
+
+- one report per test
+- mark-based scenario selection
+- compare snapshots between commits
+- attach generated reports to CI artifacts
+
+### Risks
+
+- pytest itself is a large Python application; filters must keep third-party and
+  pytest internals out of the graph by default
+- failed tests should still write useful partial artifacts
+- parallel test execution requires separate trace outputs
+
+## Live Web Request Tracing
+
+### What It Means
+
+Tracing a live web request means Skeleton would trace one request handled by an
+already running server, such as FastAPI, Flask, Django, or Starlette.
+
+Today Skeleton runs a script from start to finish. It does not attach to an
+existing process and it does not know which request should be traced.
+
+### Why It Matters
+
+Large applications often express workflows as HTTP requests, queue jobs, or
+background tasks. A developer may want to click a UI button or send one API
+request and then replay the architecture path.
+
+### Possible Shapes
+
+Middleware mode:
+
+```python
+app.add_middleware(SkeletonTraceMiddleware, project_root=".")
+```
+
+Context-manager mode:
+
+```python
+with SkeletonTraceSession(project_root=".").capture("checkout-request"):
+    response = client.post("/checkout", json={"order_id": "A-100"})
+```
+
+External attach mode is a later, harder problem and should not be the first
+slice.
+
+### Risks
+
+- concurrent requests need trace isolation
+- async call stacks need careful handling
+- secrets in request bodies, headers, cookies, and environment variables need
+  stronger redaction policy
+- server tracing should avoid global profiler leakage across unrelated requests
+
+## PyCharm Plugin
+
+### Can Skeleton Become One?
+
+Yes. A PyCharm plugin is feasible, but it should be a thin IDE frontend over the
+Skeleton CLI/API rather than a separate tracer.
+
+The plugin should not reimplement tracing. It should call the installed
+`skeleton` package, pass the selected run configuration, and open or embed the
+generated report.
+
+### Useful First Features
+
+- right-click a Python file and choose "Run with Skeleton"
+- right-click a pytest test and choose "Replay with Skeleton"
+- choose project root and output directory
+- show links to `trace.jsonl`, `snapshot.json`, `workflow.md`, and `report.html`
+- open `report.html` in PyCharm's browser panel when available
+- show CLI command used for reproducibility
+
+### Technical Shape
+
+PyCharm plugins are JVM/Kotlin/Java plugins. A first implementation would likely
+be a separate repository or package that:
+
+- defines an IDE action
+- reads the current module/content root
+- invokes `python -m skeleton run ...` or future Python API through the
+  configured interpreter
+- watches the generated artifact directory
+- opens the HTML report
+
+### Risks
+
+- interpreter selection matters in PyCharm projects
+- virtualenv and uv environments need detection
+- Windows path handling must be tested
+- plugin signing and JetBrains Marketplace publishing are separate release
+  tasks
+
+## Recommended Sequence
+
+1. Stabilize public Python API (`TraceSession.run_script`).
+2. Add `run-module` support.
+3. Add pytest plugin MVP.
+4. Add PyCharm plugin prototype using CLI/API.
+5. Add live request tracing as middleware/context-manager, not process attach.
+
+This order keeps the non-invasive runner seam intact while opening practical
+entrypoints for real projects.
