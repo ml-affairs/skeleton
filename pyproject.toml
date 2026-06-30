@@ -1,8 +1,8 @@
 [project]
 name = "skeleton-replay"
-version = "0.1.1"
+version = "0.1.2"
 description = "Replay and visualise the living architecture of a Python application."
-readme = "README.md"
+readme = "PYPI_README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [{ name = "Christos Hadjinikolis", email = "christos.hadjinikolis.subs@gmail.com" }]
