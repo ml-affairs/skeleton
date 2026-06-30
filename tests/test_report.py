@@ -59,7 +59,11 @@ class TestHtmlReportWriter:
         assert "color-scheme: dark" in html
         assert "cytoscape@3.30.4" in html
         assert "architecture-call" in html
-        assert "method/function" in html
+        assert "module shell" in html
+        assert "class shell" in html
+        assert '<span class="pill"><span class="schema method"></span>method</span>' in html
+        assert '<span class="pill"><span class="schema function"></span>function</span>' in html
+        assert "runtime call" in html
         assert "Node size combines observed call count" in html
         assert "function isVisibleActor" in html
         assert "if (!source || !target || source === target) return;" in html
@@ -71,4 +75,8 @@ class TestHtmlReportWriter:
         assert 'parent: node.type === "class" ? moduleIdForName(node.module) : undefined' in html
         assert "parent: parentForFunction(node)" in html
         assert '"compound-sizing-wrt-labels": "include"' in html
+        assert 'node[type = "function"]' in html
+        assert '"border-style": "dashed"' in html
+        assert 'node[type = "method"]' in html
+        assert '"line-style": "solid"' in html
         assert "renderedNodeIds.has(edge.source)" in html

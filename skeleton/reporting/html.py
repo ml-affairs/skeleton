@@ -158,11 +158,28 @@ class HtmlReportWriter:
       position: absolute;
       left: 18px;
       bottom: 18px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      display: grid;
+      gap: 9px;
       max-width: calc(100% - 36px);
       pointer-events: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: rgba(7, 10, 18, 0.74);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+    .legend-title {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, auto));
+      gap: 8px;
     }
     .pill {
       display: inline-flex;
@@ -176,18 +193,46 @@ class HtmlReportWriter:
       background: rgba(7, 10, 18, 0.68);
       backdrop-filter: blur(12px);
       font-size: 12px;
-      box-shadow: var(--shadow);
     }
-    .dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: var(--cyan);
+    .schema {
+      width: 20px;
+      height: 14px;
+      flex: 0 0 auto;
+      border: 2px solid currentColor;
+      background: currentColor;
       box-shadow: 0 0 16px currentColor;
     }
-    .dot.module { background: var(--cyan); color: var(--cyan); }
-    .dot.class { background: var(--violet); color: var(--violet); }
-    .dot.method { background: var(--amber); color: var(--amber); }
+    .schema.module {
+      color: var(--teal);
+      border-radius: 5px;
+      background: rgba(20, 184, 166, 0.45);
+    }
+    .schema.class {
+      color: var(--violet);
+      clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+      background: rgba(139, 92, 246, 0.62);
+    }
+    .schema.method {
+      color: var(--amber);
+      border-radius: 5px;
+      background: rgba(245, 158, 11, 0.68);
+    }
+    .schema.function {
+      color: var(--green);
+      border-radius: 5px;
+      border-style: dashed;
+      background: rgba(34, 197, 94, 0.34);
+    }
+    .schema.call {
+      width: 25px;
+      height: 0;
+      color: var(--rose);
+      border: 0;
+      border-top: 3px solid currentColor;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: 0 0 16px currentColor;
+    }
     .sidebar {
       min-width: 0;
       min-height: 0;
@@ -356,9 +401,14 @@ class HtmlReportWriter:
       <section class="stage">
         <div id="cy"></div>
         <div class="legend">
-          <span class="pill"><span class="dot module"></span>module</span>
-          <span class="pill"><span class="dot class"></span>class</span>
-          <span class="pill"><span class="dot method"></span>method/function</span>
+          <div class="legend-title">Schemas</div>
+          <div class="legend-grid">
+            <span class="pill"><span class="schema module"></span>module shell</span>
+            <span class="pill"><span class="schema class"></span>class shell</span>
+            <span class="pill"><span class="schema method"></span>method</span>
+            <span class="pill"><span class="schema function"></span>function</span>
+            <span class="pill"><span class="schema call"></span>runtime call</span>
+          </div>
         </div>
       </section>
       <aside class="sidebar">
@@ -652,7 +702,7 @@ class HtmlReportWriter:
           "shadow-opacity": 0.42
         } },
         { selector: 'node[type = "method"]', style: {
-          "shape": "ellipse",
+          "shape": "round-rectangle",
           "background-color": "#b45309",
           "border-color": "#fcd34d",
           "font-size": 9,
@@ -660,10 +710,11 @@ class HtmlReportWriter:
         } },
         { selector: 'node[type = "function"]', style: {
           "shape": "round-rectangle",
-          "background-color": "#0e7490",
-          "border-color": "#67e8f9",
+          "background-color": "#15803d",
+          "border-color": "#86efac",
+          "border-style": "dashed",
           "font-size": 9,
-          "shadow-color": "#38dce2"
+          "shadow-color": "#22c55e"
         } },
         { selector: "edge", style: {
           "curve-style": "bezier",
@@ -680,10 +731,10 @@ class HtmlReportWriter:
           "opacity": 0.72
         } },
         { selector: 'edge[type = "runtime-call"]', style: {
-          "line-style": "dashed",
-          "line-color": "#f59e0b",
-          "target-arrow-color": "#f59e0b",
-          "opacity": 0.76
+          "line-style": "solid",
+          "line-color": "#fb7185",
+          "target-arrow-color": "#fb7185",
+          "opacity": 0.82
         } },
         { selector: ".hidden", style: { "display": "none" } },
         { selector: ".dimmed", style: { "opacity": 0.18 } },
