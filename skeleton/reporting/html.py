@@ -1071,6 +1071,8 @@ class HtmlReportWriter:
     let current = events.length ? 0 : -1;
     let playTimer = null;
     let currentReplayMetrics = null;
+    let furthestRevealedEvent = -1;
+    const revealedElementIds = new Set();
     document.getElementById("counter").textContent = `0 / ${events.length}`;
     showOverview();
     renderEvent();
@@ -1104,17 +1106,19 @@ class HtmlReportWriter:
     function revealEventElements(event) {
       revealEndpoint(event.callee);
       if (event.caller) revealEndpoint(event.caller);
-      const sourceNode = event.caller ? event.caller.node_id : null;
-      const targetNode = event.callee.node_id;
+      const sourceNode = visualCallableId(event.caller);
+      const targetNode = visualCallableId(event.callee);
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
       if (runtimeEdge) revealElement(runtimeEdge.id());
     }
 
     function syncVisibilityToReplay(index) {
-      cy.elements().addClass("unseen").removeClass("hidden");
+      if (index <= furthestRevealedEvent) return;
       for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+        if (eventIndex <= furthestRevealedEvent) continue;
         revealEventElements(events[eventIndex]);
       }
+      furthestRevealedEvent = index;
     }
 
     function revealEndpoint(endpoint) {
@@ -1142,8 +1146,63 @@ class HtmlReportWriter:
       if (!id) return null;
       const element = cy.getElementById(id);
       if (!element || element.empty()) return null;
+      if (!revealedElementIds.has(id)) {
+        placeNewElement(element);
+        revealedElementIds.add(id);
+      }
       element.removeClass("unseen hidden");
       return element;
+    }
+
+    function placeNewElement(element) {
+      if (!element.isNode || !element.isNode()) return;
+      const visibleNodes = cy.nodes().not(".unseen").filter((node) => node.id() !== element.id());
+      if (!visibleNodes.length) return;
+      const parent = element.parent();
+      const hasParent = parent && !parent.empty();
+      const anchor = hasParent ? parent.position() : visibleCentroid(visibleNodes);
+      const minimumDistance = hasParent ? 62 : 150;
+      const currentPosition = element.position();
+      if (!overlapsVisibleNode(currentPosition, visibleNodes, minimumDistance)) return;
+      element.position(firstOpenPosition(anchor, visibleNodes, minimumDistance));
+    }
+
+    function visibleCentroid(nodes) {
+      let x = 0;
+      let y = 0;
+      let count = 0;
+      nodes.forEach((node) => {
+        const position = node.position();
+        x += position.x;
+        y += position.y;
+        count += 1;
+      });
+      return count ? { x: x / count, y: y / count } : { x: 0, y: 0 };
+    }
+
+    function firstOpenPosition(anchor, visibleNodes, minimumDistance) {
+      const angles = [0, Math.PI / 3, (2 * Math.PI) / 3, Math.PI, (4 * Math.PI) / 3, (5 * Math.PI) / 3];
+      for (let radius = minimumDistance; radius <= minimumDistance * 6; radius += minimumDistance) {
+        for (const angle of angles) {
+          const candidate = {
+            x: anchor.x + Math.cos(angle) * radius,
+            y: anchor.y + Math.sin(angle) * radius
+          };
+          if (!overlapsVisibleNode(candidate, visibleNodes, minimumDistance)) return candidate;
+        }
+      }
+      return { x: anchor.x + minimumDistance, y: anchor.y + minimumDistance };
+    }
+
+    function overlapsVisibleNode(position, visibleNodes, minimumDistance) {
+      let overlaps = false;
+      visibleNodes.forEach((node) => {
+        if (overlaps) return;
+        const other = node.position();
+        const distance = Math.hypot(position.x - other.x, position.y - other.y);
+        overlaps = distance < minimumDistance;
+      });
+      return overlaps;
     }
 
     function replayMetricsAt(index) {

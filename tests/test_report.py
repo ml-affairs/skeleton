@@ -129,10 +129,15 @@ class TestHtmlReportWriter:
         assert "let current = events.length ? 0 : -1" in html
         assert "renderEvent();" in html
         assert "let currentReplayMetrics = null" in html
+        assert "let furthestRevealedEvent = -1" in html
+        assert "const revealedElementIds = new Set()" in html
         assert "function parentForFunction" in html
         assert "function parentForActor" in html
         assert "function instanceForEndpoint" in html
         assert "function syncVisibilityToReplay" in html
+        assert "function placeNewElement" in html
+        assert "function firstOpenPosition" in html
+        assert "function overlapsVisibleNode" in html
         assert "function replayMetricsAt" in html
         assert "function applyReplayMetrics" in html
         assert 'node.type === "module" || node.type === "instance" ? "container" : ""' in html
@@ -157,7 +162,9 @@ class TestHtmlReportWriter:
         assert "renderedNodeIds.has(source)" in html
         assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
         assert "return:${targetNode}->${sourceNode}" in html
-        assert 'cy.elements().addClass("unseen")' in html
+        assert "if (index <= furthestRevealedEvent) return;" in html
+        assert 'cy.elements().addClass("unseen")' not in html
+        assert "element.position(firstOpenPosition(anchor, visibleNodes, minimumDistance))" in html
         assert '"events": "no"' in html
         assert "layoutVisibleElements" not in html
         assert 'window.setTimeout(() => active.removeClass("pulse"), 420)' in html
