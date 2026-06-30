@@ -13,6 +13,12 @@ understanding layer. The output is not just a call graph. It is evidence that ca
 be inspected visually by a human, stepped through as a timeline, and summarized
 as structured workflow text that an LLM can use without inventing architecture.
 
+This traceability layer is intentionally opinionated about maintainable Python
+design. The default report should show architectural actors and boundary roles,
+not every file and function as equal nodes. See
+[`software-design-principles.md`](software-design-principles.md) for the design
+patterns and visual rules Skeleton should preserve as it grows.
+
 ## What Must Be True
 
 - Human users can see modules, classes, functions, instances, and runtime calls

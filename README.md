@@ -45,6 +45,16 @@ modify application code. The runner wraps an existing script, traces only
 project-local public functions and methods by default, and records safe
 summaries of arguments and return values.
 
+Skeleton is opinionated about what makes large Python systems understandable.
+It promotes explicit architectural actors, clear dependency direction, and I/O
+decoupled from business logic. A module that only hosts a class should normally
+be rendered as that class actor; a module with public helper functions can be
+rendered as a module actor. Entrypoints, services, repositories, adapters, and
+ports are roles or boundaries unless the codebase has a concrete object that
+owns that responsibility. See
+[`docs/design/software-design-principles.md`](docs/design/software-design-principles.md)
+for the design principles that guide the visual model.
+
 `workflow.md` is a compact text explanation of the observed run. It is designed
 for humans and LLMs: event ids, node ids, caller/callee relationships, safe
 examples, and known trace gaps are written in a form that can be quoted and

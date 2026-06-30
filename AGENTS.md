@@ -109,6 +109,29 @@ relationships into an interactive architecture replay.
 - Keep tracing, filtering, event schema, summarisation, static analysis,
   snapshot generation, reporting, and CLI orchestration as separate
   responsibilities.
+- Treat `docs/design/software-design-principles.md` as product doctrine. When
+  tracing or reporting behavior changes, preserve the distinction between raw
+  implementation artifacts and architectural actors.
+- Skeleton should promote maintainable large-Python design: explicit ownership,
+  dependency inversion, ports and adapters, repositories/unit-of-work where
+  persistence exists, dependency injection at composition roots, and I/O
+  decoupled from business logic.
+- A Python module that hosts class actors should normally be represented by
+  those classes in the default report. A module with public helper functions and
+  no class actor can be represented as a module actor. Do not show both as peer
+  actors unless the code genuinely contains separate architectural
+  responsibilities.
+- Entrypoint, service, repository, adapter, port, and external resource should
+  be treated as roles or boundary concepts first. Create graph nodes for them
+  only when runtime evidence shows a concrete actor or resource.
+- I/O should become first-class architecture evidence. Databases, filesystems,
+  HTTP services, queues, caches, model providers, clocks, randomness, and
+  environment access should eventually be depicted as external resources or
+  adapters rather than hidden inside generic method-call edges.
+- Report design should help users spot useful patterns and smells: clean
+  application-service orchestration, rich domain objects, explicit repositories,
+  clear adapter boundaries, hidden I/O in domain logic, high fan-in/fan-out, and
+  accidental coupling.
 - Treat traceability as Skeleton's product moat. Runtime data should support
   three audiences: humans stepping through an interactive visual replay,
   developers reading concise workflow explanations, and LLMs consuming
