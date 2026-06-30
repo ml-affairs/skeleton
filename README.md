@@ -63,6 +63,23 @@ Run locally from the checkout:
 uv run python -m skeleton run examples/app.py
 ```
 
+Generate a stable local demo report:
+
+```bash
+make demo
+```
+
+The demo writes artifacts to `tests/dev/.temp/skeleton-demo/` and opens
+`report.html` in your default browser. For a headless run that writes the same
+files without opening a browser, use:
+
+```bash
+make demo-no-open
+```
+
+Pytest tests use `tmp_path`, so test-generated reports live in pytest-managed
+temporary directories and are intentionally disposable.
+
 ## CLI
 
 ```bash

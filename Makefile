@@ -6,8 +6,11 @@ PYTHON_VERSION ?= $(shell test -f $(PYTHON_VERSION_FILE) && cat $(PYTHON_VERSION
 UV ?= $(shell if command -v uv >/dev/null 2>&1; then command -v uv; elif [ -x "$$HOME/.local/bin/uv" ]; then printf "%s\n" "$$HOME/.local/bin/uv"; else printf "uv\n"; fi)
 UV_CACHE_DIR ?= .uv-cache
 UV_RUN := UV_CACHE_DIR="$(UV_CACHE_DIR)" $(UV) run --python "$(PYTHON_VERSION)"
+DEMO_PROJECT_ROOT ?= tests/fixtures/sample_project
+DEMO_SCRIPT ?= $(DEMO_PROJECT_ROOT)/app.py
+DEMO_OUT_DIR ?= tests/dev/.temp/skeleton-demo
 
-.PHONY: help check-uv setup sync install-hooks lint format format-check typecheck test check clean commit-msg-example
+.PHONY: help check-uv setup sync install-hooks lint format format-check typecheck test check demo demo-no-open clean commit-msg-example
 
 help:
 	@printf "Skeleton development targets\n"
@@ -19,6 +22,8 @@ help:
 	@printf "  make typecheck    Run mypy\n"
 	@printf "  make test         Run pytest\n"
 	@printf "  make check        Run lint, format-check, typecheck, and tests\n"
+	@printf "  make demo         Run the sample project, write stable artifacts, and open report.html\n"
+	@printf "  make demo-no-open Run the sample project without opening report.html\n"
 	@printf "  make clean        Remove local caches and build artifacts\n"
 
 check-uv:
@@ -58,6 +63,14 @@ test: check-uv
 check: lint format-check typecheck test
 	@printf "All checks passed.\n"
 
+demo: check-uv
+	@mkdir -p "$(DEMO_OUT_DIR)"
+	@SKELETON_OUT_DIR="$(DEMO_OUT_DIR)" $(UV_RUN) python -m skeleton run --project-root "$(DEMO_PROJECT_ROOT)" "$(DEMO_SCRIPT)"
+
+demo-no-open: check-uv
+	@mkdir -p "$(DEMO_OUT_DIR)"
+	@SKELETON_OUT_DIR="$(DEMO_OUT_DIR)" $(UV_RUN) python -m skeleton run --no-open --project-root "$(DEMO_PROJECT_ROOT)" "$(DEMO_SCRIPT)"
+
 commit-msg-example:
 	@printf "Valid semantic commit message examples:\n"
 	@printf "  feat(cli): add replay command\n"
@@ -65,5 +78,5 @@ commit-msg-example:
 	@printf "  docs!: rewrite package overview\n"
 
 clean:
-	@rm -rf .mypy_cache .pytest_cache .ruff_cache build dist *.egg-info
+	@rm -rf .mypy_cache .pytest_cache .ruff_cache build dist *.egg-info tests/dev/.temp/skeleton-demo
 	@find . -type d -name __pycache__ -prune -exec rm -rf {} +

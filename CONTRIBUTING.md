@@ -20,6 +20,7 @@ pre-commit and commit-message hooks.
 make sync
 make test
 make check
+make demo-no-open
 ```
 
 - `make test` runs pytest with branch coverage and enforces the current coverage
@@ -27,6 +28,8 @@ make check
 - `make check` runs Ruff, formatting checks, mypy strict, and tests.
 - `make format` applies Ruff formatting.
 - `make install-hooks` reinstalls hooks if `.git/hooks` is reset.
+- `make demo` writes a visible report to `tests/dev/.temp/skeleton-demo/` and
+  opens it. Use `make demo-no-open` when you only need the files.
 
 ## Code Style
 
