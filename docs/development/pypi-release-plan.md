@@ -59,7 +59,8 @@ Already present:
 - publish workflow uses PyPI Trusted Publishing through GitHub Actions OIDC
 - TestPyPI dry run
 - version bump process
-- changelog or GitHub release notes
+- changelog entry in `CHANGELOG.md`
+- GitHub release notes copied from the changelog
 - tag naming convention
 
 Trusted Publishing configuration to create in PyPI:
@@ -107,19 +108,20 @@ normal publisher.
 ## Release Checklist
 
 1. Update version in `pyproject.toml` and `skeleton_replay/__init__.py`.
-2. Update README installation instructions.
-3. Run `make check`.
-4. Run `uv build`.
-5. Create a clean virtual environment.
-6. Install `dist/*.whl`.
-7. Run `skeleton --help`.
-8. Run `skeleton run tests/fixtures/sample_project/app.py --no-open`.
-9. Inspect generated artifacts.
-10. Configure PyPI Trusted Publishing for `skeleton-replay`.
-11. Publish to TestPyPI if desired.
-12. Install from TestPyPI if used.
-13. Create a GitHub release to trigger `.github/workflows/publish.yml`.
-14. Install from PyPI and run a smoke test.
+2. Update `CHANGELOG.md`.
+3. Update README installation instructions.
+4. Run `make check`.
+5. Run `uv build`.
+6. Create a clean virtual environment.
+7. Install `dist/*.whl`.
+8. Run `skeleton --help`.
+9. Run `skeleton run tests/fixtures/sample_project/app.py --no-open`.
+10. Inspect generated artifacts.
+11. Configure PyPI Trusted Publishing for `skeleton-replay`.
+12. Publish to TestPyPI if desired.
+13. Install from TestPyPI if used.
+14. Create a GitHub release to trigger `.github/workflows/publish.yml`.
+15. Install from PyPI and run a smoke test.
 
 ## Open Decisions
 

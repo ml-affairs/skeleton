@@ -252,6 +252,10 @@ See [`docs/api/python-api.md`](docs/api/python-api.md),
 [`docs/development/missing-integration-plans.md`](docs/development/missing-integration-plans.md),
 and [`docs/development/pypi-release-plan.md`](docs/development/pypi-release-plan.md).
 
+Release history is tracked in [`CHANGELOG.md`](CHANGELOG.md). Keep the
+changelog updated in the same pull request or commit that changes user-visible
+behavior.
+
 ## Event schema
 
 Each line in `.skeleton/trace.jsonl` is a JSON object:
