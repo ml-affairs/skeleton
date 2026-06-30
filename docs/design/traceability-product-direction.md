@@ -17,7 +17,9 @@ This traceability layer is intentionally opinionated about maintainable Python
 design. The default report should show architectural actors and boundary roles,
 not every file and function as equal nodes. See
 [`software-design-principles.md`](software-design-principles.md) for the design
-patterns and visual rules Skeleton should preserve as it grows.
+patterns and visual rules Skeleton should preserve as it grows. See
+[`runtime-introspection.md`](runtime-introspection.md) for the Python runtime
+mechanisms that make the non-invasive runner possible.
 
 ## What Must Be True
 

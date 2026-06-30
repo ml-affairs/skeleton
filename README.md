@@ -155,6 +155,32 @@ The trace identifies the module, class where practical, function or method,
 caller, callee, instance identity where practical, call depth, event order,
 timestamp, safe argument summaries, and safe return summaries.
 
+## How it works
+
+Skeleton does not patch your source code. It uses Python's own runtime
+introspection:
+
+- `runpy.run_path()` runs the target script as `__main__` inside a controlled
+  runner.
+- `sys.setprofile()` receives callbacks whenever Python enters or returns from a
+  function.
+- Each callback receives a frame object. From that frame Skeleton reads
+  `frame.f_code`, `frame.f_globals`, and `frame.f_locals` to identify the file,
+  module, function name, line number, arguments, and whether the call has
+  `self`.
+- When `self` is present, Skeleton records `type(self).__name__` and
+  `id(self)`, giving a run-local object identity such as
+  `service.Greeter@0x...`.
+- Values are summarized immediately, then the raw objects are discarded.
+
+That is why the report can show instance-owned methods without decorators. It is
+not reading class source to guess behavior; it is watching Python call real
+functions on real objects. The object ids are only meaningful within one run,
+not across processes or commits.
+
+For more detail, see
+[`docs/design/runtime-introspection.md`](docs/design/runtime-introspection.md).
+
 ## Event schema
 
 Each line in `.skeleton/trace.jsonl` is a JSON object:
