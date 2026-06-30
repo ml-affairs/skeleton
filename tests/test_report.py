@@ -58,3 +58,9 @@ def test_html_report_uses_dark_architecture_replay_surface(tmp_path: Path) -> No
     assert "architecture-call" in html
     assert "method appears on focus/replay" in html
     assert "Node size combines observed call count" in html
+    assert "function isVisibleActor" in html
+    assert 'node.type === "module" && !moduleClassCounts.has(node.module)' in html
+    assert "if (!source || !target || source === target) return;" in html
+    assert 'addActorRole(target, "entrypoint")' in html
+    assert "Entrypoint and service are roles on actors" in html
+    assert "let current = -1" in html

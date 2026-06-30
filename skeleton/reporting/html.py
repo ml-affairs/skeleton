@@ -395,18 +395,43 @@ class HtmlReportWriter:
     const ownerMethods = new Map();
     const archEdgeCounts = new Map();
     const archAdjacency = new Map();
+    const moduleClassCounts = new Map();
+    const actorRoles = new Map();
 
     document.getElementById("project-root").textContent = snapshot.project_root || "project";
     document.getElementById("event-count").textContent = String(snapshot.event_count || events.length || 0);
 
+    for (const node of rawNodes.values()) {
+      if (node.type === "class" && node.module) {
+        moduleClassCounts.set(node.module, (moduleClassCounts.get(node.module) || 0) + 1);
+      }
+    }
+
+    function addActorRole(ownerId, role) {
+      if (!ownerId) return;
+      if (!actorRoles.has(ownerId)) actorRoles.set(ownerId, new Set());
+      actorRoles.get(ownerId).add(role);
+    }
+
+    function rolesForActor(ownerId) {
+      return Array.from(actorRoles.get(ownerId) || []);
+    }
+
+    function isVisibleActor(node) {
+      if (!node) return false;
+      if (node.type === "class") return true;
+      if (node.type === "module" && !moduleClassCounts.has(node.module)) return true;
+      return false;
+    }
+
     function ownerForEndpoint(endpoint) {
-      if (!endpoint) return "entrypoint";
+      if (!endpoint) return null;
       if (endpoint.class_name) return `class:${endpoint.module}.${endpoint.class_name}`;
       return `module:${endpoint.module}`;
     }
 
     function ownerForNode(node) {
-      if (!node || node.type === "entrypoint") return "entrypoint";
+      if (!node || node.type === "entrypoint") return null;
       if (node.type === "class") return node.id;
       if (node.type === "module") return node.id;
       if (node.class_name) return `class:${node.module}.${node.class_name}`;
@@ -414,17 +439,19 @@ class HtmlReportWriter:
     }
 
     function ownerLabel(ownerId) {
-      if (ownerId === "entrypoint") return "entrypoint";
+      if (!ownerId) return "entrypoint";
       const node = rawNodes.get(ownerId);
       return node?.label || ownerId.replace(/^(class|module):/, "");
     }
 
     function addOwnerMethod(ownerId, methodId) {
+      if (!ownerId) return;
       if (!ownerMethods.has(ownerId)) ownerMethods.set(ownerId, new Set());
       ownerMethods.get(ownerId).add(methodId);
     }
 
     function addArchEdge(source, target, event) {
+      if (!source || !target || source === target) return;
       const key = `${source}->${target}`;
       const record = archEdgeCounts.get(key) || {
         id: `arch:${key}`,
@@ -449,15 +476,15 @@ class HtmlReportWriter:
     }
     for (const event of events) {
       if (event.event_type !== "call") continue;
-      const source = ownerForEndpoint(event.caller);
       const target = ownerForEndpoint(event.callee);
+      if (!event.caller) addActorRole(target, "entrypoint");
+      const source = ownerForEndpoint(event.caller);
       addArchEdge(source, target, event);
       addOwnerMethod(target, event.callee.node_id);
       if (event.caller) addOwnerMethod(source, event.caller.node_id);
     }
 
     function ownerMetric(ownerId, field) {
-      if (ownerId === "entrypoint") return archAdjacency.get(ownerId)?.outgoing.size || 0;
       const node = rawNodes.get(ownerId);
       const methodTotal = Array.from(ownerMethods.get(ownerId) || []).reduce((total, methodId) => {
         const method = rawNodes.get(methodId);
@@ -467,26 +494,31 @@ class HtmlReportWriter:
     }
 
     const actorNodes = Array.from(rawNodes.values())
-      .filter((node) => ["module", "class", "entrypoint"].includes(node.type))
+      .filter((node) => isVisibleActor(node))
       .map((node) => {
         const adjacency = archAdjacency.get(node.id) || { incoming: new Set(), outgoing: new Set() };
         const loc = Number(node.loc || 0);
         const callCount = ownerMetric(node.id, "call_count");
         const degree = adjacency.incoming.size + adjacency.outgoing.size;
+        const roles = rolesForActor(node.id);
         return {
           data: {
             id: node.id,
             label: node.label || node.id,
             type: node.type,
+            roles: roles.join(", "),
             loc,
             call_count: callCount,
             fan_in: adjacency.incoming.size,
             fan_out: adjacency.outgoing.size,
             degree,
             size: 42 + Math.min(54, callCount * 7 + degree * 9 + Math.min(18, loc / 3))
-          }
+          },
+          classes: roles.includes("entrypoint") ? "role-entrypoint" : ""
         };
       });
+
+    const visibleActorIds = new Set(actorNodes.map((node) => node.data.id));
 
     const methodNodes = Array.from(rawNodes.values())
       .filter((node) => node.type === "function")
@@ -504,28 +536,32 @@ class HtmlReportWriter:
         classes: "detail hidden"
       }));
 
-    const archEdges = Array.from(archEdgeCounts.values()).map((edge) => ({
-      data: {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: "architecture-call",
-        weight: edge.call_count,
-        first_seen: edge.first_seen,
-        last_seen: edge.last_seen
-      }
-    }));
+    const archEdges = Array.from(archEdgeCounts.values())
+      .filter((edge) => visibleActorIds.has(edge.source) && visibleActorIds.has(edge.target))
+      .map((edge) => ({
+        data: {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: "architecture-call",
+          weight: edge.call_count,
+          first_seen: edge.first_seen,
+          last_seen: edge.last_seen
+        }
+      }));
 
-    const detailEdges = rawEdges.map((edge) => ({
-      data: {
-        id: `detail:${edge.id}`,
-        source: edge.source,
-        target: edge.target,
-        type: "method-call",
-        weight: edge.call_count
-      },
-      classes: "detail hidden"
-    }));
+    const detailEdges = rawEdges
+      .filter((edge) => rawNodes.has(edge.source) && rawNodes.has(edge.target))
+      .map((edge) => ({
+        data: {
+          id: `detail:${edge.id}`,
+          source: edge.source,
+          target: edge.target,
+          type: "method-call",
+          weight: edge.call_count
+        },
+        classes: "detail hidden"
+      }));
 
     document.getElementById("actor-count").textContent = String(actorNodes.length);
     document.getElementById("edge-count").textContent = String(archEdges.length);
@@ -566,11 +602,12 @@ class HtmlReportWriter:
           "border-color": "#c4b5fd",
           "shadow-color": "#8b5cf6"
         } },
-        { selector: 'node[type = "entrypoint"]', style: {
-          "shape": "ellipse",
-          "background-color": "#be123c",
+        { selector: ".role-entrypoint", style: {
           "border-color": "#fda4af",
-          "shadow-color": "#fb7185"
+          "border-width": 5,
+          "shadow-color": "#fb7185",
+          "shadow-blur": 34,
+          "shadow-opacity": 0.42
         } },
         { selector: 'node[type = "method"]', style: {
           "shape": "ellipse",
@@ -643,22 +680,28 @@ class HtmlReportWriter:
       renderEvent();
     });
 
-    let current = events.length ? 0 : -1;
+    let current = -1;
     let playTimer = null;
-    if (events.length) renderEvent();
-    else showOverview();
+    document.getElementById("counter").textContent = `0 / ${events.length}`;
+    showOverview();
 
     function selectNode(id) {
       stopPlay();
-      revealForOwner(id);
+      const selected = rawNodes.get(id) || methodData(id);
+      const ownerId = ownerForNode(selected) || id;
+      revealForOwner(ownerId, [id]);
       showNode(id);
     }
 
     function revealForOwner(ownerId, extraIds = []) {
+      if (!ownerId) return;
       cy.elements().removeClass("focus current dimmed");
       cy.$(".detail").addClass("hidden");
       const owners = new Set([ownerId]);
-      for (const id of extraIds) owners.add(ownerForNode(rawNodes.get(id)) || id);
+      for (const id of extraIds) {
+        const owner = ownerForNode(rawNodes.get(id));
+        if (owner) owners.add(owner);
+      }
       for (const owner of owners) {
         cy.getElementById(owner).addClass("focus");
         for (const methodId of ownerMethods.get(owner) || []) cy.getElementById(methodId).removeClass("hidden");
@@ -673,7 +716,7 @@ class HtmlReportWriter:
     function showOverview() {
       document.getElementById("detail-kind").textContent = "Architecture";
       document.getElementById("detail-title").textContent = "Runtime actors";
-      document.getElementById("detail-summary").textContent = "Classes and modules are shown first. Select an actor or step through replay to reveal the methods involved.";
+      document.getElementById("detail-summary").textContent = "A file with classes is represented by its classes. A file without classes is represented as a module actor.";
       const topActors = actorNodes
         .map((node) => node.data)
         .sort((left, right) => (right.call_count + right.degree) - (left.call_count + left.degree))
@@ -685,6 +728,7 @@ class HtmlReportWriter:
         <div class="section"><h3>How To Read This</h3><div class="node-kind">
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
+          Entrypoint and service are roles on actors, not standalone actors.
           Method nodes stay hidden until they explain a selected actor or replay event.
         </div></div>
       `;
@@ -697,6 +741,7 @@ class HtmlReportWriter:
       const isMethod = node.type === "function" || node.type === "method";
       const ownerId = isMethod ? ownerForNode(node) : id;
       const adjacency = archAdjacency.get(ownerId) || { incoming: new Set(), outgoing: new Set() };
+      const roles = rolesForActor(ownerId);
       const methods = Array.from(ownerMethods.get(ownerId) || [])
         .map((methodId) => rawNodes.get(methodId))
         .filter(Boolean);
@@ -705,6 +750,7 @@ class HtmlReportWriter:
       document.getElementById("detail-summary").textContent = summaryForNode(node, ownerId, adjacency);
       document.getElementById("details").innerHTML = `
         <div class="section"><h3>Metrics</h3>${metricsTable(node, ownerId, adjacency)}</div>
+        <div class="section"><h3>Roles</h3>${roleChips(roles)}</div>
         <div class="section"><h3>Observed Calls</h3>${callList(ownerId)}</div>
         <div class="section"><h3>Methods</h3>${methodChips(methods)}</div>
         <div class="section"><h3>Examples</h3><pre>${escapeHtml(JSON.stringify(examplesForNode(node, methods), null, 2))}</pre></div>
@@ -754,6 +800,11 @@ class HtmlReportWriter:
       return `<div class="chips">${methods.map((method) => `<button class="chip" data-node="${escapeAttr(method.id)}">${escapeHtml(method.label || method.function || method.id)}</button>`).join("")}</div>`;
     }
 
+    function roleChips(roles) {
+      if (!roles.length) return '<div class="empty">No runtime role inferred yet.</div>';
+      return `<div class="chips">${roles.map((role) => `<span class="chip">${escapeHtml(role)}</span>`).join("")}</div>`;
+    }
+
     function examplesForNode(node, methods) {
       if (node.type === "function") {
         return { arg_examples: node.arg_examples || [], return_examples: node.return_examples || [] };
@@ -801,14 +852,15 @@ class HtmlReportWriter:
       if (!event) return;
       const sourceOwner = ownerForEndpoint(event.caller);
       const targetOwner = ownerForEndpoint(event.callee);
+      if (!targetOwner) return;
       revealForOwner(targetOwner, [event.callee.node_id, event.caller?.node_id].filter(Boolean));
-      const sourceNode = event.caller ? event.caller.node_id : sourceOwner;
+      const sourceNode = event.caller ? event.caller.node_id : null;
       const targetNode = event.callee.node_id;
-      const archEdge = cy.getElementById(`arch:${sourceOwner}->${targetOwner}`);
+      const archEdge = sourceOwner && sourceOwner !== targetOwner ? cy.getElementById(`arch:${sourceOwner}->${targetOwner}`) : null;
       const detailEdge = cy.getElementById(`detail:${sourceNode}->${targetNode}`);
-      cy.getElementById(sourceOwner).addClass("current");
+      if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       cy.getElementById(targetOwner).addClass("current");
-      cy.getElementById(sourceNode).removeClass("hidden").addClass("current");
+      if (sourceNode) cy.getElementById(sourceNode).removeClass("hidden").addClass("current");
       cy.getElementById(targetNode).removeClass("hidden").addClass("current");
       if (archEdge) archEdge.addClass("current");
       if (detailEdge) detailEdge.removeClass("hidden").addClass("current");
