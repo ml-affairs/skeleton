@@ -144,6 +144,11 @@ relationships into an interactive architecture replay.
   three audiences: humans stepping through an interactive visual replay,
   developers reading concise workflow explanations, and LLMs consuming
   structured text/JSON evidence without guessing from raw events.
+- Keep Skeleton's category boundary explicit. Static and multi-modal knowledge
+  graph tools are useful references, but Skeleton's source of truth is observed
+  runtime behavior. Do not turn Skeleton into a generic repository knowledge
+  graph builder before runtime trace, replay, query, and scenario explanation
+  are excellent.
 - Future query features may become Cypher-like graph interactions, but v0 should
   first keep node, edge, event, and narrative outputs clean enough that such a
   query layer can be added deliberately.
