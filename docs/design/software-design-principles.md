@@ -47,17 +47,22 @@ Useful source material:
 
 ## The Core Rule
 
-Represent architectural actors, not every implementation artifact.
+Represent ownership and architectural actors, not every implementation artifact
+as an equal peer.
 
-A Python module can be one of two things in the default visual model:
+Python's ownership hierarchy should be visible:
 
-- a host for one or more class actors
-- a module actor containing public helper functions
+- a module is the outer shell for code in a file or package namespace
+- a class lives inside the module that defines it
+- a method lives inside its owning class
+- a module-level public function lives inside its module
+- call edges connect public functions and methods, with containment showing who
+  owns those callables
 
-It should not be both at the same level in the graph. If `service.py` exists
-only to host `Greeter`, the graph should show `Greeter`, not `service` beside
-`Greeter`. The module path is still important metadata, but it is not a peer
-actor.
+It should not flatten those levels into unrelated peers. If `service.py` defines
+`Greeter.greet`, the graph should show `service` as the outer shell, `Greeter`
+inside `service`, and `greet` inside `Greeter`. `greet` should not drift outside
+the class, and `Greeter` should not drift outside the module.
 
 The same rule applies to entrypoints. `entrypoint`, `service`, `repository`, and
 `adapter` are often roles. They should usually appear as roles on actors unless
@@ -184,11 +189,14 @@ The report should distinguish:
 
 Default actor graph:
 
-- Show class actors.
-- Show module actors only when the module does not host class actors.
+- Show modules as outer shells.
+- Show classes inside the modules that define them.
+- Show module-level public functions inside modules.
+- Show public class methods inside classes.
 - Show entrypoint, service, repository, adapter, and port as roles when possible.
-- Hide methods until focus or replay.
-- Collapse function-level runtime calls into actor-level edges.
+- Connect public functions and methods with runtime call edges.
+- Use containment to show module/class ownership rather than placing every
+  entity at the same level.
 - Keep raw function and event evidence available in the inspector.
 
 Metrics:
@@ -205,8 +213,8 @@ Replay:
 - Use developer language first: `CheckoutService.reserve_stock called
   InventoryRepository.get`.
 - Keep business-language inference optional and evidence-based.
-- Make hidden methods appear only when they explain the selected actor or current
-  replay event.
+- Highlight the callable nodes and their containing module/class shells for the
+  current replay event.
 
 ## Implications For Skeleton Development
 
@@ -220,4 +228,3 @@ Replay:
   actor id, role, boundary kind, resource kind, event ids, safe examples, and
   dependency direction.
 - Tests should cover conceptual rendering rules, not only file generation.
-

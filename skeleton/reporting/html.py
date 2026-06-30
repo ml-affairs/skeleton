@@ -358,14 +358,14 @@ class HtmlReportWriter:
         <div class="legend">
           <span class="pill"><span class="dot module"></span>module</span>
           <span class="pill"><span class="dot class"></span>class</span>
-          <span class="pill"><span class="dot method"></span>method appears on focus/replay</span>
+          <span class="pill"><span class="dot method"></span>method/function</span>
         </div>
       </section>
       <aside class="sidebar">
         <section class="inspector">
           <div class="eyebrow" id="detail-kind">Architecture</div>
           <h2 id="detail-title">Runtime actors</h2>
-          <div class="node-kind" id="detail-summary">Classes and modules are shown first. Select an actor or step through replay to reveal the methods involved.</div>
+          <div class="node-kind" id="detail-summary">Modules contain classes and functions. Classes contain their methods. Calls connect the nested callable nodes.</div>
           <div id="details"></div>
         </section>
         <section class="replay">
@@ -397,11 +397,13 @@ class HtmlReportWriter:
     const archAdjacency = new Map();
     const moduleClassCounts = new Map();
     const actorRoles = new Map();
+    const classNodesById = new Set();
 
     document.getElementById("project-root").textContent = snapshot.project_root || "project";
     document.getElementById("event-count").textContent = String(snapshot.event_count || events.length || 0);
 
     for (const node of rawNodes.values()) {
+      if (node.type === "class") classNodesById.add(node.id);
       if (node.type === "class" && node.module) {
         moduleClassCounts.set(node.module, (moduleClassCounts.get(node.module) || 0) + 1);
       }
@@ -419,9 +421,27 @@ class HtmlReportWriter:
 
     function isVisibleActor(node) {
       if (!node) return false;
-      if (node.type === "class") return true;
-      if (node.type === "module" && !moduleClassCounts.has(node.module)) return true;
-      return false;
+      return node.type === "module" || node.type === "class";
+    }
+
+    function classIdForFunction(node) {
+      if (!node || node.type !== "function") return null;
+      if (node.class_name) return `class:${node.module}.${node.class_name}`;
+      const qualified = node.qualified_name || node.id.replace(/^function:/, "");
+      const modulePrefix = `${node.module}.`;
+      if (!qualified.startsWith(modulePrefix)) return null;
+      const localParts = qualified.slice(modulePrefix.length).split(".");
+      if (localParts.length < 2) return null;
+      const candidate = `class:${node.module}.${localParts[0]}`;
+      return classNodesById.has(candidate) ? candidate : null;
+    }
+
+    function moduleIdForName(moduleName) {
+      return `module:${moduleName}`;
+    }
+
+    function parentForFunction(node) {
+      return classIdForFunction(node) || moduleIdForName(node.module);
     }
 
     function ownerForEndpoint(endpoint) {
@@ -434,8 +454,7 @@ class HtmlReportWriter:
       if (!node || node.type === "entrypoint") return null;
       if (node.type === "class") return node.id;
       if (node.type === "module") return node.id;
-      if (node.class_name) return `class:${node.module}.${node.class_name}`;
-      return `module:${node.module}`;
+      return classIdForFunction(node) || moduleIdForName(node.module);
     }
 
     function ownerLabel(ownerId) {
@@ -506,6 +525,7 @@ class HtmlReportWriter:
             id: node.id,
             label: node.label || node.id,
             type: node.type,
+            parent: node.type === "class" ? moduleIdForName(node.module) : undefined,
             roles: roles.join(", "),
             loc,
             call_count: callCount,
@@ -514,7 +534,11 @@ class HtmlReportWriter:
             degree,
             size: 42 + Math.min(54, callCount * 7 + degree * 9 + Math.min(18, loc / 3))
           },
-          classes: roles.includes("entrypoint") ? "role-entrypoint" : ""
+          classes: [
+            "container",
+            node.type === "module" ? "module-container" : "class-container",
+            roles.includes("entrypoint") ? "role-entrypoint" : ""
+          ].filter(Boolean).join(" ")
         };
       });
 
@@ -526,14 +550,14 @@ class HtmlReportWriter:
         data: {
           id: node.id,
           owner: ownerForNode(node),
+          parent: parentForFunction(node),
           label: node.function || node.label || node.id,
-          type: "method",
+          type: classIdForFunction(node) ? "method" : "function",
           call_count: Number(node.call_count || 0),
           fan_in: Number(node.fan_in || 0),
           fan_out: Number(node.fan_out || 0),
           size: 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4)
-        },
-        classes: "detail hidden"
+        }
       }));
 
     const renderedNodeIds = new Set([
@@ -555,25 +579,24 @@ class HtmlReportWriter:
         }
       }));
 
-    const detailEdges = rawEdges
+    const callEdges = rawEdges
       .filter((edge) => renderedNodeIds.has(edge.source) && renderedNodeIds.has(edge.target))
       .map((edge) => ({
         data: {
-          id: `detail:${edge.id}`,
+          id: `call:${edge.id}`,
           source: edge.source,
           target: edge.target,
-          type: "method-call",
+          type: "runtime-call",
           weight: edge.call_count
-        },
-        classes: "detail hidden"
+        }
       }));
 
     document.getElementById("actor-count").textContent = String(actorNodes.length);
-    document.getElementById("edge-count").textContent = String(archEdges.length);
+    document.getElementById("edge-count").textContent = String(callEdges.length);
 
     const cy = cytoscape({
       container: document.getElementById("cy"),
-      elements: [...actorNodes, ...methodNodes, ...archEdges, ...detailEdges],
+      elements: [...actorNodes, ...methodNodes, ...callEdges],
       style: [
         { selector: "node", style: {
           "label": "data(label)",
@@ -594,6 +617,20 @@ class HtmlReportWriter:
           "shadow-opacity": 0.28,
           "shadow-offset-x": 0,
           "shadow-offset-y": 0
+        } },
+        { selector: ".container", style: {
+          "text-valign": "top",
+          "text-halign": "center",
+          "padding": 28,
+          "compound-sizing-wrt-labels": "include",
+          "min-width": 130,
+          "min-height": 96,
+          "background-opacity": 0.18,
+          "border-width": 2,
+          "border-style": "solid",
+          "font-size": 13,
+          "font-weight": 800,
+          "text-margin-y": -10
         } },
         { selector: 'node[type = "module"]', style: {
           "shape": "round-rectangle",
@@ -621,6 +658,13 @@ class HtmlReportWriter:
           "font-size": 9,
           "shadow-color": "#f59e0b"
         } },
+        { selector: 'node[type = "function"]', style: {
+          "shape": "round-rectangle",
+          "background-color": "#0e7490",
+          "border-color": "#67e8f9",
+          "font-size": 9,
+          "shadow-color": "#38dce2"
+        } },
         { selector: "edge", style: {
           "curve-style": "bezier",
           "target-arrow-shape": "triangle",
@@ -635,7 +679,7 @@ class HtmlReportWriter:
           "target-arrow-color": "#38dce2",
           "opacity": 0.72
         } },
-        { selector: 'edge[type = "method-call"]', style: {
+        { selector: 'edge[type = "runtime-call"]', style: {
           "line-style": "dashed",
           "line-color": "#f59e0b",
           "target-arrow-color": "#f59e0b",
@@ -701,7 +745,6 @@ class HtmlReportWriter:
     function revealForOwner(ownerId, extraIds = []) {
       if (!ownerId) return;
       cy.elements().removeClass("focus current dimmed");
-      cy.$(".detail").addClass("hidden");
       const owners = new Set([ownerId]);
       for (const id of extraIds) {
         const owner = ownerForNode(rawNodes.get(id));
@@ -711,17 +754,12 @@ class HtmlReportWriter:
         cy.getElementById(owner).addClass("focus");
         for (const methodId of ownerMethods.get(owner) || []) cy.getElementById(methodId).removeClass("hidden");
       }
-      for (const edge of detailEdges) {
-        const sourceVisible = !cy.getElementById(edge.data.source).hasClass("hidden");
-        const targetVisible = !cy.getElementById(edge.data.target).hasClass("hidden");
-        if (sourceVisible && targetVisible) cy.getElementById(edge.data.id).removeClass("hidden");
-      }
     }
 
     function showOverview() {
       document.getElementById("detail-kind").textContent = "Architecture";
       document.getElementById("detail-title").textContent = "Runtime actors";
-      document.getElementById("detail-summary").textContent = "A file with classes is represented by its classes. A file without classes is represented as a module actor.";
+      document.getElementById("detail-summary").textContent = "Modules are outer shells. Classes and public callables are visually contained by the module or class that owns them.";
       const topActors = actorNodes
         .map((node) => node.data)
         .sort((left, right) => (right.call_count + right.degree) - (left.call_count + left.degree))
@@ -734,7 +772,7 @@ class HtmlReportWriter:
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
           Entrypoint and service are roles on actors, not standalone actors.
-          Method nodes stay hidden until they explain a selected actor or replay event.
+          Call edges connect public functions and methods inside their owning shells.
         </div></div>
       `;
       bindChipClicks();
@@ -861,14 +899,12 @@ class HtmlReportWriter:
       revealForOwner(targetOwner, [event.callee.node_id, event.caller?.node_id].filter(Boolean));
       const sourceNode = event.caller ? event.caller.node_id : null;
       const targetNode = event.callee.node_id;
-      const archEdge = sourceOwner && sourceOwner !== targetOwner ? cy.getElementById(`arch:${sourceOwner}->${targetOwner}`) : null;
-      const detailEdge = cy.getElementById(`detail:${sourceNode}->${targetNode}`);
+      const callEdge = sourceNode ? cy.getElementById(`call:${sourceNode}->${targetNode}`) : null;
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       cy.getElementById(targetOwner).addClass("current");
       if (sourceNode) cy.getElementById(sourceNode).removeClass("hidden").addClass("current");
       cy.getElementById(targetNode).removeClass("hidden").addClass("current");
-      if (archEdge) archEdge.addClass("current");
-      if (detailEdge) detailEdge.removeClass("hidden").addClass("current");
+      if (callEdge) callEdge.addClass("current");
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);

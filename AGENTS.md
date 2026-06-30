@@ -116,11 +116,11 @@ relationships into an interactive architecture replay.
   dependency inversion, ports and adapters, repositories/unit-of-work where
   persistence exists, dependency injection at composition roots, and I/O
   decoupled from business logic.
-- A Python module that hosts class actors should normally be represented by
-  those classes in the default report. A module with public helper functions and
-  no class actor can be represented as a module actor. Do not show both as peer
-  actors unless the code genuinely contains separate architectural
-  responsibilities.
+- The report should preserve Python ownership visually. Modules are outer
+  shells. Classes live inside modules. Module-level public functions live inside
+  modules. Public class methods live inside classes. Do not show modules,
+  classes, functions, and methods as unrelated peers when the source code defines
+  containment.
 - Entrypoint, service, repository, adapter, port, and external resource should
   be treated as roles or boundary concepts first. Create graph nodes for them
   only when runtime evidence shows a concrete actor or resource.

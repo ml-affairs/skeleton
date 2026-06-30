@@ -59,12 +59,16 @@ class TestHtmlReportWriter:
         assert "color-scheme: dark" in html
         assert "cytoscape@3.30.4" in html
         assert "architecture-call" in html
-        assert "method appears on focus/replay" in html
+        assert "method/function" in html
         assert "Node size combines observed call count" in html
         assert "function isVisibleActor" in html
-        assert 'node.type === "module" && !moduleClassCounts.has(node.module)' in html
         assert "if (!source || !target || source === target) return;" in html
         assert 'addActorRole(target, "entrypoint")' in html
         assert "Entrypoint and service are roles on actors" in html
         assert "let current = -1" in html
+        assert "function classIdForFunction" in html
+        assert "function parentForFunction" in html
+        assert 'parent: node.type === "class" ? moduleIdForName(node.module) : undefined' in html
+        assert "parent: parentForFunction(node)" in html
+        assert '"compound-sizing-wrt-labels": "include"' in html
         assert "renderedNodeIds.has(edge.source)" in html
