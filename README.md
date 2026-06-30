@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![Skeleton: replay and visualise the living architecture of your code.](https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/readme.png)
+![Skeleton: replay and visualise the living architecture of your code.](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/readme.png)
 
 Skeleton is a developer-understanding tool, not a profiler. It runs a Python
 script under a lightweight runtime tracer and turns the observed execution into
@@ -19,10 +19,10 @@ Skeleton produces runtime evidence in four complementary forms:
 
 | Surface | Purpose |
 | --- | --- |
-| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/trace.svg) `trace.jsonl` | Ordered public call and return events. |
-| ![Snapshot icon](https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/snapshot.svg) `snapshot.json` | Graph-shaped modules, classes, functions, instances, and edges. |
-| ![Workflow icon](https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
-| ![Replay icon](https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
+| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/trace.svg) `trace.jsonl` | Ordered public call and return events. |
+| ![Snapshot icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/snapshot.svg) `snapshot.json` | Graph-shaped modules, classes, functions, instances, and edges. |
+| ![Workflow icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
+| ![Replay icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
 
 Package naming:
 
