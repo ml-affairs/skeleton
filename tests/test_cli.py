@@ -26,21 +26,25 @@ def test_cli_run_writes_trace_snapshot_and_report(tmp_path: Path) -> None:
     # Given
     project_root = Path("tests/fixtures/sample_project").resolve()
     out_dir = tmp_path / ".skeleton"
+    opener = RecordingReportOpener()
+    command = RunCommand(
+        console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+        report_opener=opener,
+    )
+    args = Namespace(
+        script=project_root / "app.py",
+        script_args=[],
+        project_root=project_root,
+        out_dir=out_dir,
+        include=[],
+        exclude=[],
+        max_events=None,
+        no_html=False,
+        no_open=False,
+    )
 
     # When
-    exit_code = CliApplication().run(
-        [
-            "run",
-            "--color",
-            "never",
-            "--no-open",
-            "--project-root",
-            str(project_root),
-            "--out-dir",
-            str(out_dir),
-            str(project_root / "app.py"),
-        ]
-    )
+    exit_code = command.execute(args)
 
     # Then
     assert exit_code == 0
@@ -55,6 +59,7 @@ def test_cli_run_writes_trace_snapshot_and_report(tmp_path: Path) -> None:
     assert any(node["id"] == "function:service.Greeter.greet" for node in snapshot["nodes"])
     assert not any(node["id"] == "function:service.Greeter" for node in snapshot["nodes"])
     assert not any(node["id"] == "function:service.Greeter._format" for node in snapshot["nodes"])
+    assert opener.opened == [out_dir / "report.html"]
 
 
 def test_output_path_resolver_defaults_to_skeleton_home_application_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -111,3 +116,28 @@ def test_run_command_opens_html_report_by_default(tmp_path: Path) -> None:
     # Then
     assert exit_code == 0
     assert opener.opened == [out_dir / "report.html"]
+
+
+def test_cli_application_parses_run_command_without_opening(tmp_path: Path) -> None:
+    # Given
+    project_root = Path("tests/fixtures/sample_project").resolve()
+    out_dir = tmp_path / "cli-reports"
+
+    # When
+    exit_code = CliApplication().run(
+        [
+            "run",
+            "--color",
+            "never",
+            "--no-open",
+            "--project-root",
+            str(project_root),
+            "--out-dir",
+            str(out_dir),
+            str(project_root / "app.py"),
+        ]
+    )
+
+    # Then
+    assert exit_code == 0
+    assert (out_dir / "report.html").exists()

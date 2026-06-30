@@ -1,7 +1,7 @@
 # skeleton
 
 [![CI](https://github.com/ml-affairs/skeleton/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ml-affairs/skeleton/actions/workflows/ci.yml)
-![Coverage](https://img.shields.io/badge/coverage-77%25-yellowgreen)
+![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
