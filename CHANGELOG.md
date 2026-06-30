@@ -5,6 +5,12 @@ All notable changes to Skeleton are documented in this file.
 The format follows the spirit of Keep a Changelog, and versions follow
 Semantic Versioning while the project is public-alpha software.
 
+## [0.1.1] - 2026-06-30
+
+### Fixed
+
+- Use absolute GitHub raw image URLs in the README so images render correctly on PyPI.
+
 ## [0.1.0] - 2026-06-30
 
 ### Added

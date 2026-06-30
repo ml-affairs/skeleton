@@ -1,6 +1,6 @@
 [project]
 name = "skeleton-replay"
-version = "0.1.0"
+version = "0.1.1"
 description = "Replay and visualise the living architecture of a Python application."
 readme = "README.md"
 license = { file = "LICENSE" }
