@@ -536,6 +536,11 @@ class HtmlReportWriter:
         classes: "detail hidden"
       }));
 
+    const renderedNodeIds = new Set([
+      ...visibleActorIds,
+      ...methodNodes.map((node) => node.data.id)
+    ]);
+
     const archEdges = Array.from(archEdgeCounts.values())
       .filter((edge) => visibleActorIds.has(edge.source) && visibleActorIds.has(edge.target))
       .map((edge) => ({
@@ -551,7 +556,7 @@ class HtmlReportWriter:
       }));
 
     const detailEdges = rawEdges
-      .filter((edge) => rawNodes.has(edge.source) && rawNodes.has(edge.target))
+      .filter((edge) => renderedNodeIds.has(edge.source) && renderedNodeIds.has(edge.target))
       .map((edge) => ({
         data: {
           id: `detail:${edge.id}`,

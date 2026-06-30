@@ -6,11 +6,13 @@ PYTHON_VERSION ?= $(shell test -f $(PYTHON_VERSION_FILE) && cat $(PYTHON_VERSION
 UV ?= $(shell if command -v uv >/dev/null 2>&1; then command -v uv; elif [ -x "$$HOME/.local/bin/uv" ]; then printf "%s\n" "$$HOME/.local/bin/uv"; else printf "uv\n"; fi)
 UV_CACHE_DIR ?= .uv-cache
 UV_RUN := UV_CACHE_DIR="$(UV_CACHE_DIR)" $(UV) run --python "$(PYTHON_VERSION)"
+PYTEST_COV_ARGS := --cov=skeleton --cov-report=term-missing --cov-report=xml --cov-fail-under=75
 DEMO_PROJECT_ROOT ?= tests/fixtures/sample_project
 DEMO_SCRIPT ?= $(DEMO_PROJECT_ROOT)/app.py
 DEMO_OUT_DIR ?= tests/dev/.temp/skeleton-demo
+PYTEST_BASETEMP ?= tests/dev/.temp/pytest
 
-.PHONY: help check-uv setup sync install-hooks lint format format-check typecheck test check demo demo-no-open clean commit-msg-example
+.PHONY: help check-uv setup sync install-hooks lint format format-check typecheck test test-cov check where demo demo-no-open clean commit-msg-example
 
 help:
 	@printf "Skeleton development targets\n"
@@ -21,7 +23,9 @@ help:
 	@printf "  make format       Format Python files with Ruff\n"
 	@printf "  make typecheck    Run mypy\n"
 	@printf "  make test         Run pytest\n"
+	@printf "  make test-cov     Run pytest with coverage gate\n"
 	@printf "  make check        Run lint, format-check, typecheck, and tests\n"
+	@printf "  make where        Print local artifact locations\n"
 	@printf "  make demo         Run the sample project, write stable artifacts, and open report.html\n"
 	@printf "  make demo-no-open Run the sample project without opening report.html\n"
 	@printf "  make clean        Remove local caches and build artifacts\n"
@@ -60,8 +64,23 @@ typecheck: check-uv
 test: check-uv
 	@$(UV_RUN) python -m pytest
 
-check: lint format-check typecheck test
+test-cov: check-uv
+	@$(UV_RUN) python -m pytest $(PYTEST_COV_ARGS)
+
+check: lint format-check typecheck test-cov
 	@printf "All checks passed.\n"
+
+where:
+	@printf "Skeleton local artifact locations\n"
+	@printf "  stable demo report    %s/report.html\n" "$(DEMO_OUT_DIR)"
+	@printf "  stable demo artifacts %s/\n" "$(DEMO_OUT_DIR)"
+	@printf "  pytest temp root      %s/\n" "$(PYTEST_BASETEMP)"
+	@printf "  package CLI default   %s\n" "$$HOME/.skeleton/<application-name>/"
+	@printf "\n"
+	@printf "Common commands\n"
+	@printf "  make demo-no-open     regenerate %s/report.html\n" "$(DEMO_OUT_DIR)"
+	@printf "  make demo             regenerate and open %s/report.html\n" "$(DEMO_OUT_DIR)"
+	@printf "  make test             run tests with temp files under %s/\n" "$(PYTEST_BASETEMP)"
 
 demo: check-uv
 	@mkdir -p "$(DEMO_OUT_DIR)"
@@ -78,5 +97,5 @@ commit-msg-example:
 	@printf "  docs!: rewrite package overview\n"
 
 clean:
-	@rm -rf .mypy_cache .pytest_cache .ruff_cache build dist *.egg-info tests/dev/.temp/skeleton-demo
+	@rm -rf .mypy_cache .pytest_cache .ruff_cache build dist *.egg-info tests/dev/.temp/skeleton-demo tests/dev/.temp/pytest
 	@find . -type d -name __pycache__ -prune -exec rm -rf {} +

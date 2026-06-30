@@ -200,6 +200,9 @@ relationships into an interactive architecture replay.
   exact command and failure mode.
 - Mirror package ownership under `tests/` where practical.
 - Use pytest for all tests.
+- Use class-based pytest organization. Test modules should contain focused
+  `Test...` classes with test methods inside them, rather than loose top-level
+  test functions.
 - Structure tests with explicit `# Given`, `# When`, and `# Then` comments so
   intent and behavior boundaries are obvious during review.
 - Keep shared test doubles and helpers under `tests/helpers/` when they become

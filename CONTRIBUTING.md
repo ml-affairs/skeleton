@@ -19,17 +19,29 @@ pre-commit and commit-message hooks.
 ```bash
 make sync
 make test
+make test-cov
 make check
+make where
 make demo-no-open
 ```
 
-- `make test` runs pytest with branch coverage and enforces the current coverage
-  floor from `pyproject.toml`.
+- `make test` runs pytest without the coverage gate, which keeps targeted local
+  test runs useful.
+- `make test-cov` runs the full pytest suite with branch coverage and enforces
+  the current coverage floor.
 - `make check` runs Ruff, formatting checks, mypy strict, and tests.
+- `make where` prints the stable demo report path, pytest temp root, and package
+  default output root.
 - `make format` applies Ruff formatting.
 - `make install-hooks` reinstalls hooks if `.git/hooks` is reset.
 - `make demo` writes a visible report to `tests/dev/.temp/skeleton-demo/` and
   opens it. Use `make demo-no-open` when you only need the files.
+
+Local artifacts are intentionally repo-local during development:
+
+- Stable report UI work: `tests/dev/.temp/skeleton-demo/report.html`
+- Pytest `tmp_path` output: `tests/dev/.temp/pytest/`
+- End-user CLI default: `~/.skeleton/<application-name>/`
 
 ## Code Style
 
@@ -46,15 +58,16 @@ make demo-no-open
 Use pytest. Structure tests with explicit comments:
 
 ```python
-def test_behavior() -> None:
-    # Given
-    ...
+class TestComponentBehavior:
+    def test_behavior(self) -> None:
+        # Given
+        ...
 
-    # When
-    ...
+        # When
+        ...
 
-    # Then
-    ...
+        # Then
+        ...
 ```
 
 Behavior changes need focused tests. Regressions need characterization tests

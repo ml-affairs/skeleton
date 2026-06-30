@@ -67,6 +67,15 @@ make setup
 make check
 ```
 
+Use `make test` for normal or targeted local pytest runs. Use `make test-cov`
+or `make check` when you want the full-suite coverage gate that CI enforces.
+
+Print the local artifact locations:
+
+```bash
+make where
+```
+
 Run locally from the checkout:
 
 ```bash
@@ -88,7 +97,18 @@ make demo-no-open
 ```
 
 Pytest tests use `tmp_path`, so test-generated reports live in pytest-managed
-temporary directories and are intentionally disposable.
+temporary directories under `tests/dev/.temp/pytest/`. The stable report to open
+while developing the UI is:
+
+```text
+tests/dev/.temp/skeleton-demo/report.html
+```
+
+Regenerate it with:
+
+```bash
+make demo-no-open
+```
 
 ## CLI
 

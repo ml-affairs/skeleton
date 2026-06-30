@@ -48,7 +48,7 @@ files = ["skeleton", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=skeleton --cov-report=term-missing --cov-report=xml --cov-fail-under=75"
+addopts = "--basetemp=tests/dev/.temp/pytest"
 
 [tool.coverage.run]
 branch = true
