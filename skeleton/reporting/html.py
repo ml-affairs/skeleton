@@ -226,6 +226,12 @@ class HtmlReportWriter:
       clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
       background: rgba(139, 92, 246, 0.62);
     }
+    .schema.instance {
+      color: var(--cyan);
+      transform: rotate(45deg);
+      border-radius: 3px;
+      background: rgba(56, 220, 226, 0.44);
+    }
     .schema.method {
       color: var(--amber);
       border-radius: 5px;
@@ -244,6 +250,16 @@ class HtmlReportWriter:
       border: 0;
       border-top: 3px solid currentColor;
       border-radius: 0;
+      background: transparent;
+      box-shadow: 0 0 16px currentColor;
+    }
+    .schema.return {
+      width: 25px;
+      height: 14px;
+      color: var(--cyan);
+      border: 0;
+      border-top: 3px dashed currentColor;
+      border-radius: 50%;
       background: transparent;
       box-shadow: 0 0 16px currentColor;
     }
@@ -536,9 +552,11 @@ class HtmlReportWriter:
           <div class="legend-grid">
             <span class="pill"><span class="schema module"></span>module shell</span>
             <span class="pill"><span class="schema class"></span>class shell</span>
+            <span class="pill"><span class="schema instance"></span>instance</span>
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
             <span class="pill"><span class="schema call"></span>runtime call</span>
+            <span class="pill"><span class="schema return"></span>return value</span>
           </div>
         </div>
       </section>
@@ -603,7 +621,7 @@ class HtmlReportWriter:
 
     function isVisibleActor(node) {
       if (!node) return false;
-      return node.type === "module" || node.type === "class";
+      return node.type === "module" || node.type === "class" || node.type === "instance";
     }
 
     function classIdForFunction(node) {
@@ -626,17 +644,37 @@ class HtmlReportWriter:
       return classIdForFunction(node) || moduleIdForName(node.module);
     }
 
+    function parentForActor(node) {
+      if (node.type === "class") return moduleIdForName(node.module);
+      if (node.type === "instance") {
+        return node.class_name ? `class:${node.module}.${node.class_name}` : moduleIdForName(node.module);
+      }
+      return undefined;
+    }
+
     function ownerForEndpoint(endpoint) {
       if (!endpoint) return null;
       if (endpoint.class_name) return `class:${endpoint.module}.${endpoint.class_name}`;
       return `module:${endpoint.module}`;
     }
 
+    function instanceForEndpoint(endpoint) {
+      if (!endpoint?.instance_id) return null;
+      return `instance:${endpoint.instance_id}`;
+    }
+
     function ownerForNode(node) {
       if (!node || node.type === "entrypoint") return null;
+      if (node.type === "instance") return node.id;
       if (node.type === "class") return node.id;
       if (node.type === "module") return node.id;
       return classIdForFunction(node) || moduleIdForName(node.module);
+    }
+
+    function shellForNode(node) {
+      if (!node || node.type === "entrypoint") return null;
+      if (node.type === "instance") return node.class_name ? `class:${node.module}.${node.class_name}` : moduleIdForName(node.module);
+      return ownerForNode(node);
     }
 
     function ownerLabel(ownerId) {
@@ -707,7 +745,7 @@ class HtmlReportWriter:
             id: node.id,
             label: node.label || node.id,
             type: node.type,
-            parent: node.type === "class" ? moduleIdForName(node.module) : undefined,
+            parent: parentForActor(node),
             roles: roles.join(", "),
             loc,
             call_count: callCount,
@@ -717,9 +755,12 @@ class HtmlReportWriter:
             size: 42 + Math.min(54, callCount * 7 + degree * 9 + Math.min(18, loc / 3))
           },
           classes: [
-            "container",
-            node.type === "module" ? "module-container" : "class-container",
-            roles.includes("entrypoint") ? "role-entrypoint" : ""
+            node.type === "module" || node.type === "class" ? "container" : "",
+            node.type === "module" ? "module-container" : "",
+            node.type === "class" ? "class-container" : "",
+            node.type === "instance" ? "instance-node" : "",
+            roles.includes("entrypoint") ? "role-entrypoint" : "",
+            "unseen"
           ].filter(Boolean).join(" ")
         };
       });
@@ -739,7 +780,8 @@ class HtmlReportWriter:
           fan_in: Number(node.fan_in || 0),
           fan_out: Number(node.fan_out || 0),
           size: 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4)
-        }
+        },
+        classes: "unseen"
       }));
 
     const renderedNodeIds = new Set([
@@ -770,15 +812,49 @@ class HtmlReportWriter:
           target: edge.target,
           type: "runtime-call",
           weight: edge.call_count
-        }
+        },
+        classes: "unseen"
       }));
+
+    const returnEdgeCounts = new Map();
+    for (const event of events) {
+      if (event.event_type !== "return" || !event.caller) continue;
+      const source = event.callee.node_id;
+      const target = event.caller.node_id;
+      if (!renderedNodeIds.has(source) || !renderedNodeIds.has(target)) continue;
+      const key = `${source}->${target}`;
+      const record = returnEdgeCounts.get(key) || {
+        source,
+        target,
+        return_count: 0,
+        first_seen: event.order,
+        last_seen: event.order
+      };
+      record.return_count += 1;
+      record.first_seen = Math.min(record.first_seen, event.order);
+      record.last_seen = Math.max(record.last_seen, event.order);
+      returnEdgeCounts.set(key, record);
+    }
+
+    const returnEdges = Array.from(returnEdgeCounts.values()).map((edge) => ({
+      data: {
+        id: `return:${edge.source}->${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+        type: "runtime-return",
+        weight: edge.return_count,
+        first_seen: edge.first_seen,
+        last_seen: edge.last_seen
+      },
+      classes: "unseen"
+    }));
 
     document.getElementById("actor-count").textContent = String(actorNodes.length);
     document.getElementById("edge-count").textContent = String(callEdges.length);
 
     const cy = cytoscape({
       container: document.getElementById("cy"),
-      elements: [...actorNodes, ...methodNodes, ...callEdges],
+      elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges],
       style: [
         { selector: "node", style: {
           "label": "data(label)",
@@ -798,7 +874,9 @@ class HtmlReportWriter:
           "shadow-blur": 24,
           "shadow-opacity": 0.28,
           "shadow-offset-x": 0,
-          "shadow-offset-y": 0
+          "shadow-offset-y": 0,
+          "transition-property": "background-color, border-color, opacity, shadow-blur",
+          "transition-duration": "180ms"
         } },
         { selector: ".container", style: {
           "text-valign": "top",
@@ -825,6 +903,13 @@ class HtmlReportWriter:
           "background-color": "#6d28d9",
           "border-color": "#c4b5fd",
           "shadow-color": "#8b5cf6"
+        } },
+        { selector: 'node[type = "instance"]', style: {
+          "shape": "diamond",
+          "background-color": "#0891b2",
+          "border-color": "#67e8f9",
+          "font-size": 9,
+          "shadow-color": "#38dce2"
         } },
         { selector: ".role-entrypoint", style: {
           "border-color": "#fda4af",
@@ -855,7 +940,9 @@ class HtmlReportWriter:
           "target-arrow-color": "rgba(148, 163, 184, 0.68)",
           "width": "mapData(weight, 1, 12, 1.8, 10)",
           "opacity": 0.62,
-          "arrow-scale": 1.1
+          "arrow-scale": 1.1,
+          "transition-property": "line-color, target-arrow-color, opacity, width",
+          "transition-duration": "180ms"
         } },
         { selector: 'edge[type = "architecture-call"]', style: {
           "line-color": "#38dce2",
@@ -863,11 +950,22 @@ class HtmlReportWriter:
           "opacity": 0.72
         } },
         { selector: 'edge[type = "runtime-call"]', style: {
+          "curve-style": "straight",
           "line-style": "solid",
           "line-color": "#fb7185",
           "target-arrow-color": "#fb7185",
           "opacity": 0.82
         } },
+        { selector: 'edge[type = "runtime-return"]', style: {
+          "curve-style": "bezier",
+          "line-style": "dashed",
+          "line-color": "#38dce2",
+          "target-arrow-color": "#38dce2",
+          "opacity": 0.78,
+          "control-point-step-size": 72,
+          "line-dash-pattern": [8, 6]
+        } },
+        { selector: ".unseen", style: { "display": "none" } },
         { selector: ".hidden", style: { "display": "none" } },
         { selector: ".dimmed", style: { "opacity": 0.18 } },
         { selector: ".current", style: {
@@ -880,6 +978,19 @@ class HtmlReportWriter:
           "shadow-blur": 46,
           "shadow-opacity": 0.72,
           "shadow-color": "#fb7185"
+        } },
+        { selector: 'edge[type = "runtime-return"].current', style: {
+          "line-color": "#38dce2",
+          "target-arrow-color": "#38dce2",
+          "shadow-color": "#38dce2"
+        } },
+        { selector: ".pulse", style: {
+          "opacity": 1,
+          "border-color": "#ffffff",
+          "line-color": "#ffffff",
+          "target-arrow-color": "#ffffff",
+          "shadow-blur": 60,
+          "shadow-opacity": 0.9
         } },
         { selector: ".focus", style: {
           "opacity": 1,
@@ -912,31 +1023,231 @@ class HtmlReportWriter:
       renderEvent();
     });
 
-    let current = -1;
+    let current = events.length ? 0 : -1;
     let playTimer = null;
+    let currentReplayMetrics = null;
     document.getElementById("counter").textContent = `0 / ${events.length}`;
     showOverview();
+    renderEvent();
 
     function selectNode(id) {
       stopPlay();
       const selected = rawNodes.get(id) || methodData(id);
-      const ownerId = ownerForNode(selected) || id;
+      const ownerId = shellForNode(selected) || id;
       revealForOwner(ownerId, [id]);
       showNode(id);
     }
 
     function revealForOwner(ownerId, extraIds = []) {
       if (!ownerId) return;
-      cy.elements().removeClass("focus current dimmed");
-      const owners = new Set([ownerId]);
+      cy.elements().removeClass("focus current dimmed pulse");
+      const owners = new Set();
+      revealShell(ownerId);
+      owners.add(ownerId);
       for (const id of extraIds) {
-        const owner = ownerForNode(rawNodes.get(id));
+        revealNodeAndShell(id);
+        const owner = shellForNode(rawNodes.get(id) || methodData(id));
         if (owner) owners.add(owner);
       }
       for (const owner of owners) {
-        cy.getElementById(owner).addClass("focus");
-        for (const methodId of ownerMethods.get(owner) || []) cy.getElementById(methodId).removeClass("hidden");
+        revealShell(owner);
+        cy.getElementById(owner).removeClass("unseen hidden").addClass("focus");
+        for (const methodId of ownerMethods.get(owner) || []) revealElement(methodId);
       }
+      layoutVisibleElements();
+    }
+
+    function revealEventElements(event, shouldLayout = true) {
+      revealEndpoint(event.callee);
+      if (event.caller) revealEndpoint(event.caller);
+      const sourceNode = event.caller ? event.caller.node_id : null;
+      const targetNode = event.callee.node_id;
+      const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
+      if (runtimeEdge) revealElement(runtimeEdge.id());
+      if (shouldLayout) layoutVisibleElements();
+    }
+
+    function syncVisibilityToReplay(index) {
+      cy.elements().addClass("unseen").removeClass("hidden");
+      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+        revealEventElements(events[eventIndex], false);
+      }
+      layoutVisibleElements();
+    }
+
+    function revealEndpoint(endpoint) {
+      if (!endpoint) return;
+      revealShell(ownerForEndpoint(endpoint));
+      revealElement(endpoint.node_id);
+      const instanceId = instanceForEndpoint(endpoint);
+      if (instanceId) revealElement(instanceId);
+    }
+
+    function revealNodeAndShell(nodeId) {
+      const node = rawNodes.get(nodeId) || methodData(nodeId);
+      revealShell(shellForNode(node));
+      revealElement(nodeId);
+    }
+
+    function revealShell(ownerId) {
+      if (!ownerId) return;
+      const node = rawNodes.get(ownerId);
+      if (node?.type === "class") revealElement(moduleIdForName(node.module));
+      if (node?.type === "instance") revealShell(shellForNode(node));
+      revealElement(ownerId);
+    }
+
+    function revealElement(id) {
+      if (!id) return null;
+      const element = cy.getElementById(id);
+      if (!element || element.empty()) return null;
+      element.removeClass("unseen hidden");
+      return element;
+    }
+
+    function layoutVisibleElements() {
+      const visible = cy.elements().not(".unseen");
+      if (!visible || visible.empty()) return;
+      visible.layout({
+        name: "cose",
+        animate: true,
+        animationDuration: 220,
+        fit: false,
+        padding: 72,
+        nodeRepulsion: 9000,
+        idealEdgeLength: 135,
+        edgeElasticity: 100,
+        gravity: 0.58,
+        numIter: 260
+      }).run();
+    }
+
+    function replayMetricsAt(index) {
+      const actorMetrics = new Map();
+      const callableMetrics = new Map();
+      const edgeWeights = new Map();
+
+      function actorMetric(ownerId) {
+        if (!ownerId) return null;
+        if (!actorMetrics.has(ownerId)) {
+          actorMetrics.set(ownerId, { incoming: new Set(), outgoing: new Set(), call_count: 0, first_seen: null, last_seen: null });
+        }
+        return actorMetrics.get(ownerId);
+      }
+
+      function callableMetric(nodeId) {
+        if (!nodeId) return null;
+        if (!callableMetrics.has(nodeId)) {
+          callableMetrics.set(nodeId, { incoming: new Set(), outgoing: new Set(), call_count: 0, first_seen: null, last_seen: null });
+        }
+        return callableMetrics.get(nodeId);
+      }
+
+      function touch(metric, order) {
+        if (!metric) return;
+        metric.first_seen = metric.first_seen === null ? order : Math.min(metric.first_seen, order);
+        metric.last_seen = metric.last_seen === null ? order : Math.max(metric.last_seen, order);
+      }
+
+      function countEdge(edgeId, order) {
+        const edge = edgeWeights.get(edgeId) || { weight: 0, first_seen: order, last_seen: order };
+        edge.weight += 1;
+        edge.first_seen = Math.min(edge.first_seen, order);
+        edge.last_seen = Math.max(edge.last_seen, order);
+        edgeWeights.set(edgeId, edge);
+      }
+
+      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+        const event = events[eventIndex];
+        const targetOwner = ownerForEndpoint(event.callee);
+        const sourceOwner = ownerForEndpoint(event.caller);
+        const targetCallable = callableMetric(event.callee.node_id);
+        const sourceCallable = event.caller ? callableMetric(event.caller.node_id) : null;
+        const targetActor = actorMetric(targetOwner);
+        const sourceActor = actorMetric(sourceOwner);
+        touch(targetActor, event.order);
+        touch(sourceActor, event.order);
+        touch(targetCallable, event.order);
+        touch(sourceCallable, event.order);
+
+        if (event.event_type === "call") {
+          targetActor.call_count += 1;
+          targetCallable.call_count += 1;
+          if (sourceOwner && targetOwner && sourceOwner !== targetOwner) {
+            sourceActor.outgoing.add(targetOwner);
+            targetActor.incoming.add(sourceOwner);
+          }
+          if (event.caller) {
+            sourceCallable.outgoing.add(event.callee.node_id);
+            targetCallable.incoming.add(event.caller.node_id);
+            countEdge(`call:${event.caller.node_id}->${event.callee.node_id}`, event.order);
+          }
+        } else if (event.caller) {
+          countEdge(`return:${event.callee.node_id}->${event.caller.node_id}`, event.order);
+        }
+      }
+
+      return { actors: actorMetrics, callables: callableMetrics, edges: edgeWeights };
+    }
+
+    function applyReplayMetrics(metrics) {
+      for (const node of actorNodes) {
+        const rawNode = rawNodes.get(node.data.id) || {};
+        const metric = metrics.actors.get(node.data.id);
+        const incoming = metric?.incoming || new Set();
+        const outgoing = metric?.outgoing || new Set();
+        const callCount = Number(metric?.call_count || 0);
+        const loc = Number(rawNode.loc || 0);
+        const degree = incoming.size + outgoing.size;
+        cy.getElementById(node.data.id).data({
+          call_count: callCount,
+          fan_in: incoming.size,
+          fan_out: outgoing.size,
+          degree,
+          first_seen: metric?.first_seen,
+          last_seen: metric?.last_seen,
+          size: 42 + Math.min(54, callCount * 7 + degree * 9 + Math.min(18, loc / 3))
+        });
+      }
+      for (const node of methodNodes) {
+        const metric = metrics.callables.get(node.data.id);
+        const incoming = metric?.incoming || new Set();
+        const outgoing = metric?.outgoing || new Set();
+        const callCount = Number(metric?.call_count || 0);
+        cy.getElementById(node.data.id).data({
+          call_count: callCount,
+          fan_in: incoming.size,
+          fan_out: outgoing.size,
+          first_seen: metric?.first_seen,
+          last_seen: metric?.last_seen,
+          size: 22 + Math.min(22, callCount * 5 + outgoing.size * 4)
+        });
+      }
+      for (const edge of [...callEdges, ...returnEdges]) {
+        const metric = metrics.edges.get(edge.data.id);
+        cy.getElementById(edge.data.id).data({
+          weight: Number(metric?.weight || 1),
+          first_seen: metric?.first_seen,
+          last_seen: metric?.last_seen
+        });
+      }
+    }
+
+    function liveAdjacencyFor(ownerId) {
+      if (!currentReplayMetrics) return archAdjacency.get(ownerId) || { incoming: new Set(), outgoing: new Set() };
+      const metric = currentReplayMetrics.actors.get(ownerId);
+      return { incoming: metric?.incoming || new Set(), outgoing: metric?.outgoing || new Set() };
+    }
+
+    function liveNodeData(node) {
+      const element = node?.id ? cy.getElementById(node.id) : null;
+      if (!element || element.empty()) return node || {};
+      return { ...(node || {}), ...element.data() };
+    }
+
+    function liveOwnerCallCount(ownerId) {
+      if (!currentReplayMetrics) return ownerMetric(ownerId, "call_count");
+      return Number(currentReplayMetrics.actors.get(ownerId)?.call_count || 0);
     }
 
     function showOverview() {
@@ -966,7 +1277,7 @@ class HtmlReportWriter:
       if (!node) return;
       const isMethod = node.type === "function" || node.type === "method";
       const ownerId = isMethod ? ownerForNode(node) : id;
-      const adjacency = archAdjacency.get(ownerId) || { incoming: new Set(), outgoing: new Set() };
+      const adjacency = liveAdjacencyFor(ownerId);
       const roles = rolesForActor(ownerId);
       const methods = Array.from(ownerMethods.get(ownerId) || [])
         .map((methodId) => rawNodes.get(methodId))
@@ -991,24 +1302,26 @@ class HtmlReportWriter:
     }
 
     function summaryForNode(node, ownerId, adjacency) {
-      const label = node.qualified_name || node.module || node.id;
+      const liveNode = liveNodeData(node);
+      const label = liveNode.qualified_name || liveNode.module || liveNode.id;
       return `${label} · fan-in ${adjacency.incoming.size} · fan-out ${adjacency.outgoing.size}`;
     }
 
     function metricsTable(node, ownerId, adjacency) {
+      const liveNode = liveNodeData(node);
       const rows = [
-        ["type", node.type],
-        ["module", node.module],
-        ["class", node.class_name],
-        ["function", node.function],
-        ["file", node.file],
-        ["line", node.line],
-        ["loc", node.loc],
-        ["call_count", ownerMetric(ownerId, "call_count")],
+        ["type", liveNode.type],
+        ["module", liveNode.module],
+        ["class", liveNode.class_name],
+        ["function", liveNode.function],
+        ["file", liveNode.file],
+        ["line", liveNode.line],
+        ["loc", liveNode.loc],
+        ["call_count", liveNode.type === "function" || liveNode.type === "method" ? Number(liveNode.call_count || 0) : liveOwnerCallCount(ownerId)],
         ["fan_in", adjacency.incoming.size],
         ["fan_out", adjacency.outgoing.size],
-        ["first_seen", node.first_seen],
-        ["last_seen", node.last_seen]
+        ["first_seen", liveNode.first_seen],
+        ["last_seen", liveNode.last_seen]
       ].filter((row) => row[1] !== undefined && row[1] !== null && row[1] !== "");
       return `<div class="kv">${rows.map(([key, value]) => `<div>${escapeHtml(String(key))}</div><div>${escapeHtml(String(value))}</div>`).join("")}</div>`;
     }
@@ -1073,28 +1386,59 @@ class HtmlReportWriter:
     }
 
     function renderEvent() {
-      cy.elements().removeClass("current dimmed focus");
+      cy.elements().removeClass("current dimmed focus pulse");
       const event = events[current];
       if (!event) return;
       const sourceOwner = ownerForEndpoint(event.caller);
       const targetOwner = ownerForEndpoint(event.callee);
       if (!targetOwner) return;
-      revealForOwner(targetOwner, [event.callee.node_id, event.caller?.node_id].filter(Boolean));
+      currentReplayMetrics = replayMetricsAt(current);
+      applyReplayMetrics(currentReplayMetrics);
+      syncVisibilityToReplay(current);
       const sourceNode = event.caller ? event.caller.node_id : null;
       const targetNode = event.callee.node_id;
-      const callEdge = sourceNode ? cy.getElementById(`call:${sourceNode}->${targetNode}`) : null;
+      const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
+      const sourceInstance = instanceForEndpoint(event.caller);
+      const targetInstance = instanceForEndpoint(event.callee);
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       cy.getElementById(targetOwner).addClass("current");
       if (sourceNode) cy.getElementById(sourceNode).removeClass("hidden").addClass("current");
       cy.getElementById(targetNode).removeClass("hidden").addClass("current");
-      if (callEdge) callEdge.addClass("current");
+      if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
+      if (targetInstance) cy.getElementById(targetInstance).addClass("current");
+      if (runtimeEdge) runtimeEdge.addClass("current");
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
       document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
       showNode(targetNode);
-      cy.animate({ fit: { eles: cy.$(".current"), padding: 130 } }, { duration: 280 });
+      focusCurrentElements();
+      pulseCurrentElements();
+    }
+
+    function runtimeEdgeForEvent(event, sourceNode, targetNode) {
+      if (event.event_type === "call") {
+        return sourceNode ? cy.getElementById(`call:${sourceNode}->${targetNode}`) : null;
+      }
+      return sourceNode ? cy.getElementById(`return:${targetNode}->${sourceNode}`) : null;
+    }
+
+    function focusCurrentElements() {
+      const active = cy.$(".current");
+      if (!active || active.empty()) return;
+      const padding = active.length > 2 ? 150 : 190;
+      cy.stop();
+      window.setTimeout(() => {
+        cy.animate({ fit: { eles: active, padding } }, { duration: 360, easing: "ease-out-cubic" });
+      }, 230);
+    }
+
+    function pulseCurrentElements() {
+      const active = cy.$(".current");
+      if (!active || active.empty()) return;
+      active.addClass("pulse");
+      window.setTimeout(() => active.removeClass("pulse"), 420);
     }
 
     function narrativeForEvent(event) {
@@ -1126,7 +1470,7 @@ class HtmlReportWriter:
       const calleeToken = entityToken(callee.qualified_name, endpointKind(callee), ownerLabel(targetOwner));
       const delta = event.event_type === "call"
         ? `Highlighted runtime call edge into <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong>.`
-        : `Captured return summary from <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong>.`;
+        : `Highlighted dashed return edge from <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong> back to its caller.`;
       const evidence = event.event_type === "call" ? argsTable(event.args) : returnEvidence(event.return_value);
       return `
         <div class="event-card">

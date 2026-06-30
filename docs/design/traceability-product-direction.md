@@ -37,12 +37,16 @@ patterns and visual rules Skeleton should preserve as it grows.
 
 ## Human Replay
 
-![Replay icon](../images/product/replay.svg)
+<img src="../images/product/replay.svg" alt="Replay icon" width="72">
 
 The report should behave like an architecture workbench:
 
 - graph first, not a static report page
 - step-through controls tied to the runtime event stream
+- progressive reveal: entities appear only when runtime evidence first observes
+  them, and stepping backward hides future evidence again
+- live metrics: fan-in, fan-out, call count, edge width, and node size reflect
+  the current replay position
 - selected node metadata with observed calls and examples
 - edge emphasis based on call count and current replay position
 - clear labels for modules, classes, public functions, and instances
@@ -52,7 +56,7 @@ should map back to a stable node id, edge id, file path, and event id.
 
 ## LLM-Readable Workflow Output
 
-![Workflow icon](../images/product/workflow.svg)
+<img src="../images/product/workflow.svg" alt="Workflow icon" width="72">
 
 Skeleton should generate a compact workflow explanation alongside raw JSON:
 
@@ -69,7 +73,7 @@ layout data.
 
 ## Query Direction
 
-![Architecture graph icon](../images/product/architecture-graph.svg)
+<img src="../images/product/architecture-graph.svg" alt="Architecture graph icon" width="72">
 
 Cypher-like interactions are promising, but the first version should avoid
 pretending to be a graph database. The schema should make later queries natural:

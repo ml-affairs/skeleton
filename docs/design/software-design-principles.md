@@ -215,6 +215,15 @@ Replay:
 - Keep business-language inference optional and evidence-based.
 - Highlight the callable nodes and their containing module/class shells for the
   current replay event.
+- Start from observed evidence, not from the final answer. At replay position
+  zero, the graph should show only entities observed by the first event. As the
+  user steps forward, modules, classes, instances, functions, methods, calls, and
+  returns should appear when runtime evidence first mentions them.
+- Stepping backward should remove future evidence from the visible graph so the
+  user can understand the workflow as it unfolded.
+- Fan-in, fan-out, call count, edge width, node size, first_seen, and last_seen
+  should be recomputed for the current replay position. Final snapshot totals
+  are useful, but the replay should show what was known at that moment.
 
 ## Implications For Skeleton Development
 

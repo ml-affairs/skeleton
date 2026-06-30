@@ -16,6 +16,17 @@ class TestHtmlReportWriter:
                 {"id": "module:orders", "type": "module", "label": "orders", "module": "orders", "loc": 42},
                 {"id": "class:checkout.CheckoutService", "type": "class", "label": "CheckoutService", "module": "checkout", "loc": 80},
                 {
+                    "id": "function:orders.main",
+                    "type": "function",
+                    "label": "main",
+                    "module": "orders",
+                    "class_name": None,
+                    "function": "main",
+                    "qualified_name": "orders.main",
+                    "arg_examples": [],
+                    "return_examples": [],
+                },
+                {
                     "id": "function:checkout.CheckoutService.reserve",
                     "type": "function",
                     "label": "reserve",
@@ -40,13 +51,55 @@ class TestHtmlReportWriter:
                     "event_type": "call",
                     "order": 0,
                     "caller": None,
+                    "args": {},
+                    "callee": {
+                        "module": "orders",
+                        "class_name": None,
+                        "function": "main",
+                        "qualified_name": "orders.main",
+                        "node_id": "function:orders.main",
+                    },
+                },
+                {
+                    "event_type": "call",
+                    "order": 1,
+                    "caller": {
+                        "module": "orders",
+                        "class_name": None,
+                        "function": "main",
+                        "qualified_name": "orders.main",
+                        "node_id": "function:orders.main",
+                    },
                     "callee": {
                         "module": "checkout",
                         "class_name": "CheckoutService",
+                        "instance_id": "checkout.CheckoutService@0xabc",
+                        "function": "reserve",
                         "qualified_name": "checkout.CheckoutService.reserve",
                         "node_id": "function:checkout.CheckoutService.reserve",
                     },
-                }
+                    "args": {"order_id": {"type": "str", "value": "A-1"}},
+                },
+                {
+                    "event_type": "return",
+                    "order": 2,
+                    "caller": {
+                        "module": "orders",
+                        "class_name": None,
+                        "function": "main",
+                        "qualified_name": "orders.main",
+                        "node_id": "function:orders.main",
+                    },
+                    "callee": {
+                        "module": "checkout",
+                        "class_name": "CheckoutService",
+                        "instance_id": "checkout.CheckoutService@0xabc",
+                        "function": "reserve",
+                        "qualified_name": "checkout.CheckoutService.reserve",
+                        "node_id": "function:checkout.CheckoutService.reserve",
+                    },
+                    "return_value": {"type": "bool", "value": True},
+                },
             ],
         }
         out_path = tmp_path / "report.html"
@@ -65,23 +118,41 @@ class TestHtmlReportWriter:
         assert "class shell" in html
         assert '<span class="pill"><span class="schema method"></span>method</span>' in html
         assert '<span class="pill"><span class="schema function"></span>function</span>' in html
+        assert '<span class="pill"><span class="schema instance"></span>instance</span>' in html
         assert "runtime call" in html
+        assert "return value" in html
         assert "Node size combines observed call count" in html
         assert "function isVisibleActor" in html
         assert "if (!source || !target || source === target) return;" in html
         assert 'addActorRole(target, "entrypoint")' in html
         assert "Entrypoint and service are roles on actors" in html
-        assert "let current = -1" in html
+        assert "let current = events.length ? 0 : -1" in html
+        assert "renderEvent();" in html
+        assert "let currentReplayMetrics = null" in html
         assert "function classIdForFunction" in html
         assert "function parentForFunction" in html
-        assert 'parent: node.type === "class" ? moduleIdForName(node.module) : undefined' in html
+        assert "function parentForActor" in html
+        assert "function instanceForEndpoint" in html
+        assert "function syncVisibilityToReplay" in html
+        assert "function replayMetricsAt" in html
+        assert "function applyReplayMetrics" in html
+        assert 'node.type === "module" || node.type === "class" ? "container" : ""' in html
         assert "parent: parentForFunction(node)" in html
         assert '"compound-sizing-wrt-labels": "include"' in html
         assert 'node[type = "function"]' in html
         assert '"border-style": "dashed"' in html
         assert 'node[type = "method"]' in html
+        assert 'node[type = "instance"]' in html
+        assert 'edge[type = "runtime-return"]' in html
+        assert "const returnEdges" in html
+        assert '"curve-style": "straight"' in html
         assert '"line-style": "solid"' in html
+        assert '"line-style": "dashed"' in html
         assert "renderedNodeIds.has(edge.source)" in html
+        assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
+        assert "return:${targetNode}->${sourceNode}" in html
+        assert 'cy.elements().addClass("unseen")' in html
+        assert 'window.setTimeout(() => active.removeClass("pulse"), 420)' in html
         assert 'id="event-focus"' in html
         assert "function eventFocusCard" in html
         assert "function syntaxHighlightJson" in html

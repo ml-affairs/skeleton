@@ -121,6 +121,13 @@ relationships into an interactive architecture replay.
   modules. Public class methods live inside classes. Do not show modules,
   classes, functions, and methods as unrelated peers when the source code defines
   containment.
+- Replay should be evidence-progressive. Do not show the whole static graph at
+  time zero. As the user steps through events, reveal only the modules, classes,
+  instances, functions, methods, and call/return edges that have been observed up
+  to that event. Stepping backward should hide future evidence again.
+- Replay metrics should be time-aware. Fan-in, fan-out, call count, edge width,
+  node size, first_seen, and last_seen should reflect the current replay
+  position, not only the final snapshot totals.
 - Entrypoint, service, repository, adapter, port, and external resource should
   be treated as roles or boundary concepts first. Create graph nodes for them
   only when runtime evidence shows a concrete actor or resource.
