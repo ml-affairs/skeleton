@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 JsonObject = dict[str, Any]
 
@@ -22,7 +23,19 @@ class HtmlReportWriter:
 
     def _html(self, snapshot_json: str) -> str:
         """Return the static report HTML."""
-        return self._template().replace("__SKELETON_SNAPSHOT_JSON__", snapshot_json)
+        return self._template().replace("__SKELETON_SNAPSHOT_JSON__", snapshot_json).replace("__SKELETON_FAVICON__", self._favicon())
+
+    def _favicon(self) -> str:
+        """Return the inline Skeleton favicon data URL."""
+        svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+            '<rect width="64" height="64" rx="14" fill="#070a12"/>'
+            '<path d="M22 18c-6 3-9 8-9 14s3 11 9 14" fill="none" stroke="#38dce2" stroke-width="5" stroke-linecap="round"/>'
+            '<path d="M42 18c6 3 9 8 9 14s-3 11-9 14" fill="none" stroke="#38dce2" stroke-width="5" stroke-linecap="round"/>'
+            '<text x="32" y="39" text-anchor="middle" font-size="18" font-family="monospace" font-weight="700" fill="#e5eefc">sk</text>'
+            "</svg>"
+        )
+        return f"data:image/svg+xml,{quote(svg)}"
 
     def _template(self) -> str:
         """Return the dark cinematic report template."""
@@ -32,6 +45,7 @@ class HtmlReportWriter:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Skeleton Architecture Replay</title>
+  <link rel="icon" href="__SKELETON_FAVICON__">
   <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
   <style>
     :root {
@@ -371,6 +385,123 @@ class HtmlReportWriter:
       color: var(--cyan);
       font-weight: 700;
     }
+    .event-card {
+      margin-top: 10px;
+      border: 1px solid rgba(94, 234, 212, 0.22);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(2, 6, 23, 0.5);
+    }
+    .event-card-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 11px;
+      border-bottom: 1px solid var(--line);
+    }
+    .entity-token {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      background: rgba(15, 23, 42, 0.88);
+    }
+    .entity-token .kind {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .entity-token .name {
+      display: block;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+    .entity-token.module { border-color: rgba(20, 184, 166, 0.48); box-shadow: inset 3px 0 0 var(--teal); }
+    .entity-token.class { border-color: rgba(139, 92, 246, 0.52); box-shadow: inset 3px 0 0 var(--violet); }
+    .entity-token.method { border-color: rgba(245, 158, 11, 0.5); box-shadow: inset 3px 0 0 var(--amber); }
+    .entity-token.function { border-color: rgba(34, 197, 94, 0.5); box-shadow: inset 3px 0 0 var(--green); }
+    .event-arrow {
+      color: var(--rose);
+      font-weight: 900;
+      text-align: center;
+      text-shadow: 0 0 16px rgba(251, 113, 133, 0.5);
+    }
+    .event-delta {
+      display: grid;
+      gap: 8px;
+      padding: 11px;
+    }
+    .delta-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .delta-line strong {
+      color: var(--ink);
+      font-weight: 750;
+    }
+    .delta-label {
+      width: 76px;
+      flex: 0 0 auto;
+      color: var(--faint);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .arg-grid {
+      display: grid;
+      gap: 6px;
+    }
+    .arg-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 7px;
+      padding: 7px;
+      background: rgba(15, 23, 42, 0.52);
+      font-size: 12px;
+    }
+    .arg-key {
+      color: var(--ink);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .arg-value {
+      color: #b8c4d6;
+      overflow-wrap: anywhere;
+    }
+    .arg-value.redacted {
+      color: var(--rose);
+      font-weight: 750;
+    }
+    .json-view {
+      font-family: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      color: #aebbd0;
+    }
+    .json-key {
+      color: var(--cyan);
+      font-weight: 800;
+    }
+    .json-string { color: #d6e4ff; }
+    .json-number { color: #f8d68a; }
+    .json-boolean { color: #c4b5fd; }
+    .json-null { color: #718096; }
+    .json-entity-module { color: var(--teal); font-weight: 800; }
+    .json-entity-class { color: var(--violet); font-weight: 800; }
+    .json-entity-method { color: var(--amber); font-weight: 800; }
+    .json-entity-function { color: var(--green); font-weight: 800; }
     @media (max-width: 980px) {
       body { overflow: auto; }
       .app { height: auto; min-height: 100vh; }
@@ -428,9 +559,10 @@ class HtmlReportWriter:
           </div>
           <div class="eyebrow">Current Event</div>
           <div class="narrative" id="event-narrative">No event selected.</div>
+          <div id="event-focus"></div>
           <div class="section">
             <h3>Trace Evidence</h3>
-            <pre id="event-details">No event selected.</pre>
+            <pre class="json-view" id="event-details">No event selected.</pre>
           </div>
         </section>
       </aside>
@@ -959,7 +1091,8 @@ class HtmlReportWriter:
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
-      document.getElementById("event-details").textContent = JSON.stringify(event, null, 2);
+      document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
+      document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
       showNode(targetNode);
       cy.animate({ fit: { eles: cy.$(".current"), padding: 130 } }, { duration: 280 });
     }
@@ -982,6 +1115,95 @@ class HtmlReportWriter:
       if (!value) return ".";
       if (value.type === "str" && value.value !== undefined) return ` ${escapeHtml(JSON.stringify(value.value))}.`;
       return ` ${escapeHtml(value.type || "value")}.`;
+    }
+
+    function eventFocusCard(event, sourceOwner, targetOwner) {
+      const caller = event.caller;
+      const callee = event.callee;
+      const callerToken = caller
+        ? entityToken(caller.qualified_name, endpointKind(caller), ownerLabel(sourceOwner))
+        : entityToken("entrypoint", "module", ownerLabel(targetOwner));
+      const calleeToken = entityToken(callee.qualified_name, endpointKind(callee), ownerLabel(targetOwner));
+      const delta = event.event_type === "call"
+        ? `Highlighted runtime call edge into <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong>.`
+        : `Captured return summary from <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong>.`;
+      const evidence = event.event_type === "call" ? argsTable(event.args) : returnEvidence(event.return_value);
+      return `
+        <div class="event-card">
+          <div class="event-card-header">
+            ${callerToken}
+            <div class="event-arrow">${event.event_type === "call" ? "called" : "returned"}</div>
+            ${calleeToken}
+          </div>
+          <div class="event-delta">
+            <div class="delta-line"><span class="delta-label">Change</span><span>${delta}</span></div>
+            <div class="delta-line"><span class="delta-label">Scope</span><span>${escapeHtml(ownerLabel(targetOwner))} is in focus; its owning shells are emphasized.</span></div>
+            ${evidence}
+          </div>
+        </div>
+      `;
+    }
+
+    function entityToken(name, kind, owner) {
+      return `
+        <div class="entity-token ${escapeAttr(kind)}">
+          <span class="kind">${escapeHtml(kind)} · ${escapeHtml(owner || "runtime")}</span>
+          <span class="name">${escapeHtml(name)}</span>
+        </div>
+      `;
+    }
+
+    function endpointKind(endpoint) {
+      if (endpoint.class_name) return "method";
+      return "function";
+    }
+
+    function argsTable(args) {
+      if (!args || !Object.keys(args).length) {
+        return '<div class="delta-line"><span class="delta-label">Args</span><span>No public arguments captured for this event.</span></div>';
+      }
+      const rows = Object.entries(args)
+        .map(([key, value]) => `<div class="arg-row"><span class="arg-key">${escapeHtml(key)}</span><span class="arg-value ${value?.type === "redacted" ? "redacted" : ""}">${escapeHtml(summaryText(value))}</span></div>`)
+        .join("");
+      return `<div class="delta-line"><span class="delta-label">Args</span><div class="arg-grid">${rows}</div></div>`;
+    }
+
+    function returnEvidence(value) {
+      if (!value) return '<div class="delta-line"><span class="delta-label">Return</span><span>No return summary captured.</span></div>';
+      return `<div class="delta-line"><span class="delta-label">Return</span><strong>${escapeHtml(summaryText(value))}</strong></div>`;
+    }
+
+    function summaryText(value) {
+      if (!value) return "none";
+      if (value.type === "redacted") return "redacted";
+      if (value.value !== undefined) return `${value.type}: ${JSON.stringify(value.value)}`;
+      if (value.len !== undefined) return `${value.type} len=${value.len}`;
+      if (value.object_id) return `${value.type} ${value.object_id}`;
+      if (value.summary) return `${value.type}: ${value.summary}`;
+      return value.type || JSON.stringify(value);
+    }
+
+    function syntaxHighlightJson(value) {
+      const escaped = escapeHtml(JSON.stringify(value, null, 2));
+      return escaped.replace(
+        /(&quot;[^&]*?&quot;)(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/g,
+        (match, quoted, colon, booleanValue) => {
+          if (quoted && colon) return `<span class="json-key">${quoted}</span>${colon}`;
+          if (quoted) return `<span class="${jsonStringClass(quoted)}">${quoted}</span>`;
+          if (booleanValue === "true" || booleanValue === "false") return `<span class="json-boolean">${match}</span>`;
+          if (booleanValue === "null") return `<span class="json-null">${match}</span>`;
+          return `<span class="json-number">${match}</span>`;
+        }
+      );
+    }
+
+    function jsonStringClass(quoted) {
+      const value = quoted.replace(/^&quot;|&quot;$/g, "");
+      if (value.startsWith("module:")) return "json-entity-module";
+      if (value.startsWith("class:")) return "json-entity-class";
+      if (value.startsWith("function:")) return "json-entity-function";
+      if (value.includes(".") && value.includes("Greeter")) return "json-entity-method";
+      return "json-string";
     }
 
     function bindChipClicks() {

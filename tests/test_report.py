@@ -57,6 +57,8 @@ class TestHtmlReportWriter:
         # Then
         html = out_path.read_text(encoding="utf-8")
         assert "color-scheme: dark" in html
+        assert 'rel="icon"' in html
+        assert "data:image/svg+xml,%3Csvg" in html
         assert "cytoscape@3.30.4" in html
         assert "architecture-call" in html
         assert "module shell" in html
@@ -80,3 +82,7 @@ class TestHtmlReportWriter:
         assert 'node[type = "method"]' in html
         assert '"line-style": "solid"' in html
         assert "renderedNodeIds.has(edge.source)" in html
+        assert 'id="event-focus"' in html
+        assert "function eventFocusCard" in html
+        assert "function syntaxHighlightJson" in html
+        assert "json-key" in html
