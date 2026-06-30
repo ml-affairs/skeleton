@@ -957,15 +957,20 @@ class HtmlReportWriter:
           "opacity": 0.82
         } },
         { selector: 'edge[type = "runtime-return"]', style: {
-          "curve-style": "bezier",
+          "curve-style": "unbundled-bezier",
           "line-style": "dashed",
           "line-color": "#38dce2",
           "target-arrow-color": "#38dce2",
           "opacity": 0.78,
-          "control-point-step-size": 72,
+          "control-point-distances": 90,
+          "control-point-weights": 0.5,
           "line-dash-pattern": [8, 6]
         } },
-        { selector: ".unseen", style: { "display": "none" } },
+        { selector: ".unseen", style: {
+          "opacity": 0,
+          "text-opacity": 0,
+          "events": "no"
+        } },
         { selector: ".hidden", style: { "display": "none" } },
         { selector: ".dimmed", style: { "opacity": 0.18 } },
         { selector: ".current", style: {
@@ -1054,25 +1059,22 @@ class HtmlReportWriter:
         cy.getElementById(owner).removeClass("unseen hidden").addClass("focus");
         for (const methodId of ownerMethods.get(owner) || []) revealElement(methodId);
       }
-      layoutVisibleElements();
     }
 
-    function revealEventElements(event, shouldLayout = true) {
+    function revealEventElements(event) {
       revealEndpoint(event.callee);
       if (event.caller) revealEndpoint(event.caller);
       const sourceNode = event.caller ? event.caller.node_id : null;
       const targetNode = event.callee.node_id;
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
       if (runtimeEdge) revealElement(runtimeEdge.id());
-      if (shouldLayout) layoutVisibleElements();
     }
 
     function syncVisibilityToReplay(index) {
       cy.elements().addClass("unseen").removeClass("hidden");
       for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
-        revealEventElements(events[eventIndex], false);
+        revealEventElements(events[eventIndex]);
       }
-      layoutVisibleElements();
     }
 
     function revealEndpoint(endpoint) {
@@ -1103,23 +1105,6 @@ class HtmlReportWriter:
       if (!element || element.empty()) return null;
       element.removeClass("unseen hidden");
       return element;
-    }
-
-    function layoutVisibleElements() {
-      const visible = cy.elements().not(".unseen");
-      if (!visible || visible.empty()) return;
-      visible.layout({
-        name: "cose",
-        animate: true,
-        animationDuration: 220,
-        fit: false,
-        padding: 72,
-        nodeRepulsion: 9000,
-        idealEdgeLength: 135,
-        edgeElasticity: 100,
-        gravity: 0.58,
-        numIter: 260
-      }).run();
     }
 
     function replayMetricsAt(index) {

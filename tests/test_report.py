@@ -146,12 +146,17 @@ class TestHtmlReportWriter:
         assert 'edge[type = "runtime-return"]' in html
         assert "const returnEdges" in html
         assert '"curve-style": "straight"' in html
+        assert '"curve-style": "unbundled-bezier"' in html
+        assert '"control-point-distances": 90' in html
+        assert '"control-point-weights": 0.5' in html
         assert '"line-style": "solid"' in html
         assert '"line-style": "dashed"' in html
         assert "renderedNodeIds.has(edge.source)" in html
         assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
         assert "return:${targetNode}->${sourceNode}" in html
         assert 'cy.elements().addClass("unseen")' in html
+        assert '"events": "no"' in html
+        assert "layoutVisibleElements" not in html
         assert 'window.setTimeout(() => active.removeClass("pulse"), 420)' in html
         assert 'id="event-focus"' in html
         assert "function eventFocusCard" in html
