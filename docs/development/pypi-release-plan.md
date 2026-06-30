@@ -2,7 +2,7 @@
 
 ## Status
 
-Planning document.
+Active release preparation document.
 
 Skeleton is already shaped like a PyPI package, but a public release needs a
 small set of product, packaging, documentation, and governance tasks.
@@ -29,15 +29,16 @@ Already present:
 
 ### Package Identity
 
-- confirm owner/organization account
+- PyPI owner can be an individual PyPI account for v0. A PyPI organization is
+  useful later for shared ownership, but it is not required to publish
+  `skeleton-replay`.
 - verify the long description renders on PyPI
 
 ### Public API
 
-- decide whether v0 is CLI-only or includes `TraceSession`
-- document the stability level of Python imports
-- avoid exposing `argparse.Namespace` or internal command objects as the main API
-- add API docs under `docs/api/`
+- v0 includes `TraceSession.run_script`
+- public imports are documented in `docs/api/python-api.md`
+- `argparse.Namespace` and internal command objects are not the main API
 
 ### Documentation
 
@@ -54,12 +55,27 @@ Already present:
 
 ### Release Automation
 
-- `uv build` verification in CI
-- publish workflow using PyPI trusted publishing
+- `uv build` verification in release workflow
+- publish workflow uses PyPI Trusted Publishing through GitHub Actions OIDC
 - TestPyPI dry run
 - version bump process
 - changelog or GitHub release notes
 - tag naming convention
+
+Trusted Publishing configuration to create in PyPI:
+
+| Field | Value |
+| --- | --- |
+| PyPI project | `skeleton-replay` |
+| GitHub owner | `ml-affairs` |
+| GitHub repository | `skeleton` |
+| Workflow filename | `publish.yml` |
+| Environment name | `pypi` |
+
+If `skeleton-replay` does not exist on PyPI yet, create a pending Trusted
+Publisher from the PyPI account publishing page with the same values. The first
+successful publish creates the project and converts the pending publisher into a
+normal publisher.
 
 ### Quality Gates
 
@@ -99,14 +115,14 @@ Already present:
 7. Run `skeleton --help`.
 8. Run `skeleton run tests/fixtures/sample_project/app.py --no-open`.
 9. Inspect generated artifacts.
-10. Publish to TestPyPI.
-11. Install from TestPyPI.
-12. Publish to PyPI.
-13. Create a GitHub release.
+10. Configure PyPI Trusted Publishing for `skeleton-replay`.
+11. Publish to TestPyPI if desired.
+12. Install from TestPyPI if used.
+13. Create a GitHub release to trigger `.github/workflows/publish.yml`.
+14. Install from PyPI and run a smoke test.
 
 ## Open Decisions
 
-- Should v0 be published as CLI-only, or wait for a stable `TraceSession` API?
 - Should docs be hosted before the first release, or is README plus `docs/`
   enough for an initial package?
 - Should the package include embedded report assets later, or keep the report

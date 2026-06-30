@@ -2,17 +2,74 @@
 
 ## Status
 
-Early design contract.
+Available in v0.1.0.
 
-Skeleton's stable v0 interface is the CLI:
+Skeleton's primary interface is still the CLI:
 
 ```bash
 python -m skeleton_replay run path/to/script.py
 ```
 
-The internals are already object-oriented, but most Python classes are not yet
-promised as a long-term public API. This page names the current surfaces and the
-API shape Skeleton should expose before a wider PyPI release.
+The public Python API is `TraceSession`. Most lower-level classes remain
+contributor-facing implementation details.
+
+## Stable Public API
+
+### `TraceSession`
+
+Runs a Python script under Skeleton and writes the same artifacts as the CLI.
+
+```python
+from pathlib import Path
+
+from skeleton_replay import TraceSession
+
+result = TraceSession(
+    project_root=Path("."),
+    out_dir=Path(".skeleton"),
+    include=("src/",),
+    exclude=("tests/",),
+    max_events=10_000,
+).run_script(
+    Path("scripts/replay_checkout.py"),
+    script_args=["--example-order", "A-100"],
+)
+
+print(result.trace_path)
+print(result.snapshot_path)
+print(result.workflow_path)
+print(result.report_path)
+```
+
+Constructor fields:
+
+| Field | Purpose |
+| --- | --- |
+| `project_root` | Root used to decide which frames are project-local. |
+| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. |
+| `include` | Optional path or module patterns to include. |
+| `exclude` | Optional path or module patterns to exclude. |
+| `max_events` | Optional cap on written trace events. |
+| `html_enabled` | Generate `report.html` when true. |
+| `open_report` | Open `report.html` in the default browser when true. Defaults to false for library callers. |
+
+### `TraceSessionResult`
+
+Returned by `TraceSession.run_script`.
+
+| Field | Meaning |
+| --- | --- |
+| `trace_path` | Path to `trace.jsonl`. |
+| `snapshot_path` | Path to `snapshot.json`. |
+| `workflow_path` | Path to `workflow.md`. |
+| `report_path` | Path to `report.html`, or `None` when HTML is disabled. |
+| `report_opened` | Whether browser opening was attempted and accepted. |
+| `event_count` | Number of captured trace events. |
+| `node_count` | Number of snapshot nodes. |
+| `edge_count` | Number of observed runtime call edges. |
+| `target_exit_code` | Exit code from the traced script. |
+| `target_error` | String summary when the traced script raised an exception. |
+| `succeeded` | Convenience property for `target_exit_code == 0`. |
 
 ## Current Importable Building Blocks
 
@@ -29,7 +86,7 @@ CliApplication
 ```
 
 These objects are useful for contributors and tests, but the application-facing
-API should be smaller than the internal pipeline.
+API is intentionally smaller than the internal pipeline.
 
 ### `CliApplication`
 
@@ -65,38 +122,6 @@ events.
 This is a low-level tracing boundary. It should remain importable for advanced
 users eventually, but its direct API should not be the first thing most users
 need.
-
-## Intended Stable API
-
-Before a broad PyPI release, Skeleton should expose a small public object that
-wraps the pipeline without exposing CLI parsing details.
-
-The likely shape is:
-
-```python
-from pathlib import Path
-
-from skeleton_replay import TraceSession
-
-result = TraceSession(project_root=Path(".")).run_script(
-    Path("scripts/replay_checkout.py"),
-    script_args=["--example-order", "A-100"],
-)
-
-print(result.trace_path)
-print(result.snapshot_path)
-print(result.workflow_path)
-print(result.report_path)
-```
-
-The stable object should:
-
-- run a script path
-- accept script arguments
-- accept output directory, include/exclude filters, and max-events
-- optionally render and open HTML
-- return typed artifact paths and basic metrics
-- avoid exposing `argparse.Namespace`
 
 ## Planned Callable API
 

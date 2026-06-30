@@ -31,6 +31,7 @@ Product name:  Skeleton
 PyPI package:  skeleton-replay
 Import name:   skeleton_replay
 CLI command:   skeleton
+Module entry:  python -m skeleton_replay
 ```
 
 ## MVP workflow
@@ -156,6 +157,30 @@ Output location precedence:
 When HTML generation is enabled, Skeleton opens `report.html` in your default
 browser at the end of the run. Use `--no-open` for CI, scripts, or headless
 environments.
+
+## Python API
+
+Use `TraceSession` when you want to generate Skeleton artifacts from Python
+without shelling out to the CLI:
+
+```python
+from pathlib import Path
+
+from skeleton_replay import TraceSession
+
+result = TraceSession(
+    project_root=Path("path/to/project"),
+    out_dir=Path("path/to/project/.skeleton"),
+).run_script("path/to/project/app.py")
+
+print(result.report_path)
+print(result.workflow_path)
+```
+
+The Python API writes the same `trace.jsonl`, `snapshot.json`, `workflow.md`,
+and optional `report.html` artifacts as the CLI. Unlike the CLI, it does not
+open the HTML report by default; pass `open_report=True` when that is wanted.
+See [`docs/api/python-api.md`](docs/api/python-api.md).
 
 ## What gets traced
 

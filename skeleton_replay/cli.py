@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
 from skeleton_replay.analysis import SnapshotBuilder, SnapshotMetrics
-from skeleton_replay.interface import ColorMode, HtmlReportOpener, SkeletonConsole
+from skeleton_replay.interface import ColorMode, HtmlReportOpener, OutputPathResolver, SkeletonConsole
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
 
@@ -64,37 +63,6 @@ class RunConfiguration:
             exclude=self.exclude,
             max_events=self.max_events,
         )
-
-
-@dataclass(frozen=True)
-class OutputPathResolver:
-    """Resolves artifact output directories for traced applications."""
-
-    home_override: Path | None = None
-
-    def resolve(self, *, project_root: Path, requested_out_dir: Path | None) -> Path:
-        """Return the output directory for one Skeleton run."""
-        if requested_out_dir:
-            return requested_out_dir.resolve()
-        raw_out_dir = os.environ.get("SKELETON_OUT_DIR")
-        if raw_out_dir:
-            return Path(raw_out_dir).expanduser().resolve()
-        return self.skeleton_home / self._application_name(project_root)
-
-    @property
-    def skeleton_home(self) -> Path:
-        """Return the root directory used for implicit Skeleton artifacts."""
-        if self.home_override:
-            return self.home_override.resolve()
-        raw_home = os.environ.get("SKELETON_HOME")
-        if raw_home:
-            return Path(raw_home).expanduser().resolve()
-        return (Path.home() / ".skeleton").resolve()
-
-    @staticmethod
-    def _application_name(project_root: Path) -> str:
-        name = project_root.resolve().name
-        return name or "application"
 
 
 @dataclass(frozen=True)

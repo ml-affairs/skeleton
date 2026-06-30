@@ -5,6 +5,8 @@ description = "Replay and visualise the living architecture of a Python applicat
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
+authors = [{ name = "Christos Hadjinikolis", email = "christos.hadjinikolis.subs@gmail.com" }]
+maintainers = [{ name = "Christos Hadjinikolis", email = "christos.hadjinikolis.subs@gmail.com" }]
 dependencies = []
 keywords = ["architecture", "tracing", "visualization", "runtime", "developer-tools"]
 classifiers = [
