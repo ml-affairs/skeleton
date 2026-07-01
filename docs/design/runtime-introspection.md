@@ -28,10 +28,16 @@ Python calls that callback when the interpreter observes events such as:
 
 - `call`: Python is entering a function or method.
 - `return`: Python is returning from a function or method.
+- `c_call`: Python is about to call selected C-level functions such as
+  `print`, `open`, or `sqlite3.connect`.
+- `c_return` / `c_exception`: a selected C-level resource call has completed or
+  raised.
 
-Each callback receives a frame object. The current implementation handles only
-`call` and `return` events because Skeleton is an architecture replay tool, not a
-line-by-line debugger or performance profiler.
+Each callback receives a frame object. Skeleton handles normal Python
+`call`/`return` events for project-local public functions and methods. It also
+handles a narrow allow-list of C-level resource calls only when project-local
+code is already active on the trace stack. That makes I/O visible without
+turning the report into a standard-library or third-party dependency trace.
 
 This hook is standard library Python. It is the same family of runtime machinery
 used by profilers and debuggers, but Skeleton uses it for architectural evidence
@@ -163,6 +169,41 @@ Skeleton filters by:
 
 This keeps the graph focused on project-local architecture.
 
+## How Resource Boundaries Are Seen
+
+Some important architecture evidence does not appear as a project-local Python
+frame. `print()`, `open()`, SQLite connection methods, and many socket
+operations cross into C-level runtime code. Skeleton watches selected
+`c_call`/`c_return` profile events while a traced project-local function or
+method is active.
+
+The resource classifier is deliberately small. It can currently emit endpoint
+types such as:
+
+```text
+resource.stdout
+resource.filesystem
+resource.database
+external.service
+```
+
+Filesystem, stdout, and database endpoints are typed as `resource` with a
+category such as `stdout`, `file`, or `db`; the report projects them as external
+I/O cylinders. Network endpoints are typed as `external_service` with category
+`network`; the report projects them as diamonds because external services are
+architectural collaborators, not resource cylinders. The specific operation,
+such as `print`, `mkdir`, or `connect`, stays in the safe event evidence. The
+caller remains the project-local actor, for example:
+
+```text
+order_repository.SqliteOrderRepository.save -> resource.database
+notification_adapter.ConsoleNotifier.announce -> resource.stdout
+payment_gateway.PaymentGatewayClient.charge -> external.service
+```
+
+This distinction matters: local application methods keep their own architectural
+identity, while external resources become explicit boundary evidence.
+
 ## Safety Boundaries
 
 The frame gives access to live values. Skeleton deliberately does not serialize
@@ -184,7 +225,8 @@ Skeleton should be honest about what this mechanism can and cannot know.
 
 - `id()` is process-local and not stable across runs.
 - Calls implemented in C or native extensions do not expose the same Python
-  frames as normal Python functions.
+  frames as normal Python functions. Skeleton only captures the small resource
+  allow-list described above.
 - Dynamic dispatch is observed only when it happens. A class may define many
   methods, but the report should show the methods this run actually used.
 - Static imports and runtime calls are different facts. A module can import

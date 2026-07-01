@@ -23,6 +23,7 @@
       --amber: #f59e0b;
       --rose: #fb7185;
       --green: #22c55e;
+      --yellow: #fbbf24;
       --shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
     }
     * { box-sizing: border-box; }
@@ -113,6 +114,10 @@
       min-height: 0;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 430px;
+      transition: grid-template-columns 180ms ease;
+    }
+    main.sidebar-collapsed {
+      grid-template-columns: minmax(0, 1fr) 52px;
     }
     .stage {
       position: relative;
@@ -207,6 +212,23 @@
       background: transparent;
       box-shadow: 0 0 16px currentColor;
     }
+    .schema.io {
+      color: var(--violet);
+      width: 22px;
+      height: 14px;
+      border: 0;
+      border-radius: 9px 9px 3px 3px;
+      background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), transparent 40%), linear-gradient(180deg, rgba(167, 139, 250, 0.18), rgba(124, 58, 237, 0.58));
+      box-shadow: 0 2px 14px rgba(139, 92, 246, 0.52), inset 0 -2px 0 rgba(255, 255, 255, 0.18);
+    }
+    .schema.external {
+      color: var(--yellow);
+      width: 17px;
+      height: 17px;
+      transform: rotate(45deg);
+      border-radius: 2px;
+      background: rgba(251, 191, 36, 0.5);
+    }
     .schema.return {
       width: 25px;
       height: 14px;
@@ -218,6 +240,7 @@
       box-shadow: 0 0 16px currentColor;
     }
     .sidebar {
+      position: relative;
       min-width: 0;
       min-height: 0;
       display: grid;
@@ -226,10 +249,45 @@
       background: var(--panel);
       box-shadow: var(--shadow);
     }
+    .sidebar-toggle {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 8;
+      width: 32px;
+      height: 32px;
+      min-height: 32px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-color: rgba(94, 234, 212, 0.3);
+      color: var(--cyan);
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+      background: rgba(15, 23, 42, 0.96);
+      box-shadow: 0 0 24px rgba(56, 220, 226, 0.12);
+    }
+    .sidebar-toggle:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 26px rgba(56, 220, 226, 0.22);
+    }
+    main.sidebar-collapsed .sidebar {
+      display: block;
+      overflow: hidden;
+    }
+    main.sidebar-collapsed .inspector,
+    main.sidebar-collapsed .replay {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
     .inspector {
       min-height: 0;
       overflow: auto;
       padding: 18px;
+      padding-top: 58px;
+      transition: opacity 140ms ease;
     }
     .eyebrow {
       color: var(--cyan);
@@ -314,6 +372,7 @@
       border-top: 1px solid var(--line);
       padding: 14px;
       background: var(--panel-strong);
+      transition: opacity 140ms ease;
     }
     .timeline {
       width: 100%;
@@ -472,12 +531,99 @@
     .json-entity-class { color: var(--violet); font-weight: 800; }
     .json-entity-method { color: var(--amber); font-weight: 800; }
     .json-entity-function { color: var(--green); font-weight: 800; }
+    .resize-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .resize-row button {
+      min-height: 30px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+    }
+    .resize-dim {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      margin-top: 10px;
+      background: rgba(15, 23, 42, 0.75);
+      display: grid;
+      gap: 8px;
+    }
+    .resize-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+    #resize-handles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 12;
+    }
+    .resize-handle {
+      position: absolute;
+      pointer-events: auto;
+      background: rgba(56, 220, 226, 0.98);
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      box-shadow: 0 0 22px rgba(56, 220, 226, 0.7);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    #resize-handles.show .resize-handle {
+      opacity: 1;
+    }
+    .resize-handle:hover {
+      box-shadow: 0 0 28px rgba(56, 220, 226, 0.88);
+      transform: scale(1.08);
+    }
+    .resize-handle.corner {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .resize-handle.edge {
+      width: 16px;
+      height: 6px;
+      border-radius: 3px;
+    }
+    .resize-handle.edge.horizontal {
+      cursor: ns-resize;
+      width: 24px;
+      height: 7px;
+    }
+    .resize-handle.edge.vertical {
+      cursor: ew-resize;
+      width: 7px;
+      height: 24px;
+    }
+    .resize-handle[data-handle='top'],
+    .resize-handle[data-handle='bottom'] {
+      cursor: ns-resize;
+    }
+    .resize-handle[data-handle='left'],
+    .resize-handle[data-handle='right'] {
+      cursor: ew-resize;
+    }
+    .resize-handle[data-handle='top-left'],
+    .resize-handle[data-handle='bottom-right'] {
+      cursor: nwse-resize;
+    }
+    .resize-handle[data-handle='top-right'],
+    .resize-handle[data-handle='bottom-left'] {
+      cursor: nesw-resize;
+    }
+    .hidden {
+      display: none !important;
+    }
     @media (max-width: 980px) {
       body { overflow: auto; }
       .app { height: auto; min-height: 100vh; }
       header { grid-template-columns: 1fr; }
       .metrics { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       main { grid-template-columns: 1fr; grid-template-rows: 58vh minmax(420px, auto); }
+      main.sidebar-collapsed { grid-template-columns: 1fr; grid-template-rows: 58vh 52px; }
       .sidebar { border-left: 0; border-top: 1px solid var(--line); }
     }
   </style>
@@ -498,9 +644,19 @@
         <div class="metric"><strong id="edge-count">0</strong><span>calls</span></div>
       </div>
     </header>
-    <main>
+    <main id="replay-layout">
       <section class="stage">
         <div id="cy"></div>
+        <div id="resize-handles" class="hidden">
+          <div class="resize-handle edge vertical" data-handle="left" aria-hidden="true"></div>
+          <div class="resize-handle edge vertical" data-handle="right" aria-hidden="true"></div>
+          <div class="resize-handle edge horizontal" data-handle="top" aria-hidden="true"></div>
+          <div class="resize-handle edge horizontal" data-handle="bottom" aria-hidden="true"></div>
+          <div class="resize-handle corner" data-handle="top-left" aria-hidden="true"></div>
+          <div class="resize-handle corner" data-handle="top-right" aria-hidden="true"></div>
+          <div class="resize-handle corner" data-handle="bottom-left" aria-hidden="true"></div>
+          <div class="resize-handle corner" data-handle="bottom-right" aria-hidden="true"></div>
+        </div>
         <div class="legend">
           <div class="legend-title">Schemas</div>
           <div class="legend-grid">
@@ -508,17 +664,34 @@
             <span class="pill"><span class="schema instance"></span>instance shell</span>
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
+            <span class="pill"><span class="schema io"></span>I/O / resource</span>
+            <span class="pill"><span class="schema external"></span>external service</span>
             <span class="pill"><span class="schema call"></span>runtime call</span>
             <span class="pill"><span class="schema return"></span>return value</span>
           </div>
         </div>
       </section>
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse details panel" aria-expanded="true" title="Collapse details panel">›</button>
         <section class="inspector">
           <div class="eyebrow" id="detail-kind">Architecture</div>
           <h2 id="detail-title">Runtime actors</h2>
           <div class="node-kind" id="detail-summary">Modules contain runtime instances and functions. Instances contain the methods observed on that object.</div>
           <div id="details"></div>
+          <div class="section hidden" id="resize-controls">
+            <h3>Container Size</h3>
+            <div class="resize-dim">
+              <div id="resize-summary" class="node-kind">Select a container to resize.</div>
+              <div class="resize-row">
+                <button id="resize-wider" type="button">Wider</button>
+                <button id="resize-taller" type="button">Taller</button>
+              </div>
+              <div class="resize-row">
+                <button id="resize-narrower" type="button">Narrower</button>
+                <button id="resize-shorter" type="button">Shorter</button>
+              </div>
+            </div>
+          </div>
         </section>
         <section class="replay">
           <input class="timeline" id="timeline" min="0" max="0" value="0" type="range">
@@ -548,6 +721,52 @@
     const archEdgeCounts = new Map();
     const archAdjacency = new Map();
     const actorRoles = new Map();
+    let selectedContainerId = null;
+    let hoveredContainerId = null;
+    let activeResizeDrag = null;
+    let activeNodeMove = null;
+    let resizeStartState = null;
+    const dragStartPositions = new Map();
+    const containerPadding = 56;
+    const containerDefaultMinHeight = 100;
+    const containerDefaultMinWidth = 160;
+    const containerResizeEdgePx = 16;
+    const resizeHandleNames = ["top", "right", "bottom", "left", "top-left", "top-right", "bottom-right", "bottom-left"];
+    const resizeHandleByName = new Map();
+
+    const ioRulebook = {
+      file: {
+        modules: new Set(["pathlib", "os", "io", "builtins", "_io", "shutil", "tempfile", "importlib.resources"]),
+        functions: new Set([
+          "open",
+          "write",
+          "read",
+          "read_text",
+          "write_text",
+          "read_bytes",
+          "write_bytes",
+          "exists",
+          "mkdir",
+          "rmtree",
+          "copy",
+          "copy2",
+          "remove",
+          "unlink"
+        ])
+      },
+      stdout: {
+        modules: new Set(["sys", "builtins", "logging"]),
+        functions: new Set(["print", "write", "flush", "debug", "info", "warning", "error", "exception"])
+      },
+      db: {
+        modules: new Set(["sqlite3", "psycopg", "psycopg2", "sqlalchemy", "sqlmodel", "motor", "pymongo", "redis"]),
+        functions: new Set(["connect", "cursor", "execute", "fetchone", "fetchall", "fetchmany", "commit", "close"])
+      },
+      network: {
+        modules: new Set(["requests", "http", "urllib", "urllib3", "aiohttp", "socket", "ssl", "asyncio", "subprocess"]),
+        functions: new Set(["get", "post", "put", "delete", "head", "patch", "open", "connect", "send", "recv", "run", "start"])
+      }
+    };
 
     document.getElementById("project-root").textContent = snapshot.project_root || "project";
     document.getElementById("event-count").textContent = String(snapshot.event_count || events.length || 0);
@@ -556,6 +775,63 @@
       if (!ownerId) return;
       if (!actorRoles.has(ownerId)) actorRoles.set(ownerId, new Set());
       actorRoles.get(ownerId).add(role);
+    }
+
+    function ioCategoryFor(endpoint) {
+      if (!endpoint) {
+        return null;
+      }
+      if (endpoint.endpoint_type === "resource") {
+        const category = endpoint.resource_category || "file";
+        const labels = {file: "file resource", stdout: "stdout", db: "database"};
+        return {type: category, label: labels[category] || "resource"};
+      }
+      if (endpoint.class_name) {
+        return null;
+      }
+      const module = String(endpoint.module || "").toLowerCase();
+      const functionName = String(endpoint.function || "").toLowerCase();
+      const isProjectLocalModule = rawNodes.has(moduleIdForName(endpoint.module || ""));
+      if (isProjectLocalModule) {
+        return null;
+      }
+      const moduleHas = (items) => Array.from(items.modules).some((knownModule) => module === knownModule || module.startsWith(`${knownModule}.`));
+      const functionHas = (items) => items.functions.has(functionName);
+      if (moduleHas(ioRulebook.file) && functionHas(ioRulebook.file)) {
+        return {type: "file", label: "file resource"};
+      }
+      if ((moduleHas(ioRulebook.stdout) && functionHas(ioRulebook.stdout)) || (module === "builtins" && functionName === "print")) {
+        return {type: "stdout", label: "stdout"};
+      }
+      if (moduleHas(ioRulebook.db) && functionHas(ioRulebook.db)) {
+        return {type: "db", label: "database"};
+      }
+      return null;
+    }
+
+    function isResourceNode(endpoint) {
+      return endpoint?.endpoint_type === "resource" || ioCategoryFor(endpoint) !== null;
+    }
+
+    function externalServiceCategoryFor(endpoint) {
+      if (!endpoint || endpoint.class_name) {
+        return null;
+      }
+      if (endpoint.endpoint_type === "external_service") {
+        return {type: "network", label: "external service"};
+      }
+      const module = String(endpoint.module || "").toLowerCase();
+      const functionName = String(endpoint.function || "").toLowerCase();
+      const isProjectLocalModule = rawNodes.has(moduleIdForName(endpoint.module || ""));
+      if (isProjectLocalModule) {
+        return null;
+      }
+      const moduleHas = (items) => Array.from(items.modules).some((knownModule) => module === knownModule || module.startsWith(`${knownModule}.`));
+      const functionHas = (items) => items.functions.has(functionName);
+      if (moduleHas(ioRulebook.network) && functionHas(ioRulebook.network)) {
+        return {type: "network", label: "external service"};
+      }
+      return null;
     }
 
     function rolesForActor(ownerId) {
@@ -572,7 +848,8 @@
     }
 
     function parentForFunction(node) {
-      return node.owner || moduleIdForName(node.module);
+      if (node.type === "io" || node.type === "external_service") return undefined;
+      return node.owner || moduleIdForName(node.module || "");
     }
 
     function parentForActor(node) {
@@ -584,9 +861,16 @@
 
     function ownerForEndpoint(endpoint) {
       if (!endpoint) return null;
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return null;
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) return instanceId;
-      return `module:${endpoint.module}`;
+      return `module:${endpoint.module || ""}`;
+    }
+
+    function focusOwnerForEndpoint(endpoint) {
+      if (!endpoint) return null;
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return visualCallableId(endpoint);
+      return ownerForEndpoint(endpoint);
     }
 
     function instanceForEndpoint(endpoint) {
@@ -596,9 +880,10 @@
 
     function ownerForNode(node) {
       if (!node || node.type === "entrypoint") return null;
+      if (node.type === "io" || node.type === "external_service") return node.id;
       if (node.type === "instance") return node.id;
       if (node.type === "module") return node.id;
-      return node.owner || moduleIdForName(node.module);
+      return node.owner || moduleIdForName(node.module || "");
     }
 
     function shellForNode(node) {
@@ -651,6 +936,7 @@
 
     function visualCallableId(endpoint) {
       if (!endpoint) return null;
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return endpoint.node_id;
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) return `method:${instanceId}:${endpoint.node_id}`;
       return endpoint.node_id;
@@ -662,13 +948,16 @@
       if (!id) return null;
       const sourceNode = rawNodes.get(endpoint.node_id) || {};
       const owner = ownerForEndpoint(endpoint);
+      const ioCategory = ioCategoryFor(endpoint);
+      const externalServiceCategory = externalServiceCategoryFor(endpoint);
       const node = observedCallables.get(id) || {
         id,
         source_node_id: endpoint.node_id,
         owner,
         parent: owner,
-        type: endpoint.instance_id ? "method" : "function",
+        type: externalServiceCategory ? "external_service" : endpoint.endpoint_type === "resource" ? "io" : endpoint.instance_id ? "method" : ioCategory ? "io" : "function",
         label: endpoint.function || sourceNode.label || endpoint.node_id,
+        io_category: externalServiceCategory ? externalServiceCategory.type : ioCategory ? ioCategory.type : null,
         module: endpoint.module,
         class_name: endpoint.class_name,
         instance_id: endpoint.instance_id,
@@ -715,6 +1004,14 @@
         const callCount = ownerMetric(node.id, "call_count");
         const degree = adjacency.incoming.size + adjacency.outgoing.size;
         const roles = rolesForActor(node.id);
+        const baseWidth = Math.max(
+          containerDefaultMinWidth,
+          140 + Math.min(60, callCount * 3 + degree * 4 + Math.min(18, loc / 6))
+        );
+        const baseHeight = Math.max(
+          containerDefaultMinHeight,
+          92 + Math.min(56, callCount * 3 + degree * 4 + Math.min(16, loc / 5))
+        );
         return {
           data: {
             id: node.id,
@@ -727,51 +1024,80 @@
             fan_in: adjacency.incoming.size,
             fan_out: adjacency.outgoing.size,
             degree,
-            size: 42 + Math.min(54, callCount * 7 + degree * 9 + Math.min(18, loc / 3))
+            size: 46,
+            width: baseWidth,
+            height: baseHeight,
+            base_width: baseWidth,
+            base_height: baseHeight,
+            manual_width: 0,
+            manual_height: 0,
+            min_width: baseWidth,
+            min_height: baseHeight
           },
           classes: [
             node.type === "module" || node.type === "instance" ? "container" : "",
             node.type === "module" ? "module-container" : "",
             node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
-            "unseen"
+            "unseen",
+            "hidden"
           ].filter(Boolean).join(" ")
         };
       });
 
     const visibleActorIds = new Set(actorNodes.map((node) => node.data.id));
 
+    function ioNodeWidth(label) {
+      return Math.max(150, Math.min(200, String(label || "").length * 10 + 64));
+    }
+
     const methodNodes = Array.from(observedCallables.values())
-      .map((node) => ({
-        data: {
-          id: node.id,
-          owner: node.owner,
-          source_node_id: node.source_node_id,
-          parent: parentForFunction(node),
-          label: node.function || node.label || node.id,
-          type: node.type,
-          module: node.module,
-          class_name: node.class_name,
-          instance_id: node.instance_id,
-          function: node.function,
-          qualified_name: node.qualified_name,
-          file: node.file,
-          line: node.line,
-          loc: node.loc,
-          arg_examples: node.arg_examples,
-          return_examples: node.return_examples,
-          call_count: Number(node.call_count || 0),
-          fan_in: Number(node.fan_in || 0),
-          fan_out: Number(node.fan_out || 0),
-          size: 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4)
-        },
-        classes: "unseen"
-      }));
+      .map((node) => {
+        const label = node.function || node.label || node.id;
+        const isIo = node.type === "io";
+        const isExternalService = node.type === "external_service";
+        const ioWidth = ioNodeWidth(label);
+        return {
+          data: {
+            id: node.id,
+            owner: node.owner,
+            source_node_id: node.source_node_id,
+            parent: parentForFunction(node),
+            label,
+            type: node.type,
+            module: node.module,
+            class_name: node.class_name,
+            instance_id: node.instance_id,
+            function: node.function,
+            io_category: node.io_category,
+            qualified_name: node.qualified_name,
+            file: node.file,
+            line: node.line,
+            loc: node.loc,
+            arg_examples: node.arg_examples,
+            return_examples: node.return_examples,
+            call_count: Number(node.call_count || 0),
+            fan_in: Number(node.fan_in || 0),
+            fan_out: Number(node.fan_out || 0),
+            degree: Number(node.fan_in || 0) + Number(node.fan_out || 0),
+            size: isIo ? 52 : isExternalService ? 78 : 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4),
+            io_width: ioWidth,
+            io_height: 86,
+            io_label_width: ioWidth - 34
+          },
+          classes: isIo ? "unseen hidden io-capsule" : isExternalService ? "unseen hidden external-service" : "unseen hidden"
+        };
+      });
 
     const renderedNodeIds = new Set([
       ...visibleActorIds,
       ...methodNodes.map((node) => node.data.id)
     ]);
+
+    function visualNodeData(id) {
+      if (!id) return null;
+      return observedCallables.get(id) || rawNodes.get(id) || null;
+    }
 
     const archEdges = Array.from(archEdgeCounts.values())
       .filter((edge) => visibleActorIds.has(edge.source) && visibleActorIds.has(edge.target))
@@ -813,11 +1139,12 @@
         source: edge.source,
         target: edge.target,
         type: "runtime-call",
+        io_category: (visualNodeData(edge.source)?.io_category || visualNodeData(edge.target)?.io_category) || null,
         weight: edge.call_count,
         first_seen: edge.first_seen,
         last_seen: edge.last_seen
       },
-      classes: "unseen"
+      classes: "unseen hidden"
     }));
 
     const returnEdgeCounts = new Map();
@@ -846,11 +1173,12 @@
         source: edge.source,
         target: edge.target,
         type: "runtime-return",
+        io_category: (visualNodeData(edge.source)?.io_category || visualNodeData(edge.target)?.io_category) || null,
         weight: edge.return_count,
         first_seen: edge.first_seen,
         last_seen: edge.last_seen
       },
-      classes: "unseen"
+      classes: "unseen hidden"
     }));
 
     document.getElementById("actor-count").textContent = String(actorNodes.length);
@@ -875,11 +1203,7 @@
           "height": "data(size)",
           "border-width": "mapData(degree, 0, 8, 1, 7)",
           "border-color": "rgba(229, 238, 252, 0.38)",
-          "shadow-blur": 24,
-          "shadow-opacity": 0.28,
-          "shadow-offset-x": 0,
-          "shadow-offset-y": 0,
-          "transition-property": "background-color, border-color, opacity, shadow-blur",
+          "transition-property": "background-color, border-color, opacity",
           "transition-duration": "180ms"
         } },
         { selector: ".container", style: {
@@ -894,43 +1218,78 @@
           "border-style": "solid",
           "font-size": 13,
           "font-weight": 800,
-          "text-margin-y": -10
+          "text-margin-y": -10,
+          "width": "data(width)",
+          "height": "data(height)",
+          "min-width": "data(width)",
+          "min-height": "data(height)"
         } },
         { selector: 'node[type = "module"]', style: {
           "shape": "round-rectangle",
           "background-color": "#0f766e",
-          "border-color": "#5eead4",
-          "shadow-color": "#38dce2"
+          "border-color": "#5eead4"
         } },
         { selector: 'node[type = "instance"]', style: {
           "shape": "round-rectangle",
           "background-color": "#0e7490",
           "border-color": "#67e8f9",
           "background-opacity": 0.16,
-          "font-size": 12,
-          "shadow-color": "#38dce2"
+          "font-size": 12
         } },
         { selector: ".role-entrypoint", style: {
           "border-color": "#fda4af",
-          "border-width": 5,
-          "shadow-color": "#fb7185",
-          "shadow-blur": 34,
-          "shadow-opacity": 0.42
+          "border-width": 5
         } },
         { selector: 'node[type = "method"]', style: {
           "shape": "round-rectangle",
           "background-color": "#b45309",
           "border-color": "#fcd34d",
-          "font-size": 9,
-          "shadow-color": "#f59e0b"
+          "font-size": 9
         } },
         { selector: 'node[type = "function"]', style: {
           "shape": "round-rectangle",
           "background-color": "#15803d",
           "border-color": "#86efac",
           "border-style": "dashed",
-          "font-size": 9,
-          "shadow-color": "#22c55e"
+          "font-size": 9
+        } },
+        { selector: 'node[type = "io"]', style: {
+          "shape": "barrel",
+          "width": "data(io_width)",
+          "height": "data(io_height)",
+          "background-color": "#1f6f8b",
+          "background-opacity": 0.94,
+          "border-color": "#9fd7e9",
+          "border-width": 3,
+          "font-size": 15,
+          "font-weight": 800,
+          "color": "#ffffff",
+          "text-max-width": "data(io_label_width)",
+          "text-outline-width": 2,
+          "text-outline-color": "#0f172a"
+        } },
+        { selector: 'node[type = "io"][io_category = "file"]', style: {
+          "background-color": "#4f2a88",
+          "border-color": "#d8c8ff"
+        } },
+        { selector: 'node[type = "io"][io_category = "stdout"]', style: {
+          "background-color": "#7a4d12",
+          "border-color": "#ffe4a3"
+        } },
+        { selector: 'node[type = "external_service"]', style: {
+          "shape": "diamond",
+          "width": "data(size)",
+          "height": "data(size)",
+          "background-color": "#92400e",
+          "background-opacity": 0.9,
+          "border-color": "#fbbf24",
+          "border-width": 3,
+          "font-size": 11,
+          "font-weight": 800,
+          "color": "#fff7ed",
+          "text-max-width": 76,
+          "text-outline-width": 2,
+          "text-outline-color": "#0f172a"
         } },
         { selector: "edge", style: {
           "curve-style": "bezier",
@@ -958,12 +1317,34 @@
         { selector: 'edge[type = "runtime-return"]', style: {
           "curve-style": "unbundled-bezier",
           "line-style": "dashed",
+          "control-point-distances": 110,
+          "control-point-weights": 0.5,
           "line-color": "#38dce2",
           "target-arrow-color": "#38dce2",
           "opacity": 0.78,
-          "control-point-distances": 90,
-          "control-point-weights": 0.5,
-          "line-dash-pattern": [8, 6]
+          "line-dash-pattern": [8, 6],
+          "arrow-scale": 1.2
+        } },
+        { selector: 'edge[type = "runtime-call"][io_category = "stdout"]', style: {
+          "line-color": "#c084fc",
+          "target-arrow-color": "#c084fc",
+          "width": "mapData(weight, 1, 12, 1.8, 9)",
+          "opacity": 0.87
+        } },
+        { selector: 'edge[type = "runtime-call"][io_category = "file"]', style: {
+          "line-color": "#a78bfa",
+          "target-arrow-color": "#a78bfa",
+          "line-style": "solid"
+        } },
+        { selector: 'edge[type = "runtime-call"][io_category = "db"]', style: {
+          "line-color": "#f472b6",
+          "target-arrow-color": "#f472b6",
+          "line-style": "solid"
+        } },
+        { selector: 'edge[type = "runtime-call"][io_category = "network"]', style: {
+          "line-color": "#fbbf24",
+          "target-arrow-color": "#fbbf24",
+          "line-style": "solid"
         } },
         { selector: ".unseen", style: {
           "opacity": 0,
@@ -978,30 +1359,41 @@
           "line-color": "#fb7185",
           "target-arrow-color": "#fb7185",
           "background-color": "#fb7185",
-          "border-color": "#fecdd3",
-          "shadow-blur": 46,
-          "shadow-opacity": 0.72,
-          "shadow-color": "#fb7185"
+          "border-color": "#fecdd3"
+        } },
+        { selector: 'node[type = "io"].current', style: {
+          "background-opacity": 1,
+          "border-width": 4,
+          "border-color": "#ffffff"
+        } },
+        { selector: 'node[type = "io"][io_category = "file"].current', style: {
+          "background-color": "#4f2a88"
+        } },
+        { selector: 'node[type = "io"][io_category = "db"].current', style: {
+          "background-color": "#1f6f8b"
+        } },
+        { selector: 'node[type = "io"][io_category = "stdout"].current', style: {
+          "background-color": "#7a4d12"
+        } },
+        { selector: 'node[type = "external_service"].current', style: {
+          "background-color": "#92400e",
+          "border-color": "#ffffff",
+          "border-width": 4
         } },
         { selector: 'edge[type = "runtime-return"].current', style: {
           "line-color": "#38dce2",
-          "target-arrow-color": "#38dce2",
-          "shadow-color": "#38dce2"
+          "target-arrow-color": "#38dce2"
         } },
         { selector: ".pulse", style: {
           "opacity": 1,
           "border-color": "#ffffff",
           "line-color": "#ffffff",
-          "target-arrow-color": "#ffffff",
-          "shadow-blur": 60,
-          "shadow-opacity": 0.9
+          "target-arrow-color": "#ffffff"
         } },
         { selector: ".focus", style: {
           "opacity": 1,
           "z-index": 30,
-          "border-color": "#ffffff",
-          "shadow-blur": 36,
-          "shadow-opacity": 0.52
+          "border-color": "#ffffff"
         } }
       ],
       layout: {
@@ -1016,21 +1408,73 @@
         numIter: 1400
       }
     });
+    window.cy = cy;
+
+    const handleContainer = document.getElementById("resize-handles");
+    resizeHandleNames.forEach((handleName) => {
+      const handle = handleContainer.querySelector(`[data-handle="${handleName}"]`);
+      if (handle) {
+        resizeHandleByName.set(handleName, handle);
+      }
+    });
 
     cy.on("tap", "node", (event) => selectNode(event.target.id()));
+    cy.on("mousemove", (event) => {
+      if (activeResizeDrag || selectedContainerId) {
+        return;
+      }
+      const rendered = event.renderedPosition;
+      if (!rendered) return;
+      const containerId = parentContainerAtRenderedPoint(rendered);
+      if (hoveredContainerId !== containerId) {
+        hoveredContainerId = containerId;
+        maybeRenderResizeControls();
+      }
+    });
+    document.getElementById("cy").addEventListener("mouseleave", () => {
+      if (!selectedContainerId) {
+        hoveredContainerId = null;
+        maybeRenderResizeControls();
+      }
+    });
+    const cyElement = document.getElementById("cy");
+    cyElement.addEventListener("pointerdown", startManualNodeMove);
+    document.addEventListener("pointermove", updateManualNodeMove);
+    document.addEventListener("pointerup", endManualNodeMove);
+    document.addEventListener("pointercancel", endManualNodeMove);
+    cy.on("drag", "node", () => {
+      hideResizeUI();
+    });
+    cy.on("free", "node", () => {
+      renderResizeHandles();
+    });
+    cy.on("grab", "node", (event) => {
+      dragStartPositions.set(event.target.id(), { ...event.target.position() });
+      hideResizeUI();
+    });
+    cy.on("free", "node", (event) => {
+      enforceNodeMoveConstraints(event.target);
+      renderResizeHandles();
+    });
     document.getElementById("back").addEventListener("click", () => step(-1));
     document.getElementById("forward").addEventListener("click", () => step(1));
     document.getElementById("play").addEventListener("click", togglePlay);
-    document.getElementById("timeline").max = String(Math.max(0, events.length - 1));
+    document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("timeline").addEventListener("input", (event) => {
       current = Number(event.target.value);
       renderEvent();
     });
+    document.getElementById("resize-wider").addEventListener("click", () => resizeSelectedContainer("width", 28));
+    document.getElementById("resize-taller").addEventListener("click", () => resizeSelectedContainer("height", 28));
+    document.getElementById("resize-narrower").addEventListener("click", () => resizeSelectedContainer("width", -28));
+    document.getElementById("resize-shorter").addEventListener("click", () => resizeSelectedContainer("height", -28));
+    document.getElementById("timeline").max = String(Math.max(0, events.length - 1));
+    initializeResizeHandles();
+    cy.on("zoom pan", renderResizeHandles);
 
     let current = events.length ? 0 : -1;
     let playTimer = null;
     let currentReplayMetrics = null;
-    let furthestRevealedEvent = -1;
     const revealedElementIds = new Set();
     document.getElementById("counter").textContent = `0 / ${events.length}`;
     showOverview();
@@ -1042,6 +1486,565 @@
       const ownerId = shellForNode(selected) || id;
       revealForOwner(ownerId, [id]);
       showNode(id);
+      const node = cy.getElementById(id);
+      const raw = node.empty() ? null : node.data();
+      selectedContainerId = raw && (raw.type === "module" || raw.type === "instance")
+        ? id
+        : (raw?.parent || null);
+      hoveredContainerId = null;
+      maybeRenderResizeControls();
+      renderResizeHandles();
+    }
+
+    function parentContainerAtRenderedPoint(rendered) {
+      const containers = cy.nodes().filter((candidate) => candidate.isParent() && !candidate.hasClass("unseen"));
+      let bestMatch = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      let bestArea = Number.POSITIVE_INFINITY;
+      const x = Number(rendered.x || 0);
+      const y = Number(rendered.y || 0);
+      for (const container of containers) {
+        const bbox = container.renderedBoundingBox({ includeNodes: false, includeLabels: false });
+        if (!bbox) continue;
+        if (x < bbox.x1 || x > bbox.x2 || y < bbox.y1 || y > bbox.y2) {
+          continue;
+        }
+        const distanceToEdge = Math.min(x - bbox.x1, bbox.x2 - x, y - bbox.y1, bbox.y2 - y);
+        if (distanceToEdge > containerResizeEdgePx) {
+          continue;
+        }
+        const area = (bbox.x2 - bbox.x1) * (bbox.y2 - bbox.y1);
+        if (distanceToEdge < bestDistance || (distanceToEdge === bestDistance && area < bestArea)) {
+          bestMatch = container;
+          bestDistance = distanceToEdge;
+          bestArea = area;
+        }
+      }
+      return bestMatch ? bestMatch.id() : null;
+    }
+
+    function renderedBoxForNode(node) {
+      const renderedPosition = node.renderedPosition();
+      const renderedWidth = Number(node.renderedWidth?.() || 0);
+      const renderedHeight = Number(node.renderedHeight?.() || 0);
+      return {
+        x1: renderedPosition.x - renderedWidth / 2,
+        y1: renderedPosition.y - renderedHeight / 2,
+        x2: renderedPosition.x + renderedWidth / 2,
+        y2: renderedPosition.y + renderedHeight / 2,
+        width: renderedWidth,
+        height: renderedHeight
+      };
+    }
+
+    function draggableNodeAtRenderedPoint(point) {
+      const visibleNodes = cy.nodes().filter((node) => !node.hasClass("unseen") && !node.hasClass("hidden"));
+      let edgeContainer = null;
+      let smallestContainer = null;
+      let smallestContainerArea = Number.POSITIVE_INFINITY;
+      let smallestNode = null;
+      let smallestArea = Number.POSITIVE_INFINITY;
+      visibleNodes.forEach((node) => {
+        const box = renderedBoxForNode(node);
+        if (point.x < box.x1 || point.x > box.x2 || point.y < box.y1 || point.y > box.y2) {
+          return;
+        }
+        if (node.isParent()) {
+          const distanceToEdge = Math.min(point.x - box.x1, box.x2 - point.x, point.y - box.y1, box.y2 - point.y);
+          if (distanceToEdge <= containerResizeEdgePx * 1.5) {
+            edgeContainer = node;
+          }
+          const area = box.width * box.height;
+          if (area < smallestContainerArea) {
+            smallestContainerArea = area;
+            smallestContainer = node;
+          }
+          return;
+        }
+        const area = box.width * box.height;
+        if (area < smallestArea) {
+          smallestArea = area;
+          smallestNode = node;
+        }
+      });
+      return edgeContainer || smallestNode || smallestContainer;
+    }
+
+    function startManualNodeMove(event) {
+      if (activeResizeDrag || event.button !== 0) return;
+      const rect = cyElement.getBoundingClientRect();
+      const rendered = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const node = draggableNodeAtRenderedPoint(rendered);
+      if (!node || node.empty()) return;
+      activeNodeMove = {
+        id: node.id(),
+        startX: event.clientX,
+        startY: event.clientY,
+        startPosition: { ...node.position() },
+        zoom: cy.zoom(),
+        pointerId: event.pointerId
+      };
+      dragStartPositions.set(node.id(), { ...node.position() });
+      stopPlay();
+      hideResizeUI();
+      if (node.isParent()) {
+        selectedContainerId = node.id();
+        hoveredContainerId = null;
+      } else {
+        const parent = node.parent();
+        selectedContainerId = parent && !parent.empty() ? parent.id() : null;
+      }
+      cy.userPanningEnabled(false);
+      cyElement.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    }
+
+    function updateManualNodeMove(event) {
+      if (!activeNodeMove) return;
+      const node = cy.getElementById(activeNodeMove.id);
+      if (!node || node.empty()) return;
+      const candidate = {
+        x: activeNodeMove.startPosition.x + (event.clientX - activeNodeMove.startX) / activeNodeMove.zoom,
+        y: activeNodeMove.startPosition.y + (event.clientY - activeNodeMove.startY) / activeNodeMove.zoom
+      };
+      if (canPlaceNodeAt(node, candidate)) {
+        node.position(candidate);
+        const parent = node.parent();
+        if (parent && !parent.empty()) applyContainerSizeLimits(parent);
+        renderResizeHandles();
+      }
+      event.preventDefault();
+    }
+
+    function endManualNodeMove(event) {
+      if (!activeNodeMove) return;
+      const node = cy.getElementById(activeNodeMove.id);
+      enforceNodeMoveConstraints(node);
+      cy.userPanningEnabled(true);
+      if (activeNodeMove.pointerId !== undefined) {
+        try {
+          cyElement.releasePointerCapture?.(activeNodeMove.pointerId);
+        } catch (_error) {
+          // no-op: ignore platforms that do not support pointer capture.
+        }
+      }
+      activeNodeMove = null;
+      maybeRenderResizeControls();
+      renderResizeHandles();
+      event?.preventDefault?.();
+    }
+
+    function canPlaceNodeAt(node, position) {
+      const parent = node.parent();
+      const peers = visiblePeersForNode(node);
+      const outsideParent = parent && !parent.empty() && !isNodeInsideParent(node, position, parent);
+      const overlapsPeer = overlapsVisibleNode(node, position, peers, 0);
+      return !outsideParent && !overlapsPeer;
+    }
+
+    function initializeResizeHandles() {
+      for (const handleName of resizeHandleNames) {
+        const handle = resizeHandleByName.get(handleName);
+        if (!handle) continue;
+        handle.setAttribute("tabindex", "0");
+        handle.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          if (event.button !== undefined && event.button !== 0 && event.button !== -1) return;
+          startResizeDrag(event, handleName);
+        });
+      }
+    }
+
+    function startResizeDrag(event, handleName) {
+      const container = activeResizeContainer();
+      if (!container || !container.isParent()) return;
+      selectedContainerId = container.id();
+      hoveredContainerId = container.id();
+      resizeStartState = {
+        containerId: container.id(),
+        handle: handleName,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: Number(container.width?.() || container.data("width") || containerDefaultMinWidth),
+        startHeight: Number(container.height?.() || container.data("height") || containerDefaultMinHeight),
+        startPos: { ...container.position() },
+        zoom: cy.zoom(),
+        pointerId: event.pointerId
+      };
+      activeResizeDrag = handleName;
+      stopPlay();
+      if (event.currentTarget && event.currentTarget.setPointerCapture) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+      document.addEventListener("pointermove", onResizeDragMove);
+      document.addEventListener("pointerup", onResizeDragEnd);
+      document.addEventListener("pointercancel", onResizeDragEnd);
+    }
+
+    function onResizeDragMove(event) {
+      if (!activeResizeDrag || !resizeStartState) return;
+      const container = cy.getElementById(resizeStartState.containerId);
+      if (!container || container.empty() || !container.isParent()) return;
+      const deltaX = (event.clientX - resizeStartState.startX) / resizeStartState.zoom;
+      const deltaY = (event.clientY - resizeStartState.startY) / resizeStartState.zoom;
+      let nextWidth = resizeStartState.startWidth;
+      let nextHeight = resizeStartState.startHeight;
+      const nextPos = { ...resizeStartState.startPos };
+      switch (resizeStartState.handle) {
+        case "left": {
+          nextWidth = resizeStartState.startWidth - deltaX;
+          nextPos.x = resizeStartState.startPos.x + deltaX / 2;
+          break;
+        }
+        case "right": {
+          nextWidth = resizeStartState.startWidth + deltaX;
+          break;
+        }
+        case "top": {
+          nextHeight = resizeStartState.startHeight - deltaY;
+          nextPos.y = resizeStartState.startPos.y + deltaY / 2;
+          break;
+        }
+        case "bottom": {
+          nextHeight = resizeStartState.startHeight + deltaY;
+          break;
+        }
+        case "top-left": {
+          nextWidth = resizeStartState.startWidth - deltaX;
+          nextHeight = resizeStartState.startHeight - deltaY;
+          nextPos.x = resizeStartState.startPos.x + deltaX / 2;
+          nextPos.y = resizeStartState.startPos.y + deltaY / 2;
+          break;
+        }
+        case "top-right": {
+          nextWidth = resizeStartState.startWidth + deltaX;
+          nextHeight = resizeStartState.startHeight - deltaY;
+          nextPos.y = resizeStartState.startPos.y + deltaY / 2;
+          break;
+        }
+        case "bottom-left": {
+          nextWidth = resizeStartState.startWidth - deltaX;
+          nextHeight = resizeStartState.startHeight + deltaY;
+          nextPos.x = resizeStartState.startPos.x + deltaX / 2;
+          break;
+        }
+        case "bottom-right": {
+          nextWidth = resizeStartState.startWidth + deltaX;
+          nextPos.x = resizeStartState.startPos.x;
+          nextHeight = resizeStartState.startHeight + deltaY;
+          break;
+        }
+        default:
+          break;
+      }
+      applyContainerSizeCandidate(container, {
+        width: nextWidth,
+        height: nextHeight,
+        x: nextPos.x,
+        y: nextPos.y
+      });
+    }
+
+    function onResizeDragEnd() {
+      if (!activeResizeDrag) return;
+      const container = resizeStartState ? cy.getElementById(resizeStartState.containerId) : null;
+      const activeHandle = resizeHandleByName.get(activeResizeDrag);
+      const pointerId = resizeStartState?.pointerId;
+      activeResizeDrag = null;
+      resizeStartState = null;
+      document.removeEventListener("pointermove", onResizeDragMove);
+      document.removeEventListener("pointerup", onResizeDragEnd);
+      document.removeEventListener("pointercancel", onResizeDragEnd);
+      if (activeHandle && activeHandle.releasePointerCapture && pointerId !== undefined) {
+        try {
+          activeHandle.releasePointerCapture(pointerId);
+        } catch (_error) {
+          // no-op: ignore platforms that do not support pointer capture.
+        }
+      }
+      if (!container || container.empty()) {
+        return;
+      }
+      maybeRenderResizeControls();
+      renderResizeHandles();
+    }
+
+    function activeResizeContainer() {
+      const activeId = selectedContainerId || hoveredContainerId;
+      if (!activeId) return null;
+      const container = cy.getElementById(activeId);
+      if (!container || container.empty() || !container.isParent() || container.hasClass("unseen")) return null;
+      return container;
+    }
+
+    function hideResizeUI() {
+      const control = document.getElementById("resize-controls");
+      const handleLayer = document.getElementById("resize-handles");
+      control.classList.add("hidden");
+      handleLayer.classList.add("hidden");
+    }
+
+    function maybeRenderResizeControls() {
+      const control = document.getElementById("resize-controls");
+      const container = activeResizeContainer();
+      if (!container) {
+        control.classList.add("hidden");
+        hideResizeUI();
+        return;
+      }
+      const data = container.data();
+      const currentWidth = Math.max(1, Number(data.width || 0));
+      const currentHeight = Math.max(1, Number(data.height || 0));
+      const minWidth = Math.max(1, Number(data.min_width || containerDefaultMinWidth));
+      const minHeight = Math.max(1, Number(data.min_height || containerDefaultMinHeight));
+      const canShrinkW = currentWidth > minWidth + 6;
+      const canShrinkH = currentHeight > minHeight + 6;
+      control.classList.remove("hidden");
+      document.getElementById("resize-summary").textContent = `${data.label} · ${Math.round(currentWidth)}×${Math.round(currentHeight)} (minimum ${Math.round(minWidth)}×${Math.round(minHeight)})`;
+      document.getElementById("resize-wider").disabled = false;
+      document.getElementById("resize-taller").disabled = false;
+      document.getElementById("resize-narrower").disabled = !canShrinkW;
+      document.getElementById("resize-shorter").disabled = !canShrinkH;
+      renderResizeHandles();
+    }
+
+    function renderResizeHandles() {
+      const handleLayer = document.getElementById("resize-handles");
+      const container = activeResizeContainer();
+      if (!container) {
+        handleLayer.classList.add("hidden");
+        return;
+      }
+      const stage = document.querySelector(".stage");
+      const stageRect = stage.getBoundingClientRect();
+      const renderedPosition = container.renderedPosition();
+      const renderedWidth = Number(container.renderedWidth?.() || 0);
+      const renderedHeight = Number(container.renderedHeight?.() || 0);
+      if (!stageRect || !renderedPosition || renderedWidth < 24 || renderedHeight < 24) {
+        handleLayer.classList.add("hidden");
+        return;
+      }
+      const left = renderedPosition.x - renderedWidth / 2;
+      const right = renderedPosition.x + renderedWidth / 2;
+      const top = renderedPosition.y - renderedHeight / 2;
+      const bottom = renderedPosition.y + renderedHeight / 2;
+      const centerX = (left + right) / 2;
+      const centerY = (top + bottom) / 2;
+      const leftX = left + 2;
+      const rightX = right - 2;
+      const topY = top + 2;
+      const bottomY = bottom - 2;
+      const topHandle = resizeHandleByName.get("top");
+      const rightHandle = resizeHandleByName.get("right");
+      const bottomHandle = resizeHandleByName.get("bottom");
+      const leftHandle = resizeHandleByName.get("left");
+      const topLeftHandle = resizeHandleByName.get("top-left");
+      const topRightHandle = resizeHandleByName.get("top-right");
+      const bottomLeftHandle = resizeHandleByName.get("bottom-left");
+      const bottomRightHandle = resizeHandleByName.get("bottom-right");
+      if (!topHandle || !rightHandle || !bottomHandle || !leftHandle || !topLeftHandle || !topRightHandle || !bottomLeftHandle || !bottomRightHandle) {
+        return;
+      }
+      topHandle.style.left = `${centerX - 12}px`;
+      topHandle.style.top = `${topY - 4}px`;
+      rightHandle.style.left = `${rightX - 4}px`;
+      rightHandle.style.top = `${centerY - 12}px`;
+      bottomHandle.style.left = `${centerX - 12}px`;
+      bottomHandle.style.top = `${bottomY - 3}px`;
+      leftHandle.style.left = `${leftX - 3}px`;
+      leftHandle.style.top = `${centerY - 12}px`;
+      topLeftHandle.style.left = `${leftX - 7}px`;
+      topLeftHandle.style.top = `${topY - 7}px`;
+      topRightHandle.style.left = `${rightX - 7}px`;
+      topRightHandle.style.top = `${topY - 7}px`;
+      bottomLeftHandle.style.left = `${leftX - 7}px`;
+      bottomLeftHandle.style.top = `${bottomY - 7}px`;
+      bottomRightHandle.style.left = `${rightX - 7}px`;
+      bottomRightHandle.style.top = `${bottomY - 7}px`;
+      handleLayer.classList.remove("hidden");
+    }
+
+    function applyContainerSizeCandidate(container, candidate) {
+      if (!container || !container.isParent() || !candidate) return;
+      const parent = container.parent();
+      const baseWidth = Number(container.data("base_width") || containerDefaultMinWidth);
+      const baseHeight = Number(container.data("base_height") || containerDefaultMinHeight);
+      const requestedWidth = Math.max(1, Number(candidate.width || container.data("width") || containerDefaultMinWidth));
+      const requestedHeight = Math.max(1, Number(candidate.height || container.data("height") || containerDefaultMinHeight));
+      const candidatePos = { x: candidate.x, y: candidate.y };
+      const rollback = {
+        manualWidth: Number(container.data("manual_width") || 0),
+        manualHeight: Number(container.data("manual_height") || 0),
+        width: Number(container.width?.() || container.data("width") || containerDefaultMinWidth),
+        height: Number(container.height?.() || container.data("height") || containerDefaultMinHeight),
+        position: { ...container.position() }
+      };
+      container.data("manual_width", requestedWidth - baseWidth);
+      container.data("manual_height", requestedHeight - baseHeight);
+      applyContainerSizeLimits(container);
+      container.position(candidatePos);
+      const peers = visiblePeersForNode(container).filter((peer) => !peer.hasClass("unseen") && peer.id() !== container.id());
+      const minWidth = Number(container.data("min_width") || containerDefaultMinWidth);
+      const minHeight = Number(container.data("min_height") || containerDefaultMinHeight);
+      const finalWidth = Number(container.data("width") || 0);
+      const finalHeight = Number(container.data("height") || 0);
+      if (finalWidth < minWidth || finalHeight < minHeight) {
+        container.data("manual_width", minWidth - baseWidth);
+        container.data("manual_height", minHeight - baseHeight);
+        applyContainerSizeLimits(container);
+      }
+      const nextWidth = Number(container.width?.() || container.data("width") || containerDefaultMinWidth);
+      const nextHeight = Number(container.height?.() || container.data("height") || containerDefaultMinHeight);
+      const allowedByParent = isNodeInsideParent(container, candidatePos, parent, nextWidth, nextHeight);
+      const allowedByPeers = !overlapsCandidateNode(container, candidatePos, nextWidth, nextHeight, peers, 12);
+      if (!allowedByParent || !allowedByPeers) {
+        container.data("manual_width", rollback.manualWidth);
+        container.data("manual_height", rollback.manualHeight);
+        applyContainerSizeLimits(container);
+        container.position(rollback.position);
+        return;
+      }
+    }
+
+    function resizeSelectedContainer(axis, delta) {
+      if (!selectedContainerId) return;
+      const container = cy.getElementById(selectedContainerId);
+      if (!container || container.empty() || !container.isParent()) return;
+      const width = Number(container.data("width") || container.width?.() || containerDefaultMinWidth) + (axis === "width" ? delta : 0);
+      const height = Number(container.data("height") || container.height?.() || containerDefaultMinHeight) + (axis === "height" ? delta : 0);
+      applyContainerSizeCandidate(container, {
+        width,
+        height,
+        x: container.position().x,
+        y: container.position().y
+      });
+      maybeRenderResizeControls();
+    }
+
+    function enforceNodeMoveConstraints(node) {
+      if (!node || !node.isNode || !node.isNode()) return;
+      const draggedFrom = dragStartPositions.get(node.id());
+      const peers = visiblePeersForNode(node);
+      const current = node.position();
+      const parent = node.parent();
+      const outsideParent = parent && !parent.empty() && !isNodeInsideParent(node, current, parent);
+      const overlapsPeer = overlapsVisibleNode(node, current, peers, 0);
+      if (!outsideParent && !overlapsPeer) {
+        applyContainerSizeLimits(node);
+        if (parent && !parent.empty()) {
+          applyContainerSizeLimits(parent);
+        }
+        return;
+      }
+      if (draggedFrom) {
+        node.position(draggedFrom);
+      }
+    }
+
+    function visiblePeersForNode(node) {
+      let peers = cy.nodes().filter((candidate) => !candidate.hasClass("unseen") && candidate.id() !== node.id());
+      const parent = node.parent();
+      const hasParent = parent && !parent.empty();
+      if (node.isParent()) {
+        const descendants = new Set(node.descendants().map((item) => item.id()));
+        peers = peers.filter((candidate) => !descendants.has(candidate.id()));
+        if (hasParent) {
+          peers = peers.filter((candidate) => {
+            const candidateParent = candidate.parent();
+            return candidateParent && !candidateParent.empty() && candidateParent.id() === parent.id();
+          });
+        } else {
+          peers = peers.filter((candidate) => {
+            const candidateParent = candidate.parent();
+            return !candidateParent || candidateParent.empty();
+          });
+        }
+        return peers;
+      }
+      if (hasParent) {
+        peers = peers.filter((candidate) => {
+          const candidateParent = candidate.parent();
+          return candidateParent && !candidateParent.empty() && candidateParent.id() === parent.id();
+        });
+      } else {
+        peers = peers.filter((candidate) => {
+          const candidateParent = candidate.parent();
+          return !candidateParent || candidateParent.empty();
+        });
+      }
+      return peers;
+    }
+
+    function keepNodeInsideParent(node) {
+      const parent = node.parent();
+      if (!parent || parent.empty()) return;
+      const nodeHalfWidth = Number(node.width?.() || node.data("size") || 42) / 2;
+      const nodeHalfHeight = Number(node.height?.() || node.data("size") || 42) / 2;
+      const parentWidth = Number(parent.width?.() || parent.data("width") || containerDefaultMinWidth);
+      const parentHeight = Number(parent.height?.() || parent.data("height") || containerDefaultMinHeight);
+      const parentX = parent.position().x;
+      const parentY = parent.position().y;
+      const margin = 14;
+      const nextPosition = {
+        x: node.position().x,
+        y: node.position().y
+      };
+      if (nodeHalfWidth * 2 >= parentWidth - margin * 2) {
+        parent.data("min_width", Math.max(parent.data("min_width"), parentWidth + 48));
+        parent.data("width", Math.max(parent.data("width"), parentWidth + 48));
+      }
+      if (nodeHalfHeight * 2 >= parentHeight - margin * 2) {
+        parent.data("min_height", Math.max(parent.data("min_height"), parentHeight + 48));
+        parent.data("height", Math.max(parent.data("height"), parentHeight + 48));
+      }
+      nextPosition.x = Math.min(Math.max(nextPosition.x, parentX - parentWidth / 2 + nodeHalfWidth + margin), parentX + parentWidth / 2 - nodeHalfWidth - margin);
+      nextPosition.y = Math.min(Math.max(nextPosition.y, parentY - parentHeight / 2 + nodeHalfHeight + margin), parentY + parentHeight / 2 - nodeHalfHeight - margin);
+      node.position(nextPosition);
+    }
+
+    function isNodeInsideParent(node, position, parent, width = null, height = null) {
+      if (!parent || parent.empty()) return true;
+      const parentWidth = Number(parent.width?.() || parent.data("width") || containerDefaultMinWidth);
+      const parentHeight = Number(parent.height?.() || parent.data("height") || containerDefaultMinHeight);
+      const nodeWidth = Number(width ?? (node.width?.() || node.data("width") || node.data("size") || 42));
+      const nodeHeight = Number(height ?? (node.height?.() || node.data("height") || node.data("size") || 42));
+      const nodeHalfWidth = nodeWidth / 2 + 8;
+      const nodeHalfHeight = nodeHeight / 2 + 8;
+      const parentHalfWidth = parentWidth / 2;
+      const parentHalfHeight = parentHeight / 2;
+      return (
+        position.x - nodeHalfWidth >= parent.position().x - parentHalfWidth
+        && position.x + nodeHalfWidth <= parent.position().x + parentHalfWidth
+        && position.y - nodeHalfHeight >= parent.position().y - parentHalfHeight
+        && position.y + nodeHalfHeight <= parent.position().y + parentHalfHeight
+      );
+    }
+
+    function applyContainerSizeLimits(container) {
+      if (!container || !container.isParent()) return;
+      const baseWidth = Number(container.data("base_width") || containerDefaultMinWidth);
+      const baseHeight = Number(container.data("base_height") || containerDefaultMinHeight);
+      const required = containerRequiredBounds(container);
+      const requiredWidth = Math.max(1, required.width + containerPadding);
+      const requiredHeight = Math.max(1, required.height + containerPadding);
+      const manualWidth = Number(container.data("manual_width") || 0);
+      const manualHeight = Number(container.data("manual_height") || 0);
+      const minWidth = Math.max(containerDefaultMinWidth, baseWidth, requiredWidth);
+      const minHeight = Math.max(containerDefaultMinHeight, baseHeight, requiredHeight);
+      const rawTargetWidth = Math.max(baseWidth + manualWidth, minWidth);
+      const rawTargetHeight = Math.max(baseHeight + manualHeight, minHeight);
+      container.data({
+        width: rawTargetWidth,
+        height: rawTargetHeight,
+        min_width: minWidth,
+        min_height: minHeight
+      });
+      if (manualWidth < 0 && rawTargetWidth <= minWidth + 1) {
+        container.data("manual_width", minWidth - baseWidth);
+      }
+      if (manualHeight < 0 && rawTargetHeight <= minHeight + 1) {
+        container.data("manual_height", minHeight - baseHeight);
+      }
     }
 
     function revealForOwner(ownerId, extraIds = []) {
@@ -1072,17 +2075,49 @@
     }
 
     function syncVisibilityToReplay(index) {
-      if (index <= furthestRevealedEvent) return;
+      const visibleIds = visibleElementIdsAt(index);
+      cy.elements().forEach((element) => {
+        if (!visibleIds.has(element.id())) {
+          element.addClass("unseen hidden").removeClass("current focus pulse");
+        }
+      });
       for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
-        if (eventIndex <= furthestRevealedEvent) continue;
         revealEventElements(events[eventIndex]);
       }
-      furthestRevealedEvent = index;
+    }
+
+    function visibleElementIdsAt(index) {
+      const visibleIds = new Set();
+      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+        const event = events[eventIndex];
+        if (!event) continue;
+        collectEndpointElementIds(event.callee, visibleIds);
+        if (event.caller) collectEndpointElementIds(event.caller, visibleIds);
+        const sourceNode = visualCallableId(event.caller);
+        const targetNode = visualCallableId(event.callee);
+        const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
+        if (runtimeEdge && !runtimeEdge.empty()) visibleIds.add(runtimeEdge.id());
+      }
+      return visibleIds;
+    }
+
+    function collectEndpointElementIds(endpoint, visibleIds) {
+      if (!endpoint) return;
+      const callableId = visualCallableId(endpoint);
+      if (callableId) visibleIds.add(callableId);
+      const instanceId = instanceForEndpoint(endpoint);
+      if (instanceId) visibleIds.add(instanceId);
+      const ownerId = ownerForEndpoint(endpoint);
+      if (ownerId) visibleIds.add(ownerId);
+      const shell = rawNodes.get(ownerId);
+      if (shell?.type === "instance") visibleIds.add(moduleIdForName(shell.module));
     }
 
     function revealEndpoint(endpoint) {
       if (!endpoint) return;
-      revealShell(ownerForEndpoint(endpoint));
+      if (!(endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint))) {
+        revealShell(ownerForEndpoint(endpoint));
+      }
       revealElement(visualCallableId(endpoint));
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) revealElement(instanceId);
@@ -1115,15 +2150,54 @@
 
     function placeNewElement(element) {
       if (!element.isNode || !element.isNode()) return;
-      const visibleNodes = cy.nodes().not(".unseen").filter((node) => node.id() !== element.id());
-      if (!visibleNodes.length) return;
       const parent = element.parent();
       const hasParent = parent && !parent.empty();
-      const anchor = hasParent ? parent.position() : visibleCentroid(visibleNodes);
-      const minimumDistance = hasParent ? 62 : 150;
+      if (hasParent) {
+        placeNewChildElement(element, parent);
+        return;
+      }
+      const visibleNodes = visiblePeersForNode(element);
+      if (!visibleNodes.length) {
+        element.position({ x: 0, y: 0 });
+        applyContainerSizeLimits(element);
+        return;
+      }
+      const anchor = visibleCentroid(visibleNodes);
+      const minimumDistance = 150;
       const currentPosition = element.position();
-      if (!overlapsVisibleNode(currentPosition, visibleNodes, minimumDistance)) return;
-      element.position(firstOpenPosition(anchor, visibleNodes, minimumDistance));
+      const candidate = firstOpenPosition(anchor, visibleNodes, element, minimumDistance, parent);
+      if (candidate) {
+        element.position(candidate);
+      } else if (hasParent) {
+        const fallbackCandidate = findPlacementForNode(currentPosition, visiblePeersForNode(element), element, minimumDistance, parent);
+        if (fallbackCandidate) element.position(fallbackCandidate);
+      }
+      keepNodeInsideParent(element);
+      const owner = shellForNode(element.data());
+      if (owner) {
+        const ownerElement = cy.getElementById(owner);
+        applyContainerSizeLimits(ownerElement);
+      }
+    }
+
+    function placeNewChildElement(element, parent) {
+      const parentPosition = { ...parent.position() };
+      applyContainerSizeLimits(parent);
+      const siblings = parent.children().filter((node) => !node.hasClass("unseen") && node.id() !== element.id());
+      const minimumDistance = 46;
+      const anchor = siblings.length ? visibleCentroid(siblings) : parentPosition;
+      const siblingPeers = siblings.filter((node) => node.id() !== element.id());
+      let candidate = firstOpenPosition(anchor, siblingPeers, element, minimumDistance, parent);
+      if (!candidate) {
+        parent.data("manual_width", Number(parent.data("manual_width") || 0) + 64);
+        parent.data("manual_height", Number(parent.data("manual_height") || 0) + 44);
+        applyContainerSizeLimits(parent);
+        candidate = firstOpenPosition(anchor, siblingPeers, element, minimumDistance, parent);
+      }
+      element.position(candidate || parent.position());
+      keepNodeInsideParent(element);
+      applyContainerSizeLimits(parent);
+      parent.position(parentPosition);
     }
 
     function visibleCentroid(nodes) {
@@ -1139,29 +2213,129 @@
       return count ? { x: x / count, y: y / count } : { x: 0, y: 0 };
     }
 
-    function firstOpenPosition(anchor, visibleNodes, minimumDistance) {
-      const angles = [0, Math.PI / 3, (2 * Math.PI) / 3, Math.PI, (4 * Math.PI) / 3, (5 * Math.PI) / 3];
-      for (let radius = minimumDistance; radius <= minimumDistance * 6; radius += minimumDistance) {
+    function firstOpenPosition(anchor, visibleNodes, element, minimumDistance, parent = null) {
+      const baseRadius = Math.max(40, minimumDistance);
+      const angles = [0, Math.PI / 6, Math.PI / 3, Math.PI / 2, (2 * Math.PI) / 3, (5 * Math.PI) / 6, Math.PI, (7 * Math.PI) / 6, (4 * Math.PI) / 3, (3 * Math.PI) / 2, (5 * Math.PI) / 3, (11 * Math.PI) / 6];
+      const maxRadius = baseRadius * 12;
+      for (let radius = baseRadius; radius <= maxRadius; radius += baseRadius / 2) {
         for (const angle of angles) {
           const candidate = {
             x: anchor.x + Math.cos(angle) * radius,
             y: anchor.y + Math.sin(angle) * radius
           };
-          if (!overlapsVisibleNode(candidate, visibleNodes, minimumDistance)) return candidate;
+          if (!overlapsVisibleNode(element, candidate, visibleNodes, minimumDistance) && isNodeInsideParent(element, candidate, parent)) {
+            return candidate;
+          }
         }
       }
-      return { x: anchor.x + minimumDistance, y: anchor.y + minimumDistance };
+      if (!parent || parent.empty()) {
+        return { x: anchor.x + minimumDistance, y: anchor.y + minimumDistance };
+      }
+      return parent.position();
     }
 
-    function overlapsVisibleNode(position, visibleNodes, minimumDistance) {
+    function nodeBoundingBox(node, position = null, width = null, height = null) {
+      const nodeWidth = Number(width ?? (node.width?.() || node.data("width") || node.data("size") || 42));
+      const nodeHeight = Number(height ?? (node.height?.() || node.data("height") || node.data("size") || 42));
+      const point = position || node.position();
+      const pad = 2;
+      return {
+        x1: point.x - nodeWidth / 2 - pad,
+        y1: point.y - nodeHeight / 2 - pad,
+        x2: point.x + nodeWidth / 2 + pad,
+        y2: point.y + nodeHeight / 2 + pad
+      };
+    }
+
+    function overlapsVisibleNode(node, position, visibleNodes, minimumDistance) {
       let overlaps = false;
+      const active = nodeBoundingBox(node, position);
+      const safeDistance = minimumDistance || 0;
       visibleNodes.forEach((node) => {
         if (overlaps) return;
-        const other = node.position();
-        const distance = Math.hypot(position.x - other.x, position.y - other.y);
-        overlaps = distance < minimumDistance;
+        const target = nodeBoundingBox(node);
+        const expanded = {
+          x1: target.x1 - safeDistance,
+          y1: target.y1 - safeDistance,
+          x2: target.x2 + safeDistance,
+          y2: target.y2 + safeDistance
+        };
+        if (!(active.x2 < expanded.x1 || active.x1 > expanded.x2 || active.y2 < expanded.y1 || active.y1 > expanded.y2)) {
+          overlaps = true;
+        }
       });
       return overlaps;
+    }
+
+    function overlapsCandidateNode(node, position, width, height, visibleNodes, minimumDistance) {
+      let overlaps = false;
+      const active = nodeBoundingBox(node, position, width, height);
+      const safeDistance = minimumDistance || 0;
+      visibleNodes.forEach((peer) => {
+        if (overlaps) return;
+        const target = nodeBoundingBox(peer);
+        const expanded = {
+          x1: target.x1 - safeDistance,
+          y1: target.y1 - safeDistance,
+          x2: target.x2 + safeDistance,
+          y2: target.y2 + safeDistance
+        };
+        if (!(active.x2 < expanded.x1 || active.x1 > expanded.x2 || active.y2 < expanded.y1 || active.y1 > expanded.y2)) {
+          overlaps = true;
+        }
+      });
+      return overlaps;
+    }
+
+    function findPlacement(anchor, visibleNodes, element, minimumDistance, parent) {
+      if (!visibleNodes.length) return null;
+      for (let radius = 16; radius <= 240; radius += 16) {
+        for (let sector = 0; sector < 24; sector += 1) {
+          const angle = (Math.PI * 2 * sector) / 24;
+          const candidate = {
+            x: anchor.x + Math.cos(angle) * radius,
+            y: anchor.y + Math.sin(angle) * radius
+          };
+          if (!overlapsVisibleNode(element, candidate, visibleNodes, minimumDistance) && isNodeInsideParent(element, candidate, parent)) {
+            return candidate;
+          }
+        }
+      }
+      return null;
+    }
+
+    function findPlacementForNode(currentPosition, peers, element, minimumDistance, parent) {
+      const anchor = peers.length ? visibleCentroid(peers) : currentPosition;
+      const constrained = findPlacement(anchor, peers, element, minimumDistance, parent);
+      if (constrained) return constrained;
+      if (!parent || !parent.length) return null;
+      const parentCandidate = findPlacement(parent.position(), peers, element, minimumDistance, parent);
+      return parentCandidate;
+    }
+
+    function containerRequiredBounds(container) {
+      const children = container.children().filter((node) => !node.hasClass("unseen") && node.id() !== container.id());
+      if (!children.length) {
+        return {
+          width: Number(container.data("base_width") || containerDefaultMinWidth),
+          height: Number(container.data("base_height") || containerDefaultMinHeight)
+        };
+      }
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      children.forEach((node) => {
+        const box = nodeBoundingBox(node);
+        minX = Math.min(minX, box.x1);
+        minY = Math.min(minY, box.y1);
+        maxX = Math.max(maxX, box.x2);
+        maxY = Math.max(maxY, box.y2);
+      });
+      return {
+        width: Math.max(containerDefaultMinWidth, maxX - minX),
+        height: Math.max(containerDefaultMinHeight, maxY - minY)
+      };
     }
 
     function replayMetricsAt(index) {
@@ -1215,8 +2389,8 @@
         touch(sourceCallable, event.order);
 
         if (event.event_type === "call") {
-          targetActor.call_count += 1;
-          targetCallable.call_count += 1;
+          if (targetActor) targetActor.call_count += 1;
+          if (targetCallable) targetCallable.call_count += 1;
           if (sourceOwner && targetOwner && sourceOwner !== targetOwner) {
             sourceActor.outgoing.add(targetOwner);
             targetActor.incoming.add(sourceOwner);
@@ -1258,13 +2432,15 @@
         const incoming = metric?.incoming || new Set();
         const outgoing = metric?.outgoing || new Set();
         const callCount = Number(metric?.call_count || 0);
+        const nodeType = node.data.type;
+        const size = nodeType === "external_service" ? 78 + Math.min(18, callCount * 4 + outgoing.size * 3) : nodeType === "io" ? 52 : 22 + Math.min(22, callCount * 5 + outgoing.size * 4);
         cy.getElementById(node.data.id).data({
           call_count: callCount,
           fan_in: incoming.size,
           fan_out: outgoing.size,
           first_seen: metric?.first_seen,
           last_seen: metric?.last_seen,
-          size: 22 + Math.min(22, callCount * 5 + outgoing.size * 4)
+          size
         });
       }
       for (const edge of [...callEdges, ...returnEdges]) {
@@ -1432,23 +2608,37 @@
       document.getElementById("play").textContent = "Play";
     }
 
+    function toggleSidebar() {
+      const layout = document.getElementById("replay-layout");
+      const toggle = document.getElementById("sidebar-toggle");
+      const collapsed = layout.classList.toggle("sidebar-collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.setAttribute("aria-label", collapsed ? "Expand details panel" : "Collapse details panel");
+      toggle.setAttribute("title", collapsed ? "Expand details panel" : "Collapse details panel");
+      toggle.textContent = collapsed ? "‹" : "›";
+      window.setTimeout(() => {
+        cy.resize();
+        keepCurrentNodesInView();
+        renderResizeHandles();
+      }, 190);
+    }
+
     function renderEvent() {
       cy.elements().removeClass("current dimmed focus pulse");
       const event = events[current];
       if (!event) return;
-      const sourceOwner = ownerForEndpoint(event.caller);
-      const targetOwner = ownerForEndpoint(event.callee);
-      if (!targetOwner) return;
+      const sourceOwner = focusOwnerForEndpoint(event.caller);
+      const targetOwner = focusOwnerForEndpoint(event.callee);
+      syncVisibilityToReplay(current);
       currentReplayMetrics = replayMetricsAt(current);
       applyReplayMetrics(currentReplayMetrics);
-      syncVisibilityToReplay(current);
       const sourceNode = visualCallableId(event.caller);
       const targetNode = visualCallableId(event.callee);
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
       const sourceInstance = instanceForEndpoint(event.caller);
       const targetInstance = instanceForEndpoint(event.callee);
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
-      cy.getElementById(targetOwner).addClass("current");
+      if (targetOwner) cy.getElementById(targetOwner).addClass("current");
       if (sourceNode) cy.getElementById(sourceNode).removeClass("hidden").addClass("current");
       cy.getElementById(targetNode).removeClass("hidden").addClass("current");
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
@@ -1460,8 +2650,28 @@
       document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
       if (targetNode) showNode(targetNode);
-      focusCurrentElements();
+      maybeRenderResizeControls();
+      keepCurrentNodesInView();
       pulseCurrentElements();
+    }
+
+    function keepCurrentNodesInView() {
+      const activeNodes = cy.nodes(".current").filter((node) => !node.hasClass("hidden") && !node.hasClass("unseen"));
+      if (!activeNodes.length) return;
+      const box = activeNodes.renderedBoundingBox({ includeLabels: true, includeOverlays: true });
+      const margin = 86;
+      let dx = 0;
+      let dy = 0;
+      const stageWidth = cy.width();
+      const stageHeight = cy.height();
+      if (box.x1 < margin) dx = margin - box.x1;
+      if (box.x2 > stageWidth - margin) dx = Math.min(dx, stageWidth - margin - box.x2);
+      if (box.y1 < margin) dy = margin - box.y1;
+      if (box.y2 > stageHeight - margin) dy = Math.min(dy, stageHeight - margin - box.y2);
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      const pan = cy.pan();
+      cy.pan({ x: pan.x + dx, y: pan.y + dy });
+      renderResizeHandles();
     }
 
     function runtimeEdgeForEvent(event, sourceNode, targetNode) {
@@ -1469,16 +2679,6 @@
         return sourceNode ? cy.getElementById(`call:${sourceNode}->${targetNode}`) : null;
       }
       return sourceNode ? cy.getElementById(`return:${targetNode}->${sourceNode}`) : null;
-    }
-
-    function focusCurrentElements() {
-      const active = cy.$(".current");
-      if (!active || active.empty()) return;
-      const padding = active.length > 2 ? 150 : 190;
-      cy.stop();
-      window.setTimeout(() => {
-        cy.animate({ fit: { eles: active, padding } }, { duration: 360, easing: "ease-out-cubic" });
-      }, 230);
     }
 
     function pulseCurrentElements() {
@@ -1545,6 +2745,8 @@
     }
 
     function endpointKind(endpoint) {
+      if (externalServiceCategoryFor(endpoint)) return "external service";
+      if (endpoint.endpoint_type === "resource") return endpoint.resource_category || "resource";
       if (endpoint.class_name) return "method";
       return "function";
     }

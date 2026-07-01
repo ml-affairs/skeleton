@@ -25,6 +25,49 @@ class RecordingReportOpener:
 class TestRunCommand:
     """CLI run command behavior."""
 
+    @pytest.mark.parametrize(
+        "project_name",
+        [
+            "sample_project",
+            "sample_supply_chain",
+            "sample_orchestrated",
+            "sample_io_boundaries",
+        ],
+    )
+    def test_writes_trace_snapshot_workflow_report_for_fixtures(self, project_name: str) -> None:
+        # Given
+        project_root = Path(f"tests/fixtures/{project_name}").resolve()
+        out_dir = project_root / ".skeleton"
+        opener = RecordingReportOpener()
+        command = RunCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            report_opener=opener,
+        )
+        args = Namespace(
+            script=project_root / "app.py",
+            script_args=[],
+            project_root=project_root,
+            out_dir=out_dir,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=False,
+            no_open=False,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "report.html").exists()
+        assert (out_dir / "trace.jsonl").stat().st_size > 0
+        assert (out_dir / "report.html").stat().st_size > 0
+        assert opener.opened == [out_dir / "report.html"]
+
     def test_writes_trace_snapshot_workflow_report_and_opens_html(self, tmp_path: Path) -> None:
         # Given
         project_root = Path("tests/fixtures/sample_project").resolve()

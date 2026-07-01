@@ -14,6 +14,7 @@ from typing import TextIO
 
 from skeleton_replay.runtime.events import Endpoint, TraceEvent
 from skeleton_replay.runtime.filters import TraceFilter
+from skeleton_replay.runtime.resources import ResourceCall, RuntimeResourceClassifier
 from skeleton_replay.safety import ValueSummariser
 
 
@@ -43,6 +44,7 @@ class RuntimeTracer:
         """Initialize a runtime tracer for one target execution."""
         self.options = options
         self.summariser = summariser or ValueSummariser()
+        self.resource_classifier = RuntimeResourceClassifier()
         self.trace_filter = TraceFilter(
             project_root=options.project_root,
             include=options.include,
@@ -52,7 +54,9 @@ class RuntimeTracer:
         self._event_count = 0
         self._stack: list[Endpoint] = []
         self._frames: dict[int, Endpoint] = {}
+        self._active_resource_calls: list[ResourceCall] = []
         self._writer: TextIO | None = None
+        self._writing = False
 
     @property
     def event_count(self) -> int:
@@ -73,10 +77,16 @@ class RuntimeTracer:
             self._writer.close()
 
     def _profile(self, frame: FrameType, event: str, arg: object) -> None:
+        if self._writing:
+            return
         if event == "call":
             self._handle_call(frame)
         elif event == "return":
             self._handle_return(frame, arg)
+        elif event == "c_call":
+            self._handle_resource_call(arg)
+        elif event in {"c_return", "c_exception"}:
+            self._handle_resource_return(arg, failed=event == "c_exception")
 
     def _handle_call(self, frame: FrameType) -> None:
         endpoint = self._endpoint_from_frame(frame)
@@ -118,13 +128,66 @@ class RuntimeTracer:
             )
         )
 
-    def _write_event(self, event: TraceEvent) -> None:
-        if self.options.max_events is not None and self._event_count >= self.options.max_events:
+    def _handle_resource_call(self, c_callable: object) -> None:
+        if not self._stack:
             return
+        resource_call = self.resource_classifier.classify(c_callable)
+        if resource_call is None:
+            return
+        caller = self._stack[-1]
+        written = self._write_event(
+            TraceEvent(
+                event_type="call",
+                order=self._event_count,
+                timestamp=time.time(),
+                depth=len(self._stack),
+                caller=caller,
+                callee=resource_call.endpoint,
+                args={
+                    "resource": {
+                        "type": "resource",
+                        "category": resource_call.endpoint.resource_category,
+                        "operation": resource_call.endpoint.function,
+                    }
+                },
+            )
+        )
+        if written:
+            self._active_resource_calls.append(resource_call)
+
+    def _handle_resource_return(self, c_callable: object, *, failed: bool) -> None:
+        resource_call = self._pop_resource_call(id(c_callable))
+        if resource_call is None:
+            return
+        caller = self._stack[-1] if self._stack else None
+        self._write_event(
+            TraceEvent(
+                event_type="return",
+                order=self._event_count,
+                timestamp=time.time(),
+                depth=len(self._stack),
+                caller=caller,
+                callee=resource_call.endpoint,
+                return_value={
+                    "type": "resource_exception" if failed else "resource_return",
+                    "category": resource_call.endpoint.resource_category,
+                    "summary": "resource result not captured",
+                },
+            )
+        )
+
+    def _write_event(self, event: TraceEvent) -> bool:
+        if self.options.max_events is not None and self._event_count >= self.options.max_events:
+            return False
         if self._writer is None:
             raise RuntimeError("Trace writer is not open")
-        self._writer.write(json.dumps(event.to_json(), sort_keys=True) + "\n")
-        self._event_count += 1
+        self._writing = True
+        try:
+            self._writer.write(json.dumps(event.to_json(), sort_keys=True) + "\n")
+            self._event_count += 1
+        finally:
+            self._writing = False
+        return True
 
     def _endpoint_from_frame(self, frame: FrameType) -> Endpoint | None:
         code = frame.f_code
@@ -208,6 +271,12 @@ class RuntimeTracer:
             if self._stack[index] == endpoint:
                 del self._stack[index]
                 return
+
+    def _pop_resource_call(self, callable_id: int) -> ResourceCall | None:
+        for index in range(len(self._active_resource_calls) - 1, -1, -1):
+            if self._active_resource_calls[index].callable_id == callable_id:
+                return self._active_resource_calls.pop(index)
+        return None
 
 
 @dataclass(frozen=True)

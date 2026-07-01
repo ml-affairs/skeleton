@@ -21,6 +21,12 @@ patterns and visual rules Skeleton should preserve as it grows. See
 [`runtime-introspection.md`](runtime-introspection.md) for the Python runtime
 mechanisms that make the non-invasive runner possible.
 
+Skeleton should also stay clear about its category boundary. It can learn from
+static and multi-modal knowledge graph tools, but it should not become one by
+default. See
+[`runtime-replay-vs-knowledge-graphs.md`](runtime-replay-vs-knowledge-graphs.md)
+for the product distinction and roadmap implications.
+
 ## What Must Be True
 
 - Human users can see modules, runtime instances, functions, methods, and
@@ -89,6 +95,19 @@ pretending to be a graph database. The schema should make later queries natural:
 The eventual user experience could support natural language questions and a
 small structured query language over the snapshot. That only works if v0 treats
 trace and snapshot shape as real product contracts.
+
+Useful future commands should grow from runtime evidence:
+
+```text
+skeleton query "which actors called PaymentGateway?"
+skeleton path OrderService PaymentGateway
+skeleton explain --event 42
+skeleton compare run-a run-b
+```
+
+These should query saved trace and snapshot artifacts first. Static context and
+LLM interpretation can enrich the answer later, but the answer should cite
+runtime event ids, node ids, edge ids, and safe examples.
 
 ## Visual Language
 

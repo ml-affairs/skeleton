@@ -129,20 +129,62 @@ class TestHtmlReportWriter:
         assert "let current = events.length ? 0 : -1" in html
         assert "renderEvent();" in html
         assert "let currentReplayMetrics = null" in html
-        assert "let furthestRevealedEvent = -1" in html
         assert "const revealedElementIds = new Set()" in html
         assert "function parentForFunction" in html
         assert "function parentForActor" in html
         assert "function instanceForEndpoint" in html
         assert "function syncVisibilityToReplay" in html
+        assert "function visibleElementIdsAt" in html
+        assert "function collectEndpointElementIds" in html
+        assert "function focusOwnerForEndpoint" in html
         assert "function placeNewElement" in html
         assert "function firstOpenPosition" in html
         assert "function overlapsVisibleNode" in html
+        assert "function applyContainerSizeCandidate" in html
+        assert "function parentContainerAtRenderedPoint" in html
+        assert "const containerResizeEdgePx" in html
+        assert 'const isProjectLocalModule = rawNodes.has(moduleIdForName(endpoint.module || ""))' in html
+        assert "moduleHas(ioRulebook.file) && functionHas(ioRulebook.file)" in html
+        assert "moduleHas(ioRulebook.file) || functionHas(ioRulebook.file)" not in html
+        assert 'endpoint.endpoint_type === "external_service"' in html
+        assert "function externalServiceCategoryFor" in html
+        assert '"shape": "barrel"' in html
+        assert "function ioNodeWidth" in html
+        assert "io_width: ioWidth" in html
+        assert '"width": "data(io_width)"' in html
+        assert '"height": "data(io_height)"' in html
+        assert 'node[type = "io"][io_category = "file"]' in html
+        assert 'node[type = "io"][io_category = "db"].current' in html
+        assert 'node[type = "io"][io_category = "stdout"]' in html
+        assert 'node[type = "io"][io_category = "network"]' not in html
+        assert 'node[type = "external_service"]' in html
+        assert '"shape": "diamond"' in html
+        assert '<span class="pill"><span class="schema external"></span>external service</span>' in html
+        assert 'id="sidebar-toggle"' in html
+        assert "function toggleSidebar" in html
+        assert "sidebar-collapsed" in html
+        assert "right: 12px;" in html
+        assert "padding-top: 58px;" in html
+        assert "cy.resize();" in html
+        assert "function visualNodeData" in html
+        assert "function renderResizeHandles" in html
+        assert "function initializeResizeHandles" in html
+        assert "function startResizeDrag" in html
+        assert "function onResizeDragMove" in html
+        assert "function placeNewChildElement" in html
+        assert "function enforceNodeMoveConstraints" in html
+        assert "function startManualNodeMove" in html
+        assert "function updateManualNodeMove" in html
+        assert "function canPlaceNodeAt" in html
+        assert "node.position(draggedFrom)" in html
+        assert 'id="resize-handles"' in html
         assert "function replayMetricsAt" in html
         assert "function applyReplayMetrics" in html
+        assert "window.cy = cy" in html
         assert 'node.type === "module" || node.type === "instance" ? "container" : ""' in html
         assert "parent: parentForFunction(node)" in html
         assert '"compound-sizing-wrt-labels": "include"' in html
+        assert '"min-width": "data(width)"' in html
         assert "Modules contain runtime instances and functions" in html
         assert "Instances contain the methods observed on that object" in html
         assert 'node[type = "function"]' in html
@@ -155,20 +197,27 @@ class TestHtmlReportWriter:
         assert "const returnEdges" in html
         assert '"curve-style": "straight"' in html
         assert '"curve-style": "unbundled-bezier"' in html
-        assert '"control-point-distances": 90' in html
+        assert '"control-point-distances": 110' in html
         assert '"control-point-weights": 0.5' in html
         assert '"line-style": "solid"' in html
         assert '"line-style": "dashed"' in html
         assert "renderedNodeIds.has(source)" in html
         assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
         assert "return:${targetNode}->${sourceNode}" in html
-        assert "if (index <= furthestRevealedEvent) return;" in html
+        assert 'element.addClass("unseen hidden").removeClass("current focus pulse")' in html
         assert 'cy.elements().addClass("unseen")' not in html
-        assert "element.position(firstOpenPosition(anchor, visibleNodes, minimumDistance))" in html
+        assert "firstOpenPosition(anchor, visibleNodes, element" in html
         assert '"events": "no"' in html
+        assert "avoidOverlapsForCurrentStep" not in html
+        assert "function avoidOverlapsForNode" not in html
+        assert "function ensureContainerFits" not in html
+        assert "fit: { eles: active" not in html
         assert "layoutVisibleElements" not in html
         assert 'window.setTimeout(() => active.removeClass("pulse"), 420)' in html
         assert 'id="event-focus"' in html
         assert "function eventFocusCard" in html
+        assert "function keepCurrentNodesInView" in html
+        assert "activeNodes.renderedBoundingBox" in html
+        assert "cy.pan({ x: pan.x + dx, y: pan.y + dy })" in html
         assert "function syntaxHighlightJson" in html
         assert "json-key" in html

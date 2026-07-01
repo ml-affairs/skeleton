@@ -196,6 +196,13 @@ The trace identifies the module, class where practical, function or method,
 caller, callee, instance identity where practical, call depth, event order,
 timestamp, safe argument summaries, and safe return summaries.
 
+When project-local code is already on the trace stack, Skeleton also records a
+small allow-list of standard-library boundary calls. Today that includes
+stdout, filesystem operations, SQLite operations, and basic network socket
+calls. Filesystems, stdout, and databases appear as resource cylinders.
+Network calls appear as external-service diamonds, because an external service
+is an architectural collaborator rather than an I/O resource.
+
 ## How it works
 
 Skeleton does not patch your source code. It uses Python's own runtime
@@ -204,7 +211,8 @@ introspection:
 - `runpy.run_path()` runs the target script as `__main__` inside a controlled
   runner.
 - `sys.setprofile()` receives callbacks whenever Python enters or returns from a
-  function.
+  function, plus selected C-level resource calls such as `print` or
+  `sqlite3.connect`.
 - Each callback receives a frame object. From that frame Skeleton reads
   `frame.f_code`, `frame.f_globals`, and `frame.f_locals` to identify the file,
   module, function name, line number, arguments, and whether the call has
@@ -276,13 +284,22 @@ Each line in `.skeleton/trace.jsonl` is a JSON object:
     "file": "/project/app.py",
     "line": 10,
     "node_id": "function:app.main",
-    "instance_id": null
+    "instance_id": null,
+    "endpoint_type": "function",
+    "resource_category": null
   },
   "args": {}
 }
 ```
 
 Return events use the same endpoint shape and include `return_value`.
+Resource endpoints use the same shape with `endpoint_type: "resource"`, a
+`resource_category` such as `stdout`, `file`, or `db`, and a
+`node_id` beginning with `resource:`. Resource nodes are aggregated by boundary
+kind, for example `resource.database` or `resource.stdout`; the specific
+operation, such as `connect` or `print`, is kept in the safe event evidence.
+Network endpoints use `endpoint_type: "external_service"` and render as
+diamond-shaped external service entities.
 
 ## Safety model
 
