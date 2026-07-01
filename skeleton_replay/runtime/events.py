@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 SCHEMA_VERSION = 1
 JsonObject = dict[str, Any]
 EventType = Literal["call", "return"]
+EndpointType = Literal["function", "resource"]
+ResourceCategory = Literal["file", "stdout", "db", "network"]
 
 
 @dataclass(frozen=True)
@@ -22,10 +24,18 @@ class Endpoint:
     node_id: str
     class_name: str | None = None
     instance_id: str | None = None
+    endpoint_type: EndpointType = "function"
+    resource_category: ResourceCategory | None = None
 
     @classmethod
     def from_json(cls, data: JsonObject) -> Endpoint:
         """Create an endpoint from a decoded trace object."""
+        endpoint_type = str(data.get("endpoint_type", "function"))
+        if endpoint_type not in {"function", "resource"}:
+            raise ValueError(f"Unknown endpoint type: {endpoint_type}")
+        resource_category = data.get("resource_category")
+        if resource_category is not None and resource_category not in {"file", "stdout", "db", "network"}:
+            raise ValueError(f"Unknown resource category: {resource_category}")
         return cls(
             module=str(data["module"]),
             function=str(data["function"]),
@@ -35,6 +45,8 @@ class Endpoint:
             node_id=str(data["node_id"]),
             class_name=str(data["class_name"]) if data.get("class_name") is not None else None,
             instance_id=str(data["instance_id"]) if data.get("instance_id") is not None else None,
+            endpoint_type=cast(EndpointType, endpoint_type),
+            resource_category=cast(ResourceCategory | None, resource_category),
         )
 
 

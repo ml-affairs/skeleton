@@ -68,6 +68,7 @@ convention = "google"
 python_version = "3.11"
 strict = true
 files = ["skeleton_replay", "tests"]
+exclude = ["tests/fixtures"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

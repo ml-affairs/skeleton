@@ -1,5 +1,6 @@
 import inspect
 import json
+import sqlite3
 from pathlib import Path
 from types import FrameType
 
@@ -7,6 +8,7 @@ import pytest
 
 from skeleton_replay.runtime import RuntimeTracer, TargetScriptRunner, TraceOptions
 from skeleton_replay.runtime.events import Endpoint, TraceEvent
+from skeleton_replay.runtime.resources import RuntimeResourceClassifier
 
 
 class SampleFrames:
@@ -169,3 +171,137 @@ class TestRuntimeTracer:
         # When / Then
         with pytest.raises(RuntimeError, match="Trace writer is not open"):
             tracer._write_event(event)
+
+
+class TestRuntimeResourceClassifier:
+    """Selected standard-library C-call resource classification."""
+
+    def test_classifies_stdout_filesystem_and_sqlite_boundaries(self) -> None:
+        # Given
+        classifier = RuntimeResourceClassifier()
+
+        # When
+        stdout_call = classifier.classify(print)
+        file_call = classifier.classify(open)
+        database_call = classifier.classify(sqlite3.connect)
+
+        # Then
+        assert stdout_call is not None
+        assert stdout_call.endpoint.endpoint_type == "resource"
+        assert stdout_call.endpoint.resource_category == "stdout"
+        assert stdout_call.endpoint.qualified_name == "resource.stdout"
+        assert file_call is not None
+        assert file_call.endpoint.resource_category == "file"
+        assert database_call is not None
+        assert database_call.endpoint.resource_category == "db"
+
+
+class TestFixtureProjects:
+    """Target-script fixture regression for richer architecture traces."""
+
+    @pytest.mark.parametrize(
+        ("project_name", "required_calls"),
+        [
+            (
+                "sample_supply_chain",
+                {
+                    "app.main",
+                    "app.bootstrap",
+                    "app.read_seed",
+                    "supply_service.ShipmentService.fulfill",
+                    "supply_repository.ShipmentRepository.create_shipment",
+                    "supply_repository.ShipmentRepository.load_destination",
+                    "supply_telemetry.read_text",
+                    "supply_telemetry.write_text",
+                    "supply_telemetry.post",
+                },
+            ),
+            (
+                "sample_orchestrated",
+                {
+                    "app.main",
+                    "app.bootstrap",
+                    "orchestrated_telemetry.read_text",
+                    "orchestrator.WorkflowOrchestrator.run",
+                    "pipeline.build_plan",
+                    "workers.Worker.execute",
+                    "queueing.stage_one",
+                    "queueing.stage_two",
+                    "queueing.stage_three",
+                    "orchestrated_telemetry.get",
+                    "orchestrated_telemetry.write_text",
+                },
+            ),
+            (
+                "sample_io_boundaries",
+                {
+                    "app.main",
+                    "app.bootstrap",
+                    "order_service.OrderService.register_order",
+                    "order_repository.SqliteOrderRepository.save",
+                    "order_repository.SqliteOrderRepository.load",
+                    "notification_adapter.ConsoleNotifier.announce",
+                    "order_domain.Order.display_label",
+                },
+            ),
+        ],
+    )
+    def test_project_traces_expected_public_calls(self, tmp_path: Path, project_name: str, required_calls: set[str]) -> None:
+        # Given
+        project_root = Path(f"tests/fixtures/{project_name}").resolve()
+        out_dir = tmp_path / ".skeleton" / project_name
+
+        # When
+        result = TargetScriptRunner().run(
+            project_root / "app.py",
+            [],
+            TraceOptions(project_root=project_root, out_dir=out_dir),
+        )
+        events = [json.loads(line) for line in result.trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        calls = [event for event in events if event["event_type"] == "call"]
+
+        # Then
+        assert events
+        observed = {event["callee"]["qualified_name"] for event in calls}
+        for expected in required_calls:
+            assert any(qualified.endswith(f".{expected}") or qualified == expected for qualified in observed)
+
+    def test_project_traces_io_resource_boundaries(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_io_boundaries").resolve()
+        out_dir = tmp_path / ".skeleton" / "sample_io_boundaries"
+
+        # When
+        result = TargetScriptRunner().run(
+            project_root / "app.py",
+            [],
+            TraceOptions(project_root=project_root, out_dir=out_dir),
+        )
+        events = [json.loads(line) for line in result.trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        resource_calls = [event["callee"] for event in events if event["event_type"] == "call" and event["callee"].get("endpoint_type") == "resource"]
+
+        # Then
+        resource_categories = {call["resource_category"] for call in resource_calls}
+        resource_names = {call["qualified_name"] for call in resource_calls}
+        assert {"stdout", "file", "db"}.issubset(resource_categories)
+        assert "resource.stdout" in resource_names
+        assert "resource.database" in resource_names
+        assert all(call["node_id"].startswith("resource:") for call in resource_calls)
+
+    def test_private_methods_are_not_traced_in_fixtures(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_supply_chain").resolve()
+        out_dir = tmp_path / ".skeleton" / "sample_supply_chain"
+
+        # When
+        result = TargetScriptRunner().run(
+            project_root / "app.py",
+            [],
+            TraceOptions(project_root=project_root, out_dir=out_dir),
+        )
+        events = [json.loads(line) for line in result.trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+        # Then
+        qualified = [event["callee"]["qualified_name"] for event in events if event["event_type"] == "call"]
+        assert "sample_supply_chain.supply_service.ShipmentService._resolve_tracking" not in qualified
+        assert "sample_supply_chain.workers.Worker._run_step" not in qualified
