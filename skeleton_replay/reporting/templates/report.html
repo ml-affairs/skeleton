@@ -23,6 +23,7 @@
       --amber: #f59e0b;
       --rose: #fb7185;
       --green: #22c55e;
+      --yellow: #fbbf24;
       --shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
     }
     * { box-sizing: border-box; }
@@ -113,6 +114,10 @@
       min-height: 0;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 430px;
+      transition: grid-template-columns 180ms ease;
+    }
+    main.sidebar-collapsed {
+      grid-template-columns: minmax(0, 1fr) 52px;
     }
     .stage {
       position: relative;
@@ -216,6 +221,14 @@
       background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.24), transparent 40%), linear-gradient(180deg, rgba(167, 139, 250, 0.18), rgba(124, 58, 237, 0.58));
       box-shadow: 0 2px 14px rgba(139, 92, 246, 0.52), inset 0 -2px 0 rgba(255, 255, 255, 0.18);
     }
+    .schema.external {
+      color: var(--yellow);
+      width: 17px;
+      height: 17px;
+      transform: rotate(45deg);
+      border-radius: 2px;
+      background: rgba(251, 191, 36, 0.5);
+    }
     .schema.return {
       width: 25px;
       height: 14px;
@@ -227,6 +240,7 @@
       box-shadow: 0 0 16px currentColor;
     }
     .sidebar {
+      position: relative;
       min-width: 0;
       min-height: 0;
       display: grid;
@@ -235,10 +249,44 @@
       background: var(--panel);
       box-shadow: var(--shadow);
     }
+    .sidebar-toggle {
+      position: absolute;
+      top: 12px;
+      left: 10px;
+      z-index: 8;
+      width: 32px;
+      height: 32px;
+      min-height: 32px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-color: rgba(94, 234, 212, 0.3);
+      color: var(--cyan);
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+      background: rgba(15, 23, 42, 0.96);
+      box-shadow: 0 0 24px rgba(56, 220, 226, 0.12);
+    }
+    .sidebar-toggle:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 26px rgba(56, 220, 226, 0.22);
+    }
+    main.sidebar-collapsed .sidebar {
+      display: block;
+      overflow: hidden;
+    }
+    main.sidebar-collapsed .inspector,
+    main.sidebar-collapsed .replay {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
     .inspector {
       min-height: 0;
       overflow: auto;
       padding: 18px;
+      transition: opacity 140ms ease;
     }
     .eyebrow {
       color: var(--cyan);
@@ -323,6 +371,7 @@
       border-top: 1px solid var(--line);
       padding: 14px;
       background: var(--panel-strong);
+      transition: opacity 140ms ease;
     }
     .timeline {
       width: 100%;
@@ -573,6 +622,7 @@
       header { grid-template-columns: 1fr; }
       .metrics { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
       main { grid-template-columns: 1fr; grid-template-rows: 58vh minmax(420px, auto); }
+      main.sidebar-collapsed { grid-template-columns: 1fr; grid-template-rows: 58vh 52px; }
       .sidebar { border-left: 0; border-top: 1px solid var(--line); }
     }
   </style>
@@ -593,7 +643,7 @@
         <div class="metric"><strong id="edge-count">0</strong><span>calls</span></div>
       </div>
     </header>
-    <main>
+    <main id="replay-layout">
       <section class="stage">
         <div id="cy"></div>
         <div id="resize-handles" class="hidden">
@@ -614,12 +664,14 @@
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
             <span class="pill"><span class="schema io"></span>I/O / resource</span>
+            <span class="pill"><span class="schema external"></span>external service</span>
             <span class="pill"><span class="schema call"></span>runtime call</span>
             <span class="pill"><span class="schema return"></span>return value</span>
           </div>
         </div>
       </section>
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse details panel" aria-expanded="true" title="Collapse details panel">›</button>
         <section class="inspector">
           <div class="eyebrow" id="detail-kind">Architecture</div>
           <h2 id="detail-title">Runtime actors</h2>
@@ -728,9 +780,9 @@
       if (!endpoint) {
         return null;
       }
-      if (endpoint.endpoint_type === "resource" || endpoint.resource_category) {
+      if (endpoint.endpoint_type === "resource") {
         const category = endpoint.resource_category || "file";
-        const labels = {file: "file resource", stdout: "stdout", db: "database", network: "network"};
+        const labels = {file: "file resource", stdout: "stdout", db: "database"};
         return {type: category, label: labels[category] || "resource"};
       }
       if (endpoint.class_name) {
@@ -753,14 +805,32 @@
       if (moduleHas(ioRulebook.db) && functionHas(ioRulebook.db)) {
         return {type: "db", label: "database"};
       }
-      if (moduleHas(ioRulebook.network) && functionHas(ioRulebook.network)) {
-        return {type: "network", label: "network"};
-      }
       return null;
     }
 
     function isResourceNode(endpoint) {
-      return ioCategoryFor(endpoint) !== null;
+      return endpoint?.endpoint_type === "resource" || ioCategoryFor(endpoint) !== null;
+    }
+
+    function externalServiceCategoryFor(endpoint) {
+      if (!endpoint || endpoint.class_name) {
+        return null;
+      }
+      if (endpoint.endpoint_type === "external_service") {
+        return {type: "network", label: "external service"};
+      }
+      const module = String(endpoint.module || "").toLowerCase();
+      const functionName = String(endpoint.function || "").toLowerCase();
+      const isProjectLocalModule = rawNodes.has(moduleIdForName(endpoint.module || ""));
+      if (isProjectLocalModule) {
+        return null;
+      }
+      const moduleHas = (items) => Array.from(items.modules).some((knownModule) => module === knownModule || module.startsWith(`${knownModule}.`));
+      const functionHas = (items) => items.functions.has(functionName);
+      if (moduleHas(ioRulebook.network) && functionHas(ioRulebook.network)) {
+        return {type: "network", label: "external service"};
+      }
+      return null;
     }
 
     function rolesForActor(ownerId) {
@@ -777,7 +847,7 @@
     }
 
     function parentForFunction(node) {
-      if (node.type === "io") return undefined;
+      if (node.type === "io" || node.type === "external_service") return undefined;
       return node.owner || moduleIdForName(node.module || "");
     }
 
@@ -790,7 +860,7 @@
 
     function ownerForEndpoint(endpoint) {
       if (!endpoint) return null;
-      if (endpoint.endpoint_type === "resource" || endpoint.resource_category) return null;
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return null;
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) return instanceId;
       return `module:${endpoint.module || ""}`;
@@ -798,7 +868,7 @@
 
     function focusOwnerForEndpoint(endpoint) {
       if (!endpoint) return null;
-      if (endpoint.endpoint_type === "resource" || endpoint.resource_category) return visualCallableId(endpoint);
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return visualCallableId(endpoint);
       return ownerForEndpoint(endpoint);
     }
 
@@ -809,7 +879,7 @@
 
     function ownerForNode(node) {
       if (!node || node.type === "entrypoint") return null;
-      if (node.type === "io") return node.id;
+      if (node.type === "io" || node.type === "external_service") return node.id;
       if (node.type === "instance") return node.id;
       if (node.type === "module") return node.id;
       return node.owner || moduleIdForName(node.module || "");
@@ -865,7 +935,7 @@
 
     function visualCallableId(endpoint) {
       if (!endpoint) return null;
-      if (endpoint.endpoint_type === "resource" || endpoint.resource_category) return endpoint.node_id;
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return endpoint.node_id;
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) return `method:${instanceId}:${endpoint.node_id}`;
       return endpoint.node_id;
@@ -878,14 +948,15 @@
       const sourceNode = rawNodes.get(endpoint.node_id) || {};
       const owner = ownerForEndpoint(endpoint);
       const ioCategory = ioCategoryFor(endpoint);
+      const externalServiceCategory = externalServiceCategoryFor(endpoint);
       const node = observedCallables.get(id) || {
         id,
         source_node_id: endpoint.node_id,
         owner,
         parent: owner,
-        type: endpoint.endpoint_type === "resource" || endpoint.resource_category ? "io" : endpoint.instance_id ? "method" : ioCategory ? "io" : "function",
+        type: externalServiceCategory ? "external_service" : endpoint.endpoint_type === "resource" ? "io" : endpoint.instance_id ? "method" : ioCategory ? "io" : "function",
         label: endpoint.function || sourceNode.label || endpoint.node_id,
-        io_category: ioCategory ? ioCategory.type : null,
+        io_category: externalServiceCategory ? externalServiceCategory.type : ioCategory ? ioCategory.type : null,
         module: endpoint.module,
         class_name: endpoint.class_name,
         instance_id: endpoint.instance_id,
@@ -983,6 +1054,7 @@
       .map((node) => {
         const label = node.function || node.label || node.id;
         const isIo = node.type === "io";
+        const isExternalService = node.type === "external_service";
         const ioWidth = ioNodeWidth(label);
         return {
           data: {
@@ -1007,12 +1079,12 @@
             fan_in: Number(node.fan_in || 0),
             fan_out: Number(node.fan_out || 0),
             degree: Number(node.fan_in || 0) + Number(node.fan_out || 0),
-            size: isIo ? 52 : 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4),
+            size: isIo ? 52 : isExternalService ? 78 : 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4),
             io_width: ioWidth,
             io_height: 86,
             io_label_width: ioWidth - 34
           },
-          classes: isIo ? "unseen hidden io-capsule" : "unseen hidden"
+          classes: isIo ? "unseen hidden io-capsule" : isExternalService ? "unseen hidden external-service" : "unseen hidden"
         };
       });
 
@@ -1203,9 +1275,20 @@
           "background-color": "#7a4d12",
           "border-color": "#ffe4a3"
         } },
-        { selector: 'node[type = "io"][io_category = "network"]', style: {
-          "background-color": "#16635f",
-          "border-color": "#c9fff6"
+        { selector: 'node[type = "external_service"]', style: {
+          "shape": "diamond",
+          "width": "data(size)",
+          "height": "data(size)",
+          "background-color": "#92400e",
+          "background-opacity": 0.9,
+          "border-color": "#fbbf24",
+          "border-width": 3,
+          "font-size": 11,
+          "font-weight": 800,
+          "color": "#fff7ed",
+          "text-max-width": 76,
+          "text-outline-width": 2,
+          "text-outline-color": "#0f172a"
         } },
         { selector: "edge", style: {
           "curve-style": "bezier",
@@ -1291,8 +1374,10 @@
         { selector: 'node[type = "io"][io_category = "stdout"].current', style: {
           "background-color": "#7a4d12"
         } },
-        { selector: 'node[type = "io"][io_category = "network"].current', style: {
-          "background-color": "#16635f"
+        { selector: 'node[type = "external_service"].current', style: {
+          "background-color": "#92400e",
+          "border-color": "#ffffff",
+          "border-width": 4
         } },
         { selector: 'edge[type = "runtime-return"].current', style: {
           "line-color": "#38dce2",
@@ -1373,6 +1458,7 @@
     document.getElementById("back").addEventListener("click", () => step(-1));
     document.getElementById("forward").addEventListener("click", () => step(1));
     document.getElementById("play").addEventListener("click", togglePlay);
+    document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("timeline").addEventListener("input", (event) => {
       current = Number(event.target.value);
       renderEvent();
@@ -2028,7 +2114,7 @@
 
     function revealEndpoint(endpoint) {
       if (!endpoint) return;
-      if (!(endpoint.endpoint_type === "resource" || endpoint.resource_category)) {
+      if (!(endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint))) {
         revealShell(ownerForEndpoint(endpoint));
       }
       revealElement(visualCallableId(endpoint));
@@ -2345,13 +2431,15 @@
         const incoming = metric?.incoming || new Set();
         const outgoing = metric?.outgoing || new Set();
         const callCount = Number(metric?.call_count || 0);
+        const nodeType = node.data.type;
+        const size = nodeType === "external_service" ? 78 + Math.min(18, callCount * 4 + outgoing.size * 3) : nodeType === "io" ? 52 : 22 + Math.min(22, callCount * 5 + outgoing.size * 4);
         cy.getElementById(node.data.id).data({
           call_count: callCount,
           fan_in: incoming.size,
           fan_out: outgoing.size,
           first_seen: metric?.first_seen,
           last_seen: metric?.last_seen,
-          size: 22 + Math.min(22, callCount * 5 + outgoing.size * 4)
+          size
         });
       }
       for (const edge of [...callEdges, ...returnEdges]) {
@@ -2519,6 +2607,21 @@
       document.getElementById("play").textContent = "Play";
     }
 
+    function toggleSidebar() {
+      const layout = document.getElementById("replay-layout");
+      const toggle = document.getElementById("sidebar-toggle");
+      const collapsed = layout.classList.toggle("sidebar-collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.setAttribute("aria-label", collapsed ? "Expand details panel" : "Collapse details panel");
+      toggle.setAttribute("title", collapsed ? "Expand details panel" : "Collapse details panel");
+      toggle.textContent = collapsed ? "‹" : "›";
+      window.setTimeout(() => {
+        cy.resize();
+        keepCurrentNodesInView();
+        renderResizeHandles();
+      }, 190);
+    }
+
     function renderEvent() {
       cy.elements().removeClass("current dimmed focus pulse");
       const event = events[current];
@@ -2641,7 +2744,8 @@
     }
 
     function endpointKind(endpoint) {
-      if (endpoint.endpoint_type === "resource" || endpoint.resource_category) return endpoint.resource_category || "resource";
+      if (externalServiceCategoryFor(endpoint)) return "external service";
+      if (endpoint.endpoint_type === "resource") return endpoint.resource_category || "resource";
       if (endpoint.class_name) return "method";
       return "function";
     }

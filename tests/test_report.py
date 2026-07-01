@@ -146,7 +146,8 @@ class TestHtmlReportWriter:
         assert 'const isProjectLocalModule = rawNodes.has(moduleIdForName(endpoint.module || ""))' in html
         assert "moduleHas(ioRulebook.file) && functionHas(ioRulebook.file)" in html
         assert "moduleHas(ioRulebook.file) || functionHas(ioRulebook.file)" not in html
-        assert 'endpoint.endpoint_type === "resource" || endpoint.resource_category' in html
+        assert 'endpoint.endpoint_type === "external_service"' in html
+        assert "function externalServiceCategoryFor" in html
         assert '"shape": "barrel"' in html
         assert "function ioNodeWidth" in html
         assert "io_width: ioWidth" in html
@@ -155,7 +156,14 @@ class TestHtmlReportWriter:
         assert 'node[type = "io"][io_category = "file"]' in html
         assert 'node[type = "io"][io_category = "db"].current' in html
         assert 'node[type = "io"][io_category = "stdout"]' in html
-        assert 'node[type = "io"][io_category = "network"]' in html
+        assert 'node[type = "io"][io_category = "network"]' not in html
+        assert 'node[type = "external_service"]' in html
+        assert '"shape": "diamond"' in html
+        assert '<span class="pill"><span class="schema external"></span>external service</span>' in html
+        assert 'id="sidebar-toggle"' in html
+        assert "function toggleSidebar" in html
+        assert "sidebar-collapsed" in html
+        assert "cy.resize();" in html
         assert "function visualNodeData" in html
         assert "function renderResizeHandles" in html
         assert "function initializeResizeHandles" in html

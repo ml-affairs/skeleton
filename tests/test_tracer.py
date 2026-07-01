@@ -1,5 +1,6 @@
 import inspect
 import json
+import socket
 import sqlite3
 from pathlib import Path
 from types import FrameType
@@ -184,6 +185,7 @@ class TestRuntimeResourceClassifier:
         stdout_call = classifier.classify(print)
         file_call = classifier.classify(open)
         database_call = classifier.classify(sqlite3.connect)
+        network_call = classifier.classify(socket.socket.connect)
 
         # Then
         assert stdout_call is not None
@@ -194,6 +196,10 @@ class TestRuntimeResourceClassifier:
         assert file_call.endpoint.resource_category == "file"
         assert database_call is not None
         assert database_call.endpoint.resource_category == "db"
+        assert network_call is not None
+        assert network_call.endpoint.endpoint_type == "external_service"
+        assert network_call.endpoint.resource_category == "network"
+        assert network_call.endpoint.node_id == "external_service:network:external.service"
 
 
 class TestFixtureProjects:

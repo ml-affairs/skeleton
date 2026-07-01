@@ -1,7 +1,8 @@
+import json
 from pathlib import Path
 
 from skeleton_replay.analysis import SnapshotBuilder
-from skeleton_replay.runtime import TargetScriptRunner, TraceOptions
+from skeleton_replay.runtime import Endpoint, TargetScriptRunner, TraceEvent, TraceOptions
 
 
 class TestSnapshotBuilder:
@@ -108,3 +109,40 @@ class TestSnapshotBuilder:
         assert any(node["type"] == "io" and node["resource_category"] == "file" for node in nodes.values())
         assert ("function:notification_adapter.ConsoleNotifier.announce", "resource:stdout:resource.stdout") in edges
         assert ("function:order_repository.SqliteOrderRepository.save", "resource:db:resource.database") in edges
+
+    def test_builds_external_service_node_for_network_boundary(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_project").resolve()
+        trace_path = tmp_path / "trace.jsonl"
+        out_path = tmp_path / "snapshot.json"
+        caller = Endpoint(
+            module="client",
+            function="send",
+            qualified_name="client.ApiClient.send",
+            file=str((project_root / "client.py").resolve()),
+            line=1,
+            node_id="function:client.ApiClient.send",
+            class_name="ApiClient",
+            instance_id="client.ApiClient@0xabc",
+        )
+        callee = Endpoint(
+            module="external",
+            function="service",
+            qualified_name="external.service",
+            file="",
+            line=0,
+            node_id="external_service:network:external.service",
+            endpoint_type="external_service",
+            resource_category="network",
+        )
+        event = TraceEvent(event_type="call", order=0, timestamp=1.0, depth=1, caller=caller, callee=callee)
+        trace_path.write_text(json.dumps(event.to_json()) + "\n", encoding="utf-8")
+
+        # When
+        snapshot = SnapshotBuilder(project_root).build(trace_path, out_path)
+        nodes = {node["id"]: node for node in snapshot["nodes"]}
+
+        # Then
+        assert nodes["external_service:network:external.service"]["type"] == "external_service"
+        assert nodes["external_service:network:external.service"]["endpoint_type"] == "external_service"
+        assert nodes["external_service:network:external.service"]["resource_category"] == "network"

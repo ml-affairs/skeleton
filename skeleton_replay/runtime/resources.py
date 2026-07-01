@@ -1,4 +1,4 @@
-"""Resource-call classification for standard-library runtime evidence."""
+"""Boundary-call classification for standard-library runtime evidence."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class ResourceCall:
 
 @dataclass(frozen=True)
 class RuntimeResourceClassifier:
-    """Classifies selected standard-library C calls as architecture resources."""
+    """Classifies selected standard-library C calls as architecture boundaries."""
 
     file_modules: ClassVar[frozenset[str]] = frozenset({"_io", "io", "builtins", "os", "posix"})
     file_functions: ClassVar[frozenset[str]] = frozenset({"open", "read", "write", "close", "flush", "mkdir", "remove", "unlink", "stat"})
@@ -85,11 +85,21 @@ class RuntimeResourceClassifier:
     @staticmethod
     def _endpoint(*, category: ResourceCategory, name: str) -> Endpoint:
         del name
+        if category == "network":
+            return Endpoint(
+                module="external",
+                function="service",
+                qualified_name="external.service",
+                file="",
+                line=0,
+                node_id="external_service:network:external.service",
+                endpoint_type="external_service",
+                resource_category=category,
+            )
         resource_name = {
             "file": "filesystem",
             "stdout": "stdout",
             "db": "database",
-            "network": "network",
         }[category]
         qualified_name = f"resource.{resource_name}"
         return Endpoint(

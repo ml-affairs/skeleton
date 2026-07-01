@@ -200,6 +200,26 @@ class SnapshotBuilder:
                 },
             )
             return
+        if endpoint.endpoint_type == "external_service":
+            nodes.setdefault(
+                endpoint.node_id,
+                {
+                    "id": endpoint.node_id,
+                    "type": "external_service",
+                    "label": endpoint.function,
+                    "module": endpoint.module,
+                    "function": endpoint.function,
+                    "qualified_name": endpoint.qualified_name,
+                    "resource_category": endpoint.resource_category,
+                    "endpoint_type": endpoint.endpoint_type,
+                    "fan_in": 0,
+                    "fan_out": 0,
+                    "call_count": 0,
+                    "arg_examples": [],
+                    "return_examples": [],
+                },
+            )
+            return
         module_id = f"module:{endpoint.module}"
         nodes.setdefault(
             module_id,

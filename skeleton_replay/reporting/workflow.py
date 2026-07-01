@@ -59,7 +59,7 @@ class WorkflowNarrativeWriter:
         return "\n".join(lines) + "\n"
 
     def _actor_lines(self, nodes: list[object]) -> list[str]:
-        actor_nodes = [node for node in nodes if isinstance(node, dict) and node.get("type") in {"module", "class", "function", "instance", "io"}]
+        actor_nodes = [node for node in nodes if isinstance(node, dict) and node.get("type") in {"module", "class", "function", "instance", "io", "external_service"}]
         if not actor_nodes:
             return ["- No actors observed."]
         return [self._actor_line(node) for node in actor_nodes[: self.max_events]]

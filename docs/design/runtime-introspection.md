@@ -184,17 +184,21 @@ types such as:
 resource.stdout
 resource.filesystem
 resource.database
-resource.network
+external.service
 ```
 
-These endpoints are typed as `resource` with a category such as `stdout`,
-`file`, `db`, or `network`. The report projects them as external I/O cylinders
-and keeps the specific operation, such as `print`, `mkdir`, or `connect`, in the
-safe event evidence. The caller remains the project-local actor, for example:
+Filesystem, stdout, and database endpoints are typed as `resource` with a
+category such as `stdout`, `file`, or `db`; the report projects them as external
+I/O cylinders. Network endpoints are typed as `external_service` with category
+`network`; the report projects them as diamonds because external services are
+architectural collaborators, not resource cylinders. The specific operation,
+such as `print`, `mkdir`, or `connect`, stays in the safe event evidence. The
+caller remains the project-local actor, for example:
 
 ```text
 order_repository.SqliteOrderRepository.save -> resource.database
 notification_adapter.ConsoleNotifier.announce -> resource.stdout
+payment_gateway.PaymentGatewayClient.charge -> external.service
 ```
 
 This distinction matters: local application methods keep their own architectural

@@ -197,11 +197,11 @@ caller, callee, instance identity where practical, call depth, event order,
 timestamp, safe argument summaries, and safe return summaries.
 
 When project-local code is already on the trace stack, Skeleton also records a
-small allow-list of standard-library resource calls as external I/O endpoints.
-Today that includes stdout, filesystem operations, SQLite operations, and basic
-network socket calls. These appear as resource nodes rather than project-local
-functions, so a repository method can call outward to a database cylinder and a
-console adapter can call outward to stdout.
+small allow-list of standard-library boundary calls. Today that includes
+stdout, filesystem operations, SQLite operations, and basic network socket
+calls. Filesystems, stdout, and databases appear as resource cylinders.
+Network calls appear as external-service diamonds, because an external service
+is an architectural collaborator rather than an I/O resource.
 
 ## How it works
 
@@ -294,10 +294,12 @@ Each line in `.skeleton/trace.jsonl` is a JSON object:
 
 Return events use the same endpoint shape and include `return_value`.
 Resource endpoints use the same shape with `endpoint_type: "resource"`, a
-`resource_category` such as `stdout`, `file`, `db`, or `network`, and a
+`resource_category` such as `stdout`, `file`, or `db`, and a
 `node_id` beginning with `resource:`. Resource nodes are aggregated by boundary
 kind, for example `resource.database` or `resource.stdout`; the specific
 operation, such as `connect` or `print`, is kept in the safe event evidence.
+Network endpoints use `endpoint_type: "external_service"` and render as
+diamond-shaped external service entities.
 
 ## Safety model
 

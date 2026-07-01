@@ -8,7 +8,7 @@ from typing import Any, Literal, cast
 SCHEMA_VERSION = 1
 JsonObject = dict[str, Any]
 EventType = Literal["call", "return"]
-EndpointType = Literal["function", "resource"]
+EndpointType = Literal["function", "resource", "external_service"]
 ResourceCategory = Literal["file", "stdout", "db", "network"]
 
 
@@ -31,7 +31,7 @@ class Endpoint:
     def from_json(cls, data: JsonObject) -> Endpoint:
         """Create an endpoint from a decoded trace object."""
         endpoint_type = str(data.get("endpoint_type", "function"))
-        if endpoint_type not in {"function", "resource"}:
+        if endpoint_type not in {"function", "resource", "external_service"}:
             raise ValueError(f"Unknown endpoint type: {endpoint_type}")
         resource_category = data.get("resource_category")
         if resource_category is not None and resource_category not in {"file", "stdout", "db", "network"}:
