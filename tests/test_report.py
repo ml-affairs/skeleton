@@ -163,6 +163,8 @@ class TestHtmlReportWriter:
         assert 'id="sidebar-toggle"' in html
         assert "function toggleSidebar" in html
         assert "sidebar-collapsed" in html
+        assert "right: 12px;" in html
+        assert "padding-top: 58px;" in html
         assert "cy.resize();" in html
         assert "function visualNodeData" in html
         assert "function renderResizeHandles" in html
