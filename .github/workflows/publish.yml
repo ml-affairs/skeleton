@@ -1,9 +1,10 @@
 name: Publish
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,6 +36,19 @@ jobs:
 
       - name: Sync dependencies
         run: uv sync --all-groups --python "$(cat .python-version)"
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          PACKAGE_VERSION="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          with Path("pyproject.toml").open("rb") as reader:
+              print(tomllib.load(reader)["project"]["version"])
+          PY
+          )"
+          test "v${PACKAGE_VERSION}" = "${GITHUB_REF_NAME}"
 
       - name: Check
         run: make check

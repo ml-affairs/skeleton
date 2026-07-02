@@ -57,6 +57,7 @@ Already present:
 
 - `uv build` verification in release workflow
 - publish workflow uses PyPI Trusted Publishing through GitHub Actions OIDC
+- `v*` tag pushes trigger publishing; `workflow_dispatch` is available as a recovery path
 - TestPyPI dry run
 - version bump process
 - changelog entry in `CHANGELOG.md`
@@ -120,7 +121,7 @@ normal publisher.
 11. Configure PyPI Trusted Publishing for `skeleton-replay`.
 12. Publish to TestPyPI if desired.
 13. Install from TestPyPI if used.
-14. Create a GitHub release to trigger `.github/workflows/publish.yml`.
+14. Push a `v*` tag to trigger `.github/workflows/publish.yml`.
 15. Install from PyPI and run a smoke test.
 
 ## Open Decisions
