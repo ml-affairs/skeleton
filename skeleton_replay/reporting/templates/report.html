@@ -136,16 +136,109 @@
       position: absolute;
       left: 18px;
       bottom: 18px;
+      z-index: 6;
       display: grid;
       gap: 9px;
       max-width: calc(100% - 36px);
-      pointer-events: none;
+      pointer-events: auto;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 11px;
       background: rgba(7, 10, 18, 0.74);
       backdrop-filter: blur(12px);
       box-shadow: var(--shadow);
+    }
+    .legend-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .legend-toggle,
+    .legend-show {
+      min-height: 26px;
+      padding: 4px 8px;
+      color: var(--cyan);
+      font-size: 11px;
+    }
+    .legend-show {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      z-index: 7;
+    }
+    .heatmap {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 6;
+      width: min(420px, calc(100% - 36px));
+      display: grid;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7, 10, 18, 0.76);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+    .heatmap-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .heatmap-title {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .heatmap-grid {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 7px;
+      background: rgba(2, 6, 23, 0.42);
+    }
+    .heatmap-tile {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #f8fafc;
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1.05;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 2px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+      transition: left 180ms ease, top 180ms ease, width 180ms ease, height 180ms ease, background-color 180ms ease, border-color 180ms ease;
+    }
+    .heatmap-tile.active {
+      border-color: #ffffff;
+      box-shadow: 0 0 16px rgba(56, 220, 226, 0.5);
+    }
+    .heatmap-tile.small {
+      font-size: 0;
+    }
+    .heatmap-toggle {
+      min-height: 26px;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .heatmap-show {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 7;
+      min-height: 30px;
+      padding: 6px 9px;
+      color: var(--cyan);
     }
     .legend-title {
       color: var(--cyan);
@@ -184,6 +277,12 @@
       color: var(--teal);
       border-radius: 5px;
       background: rgba(20, 184, 166, 0.45);
+    }
+    .schema.package {
+      color: #60a5fa;
+      border-radius: 5px;
+      background: rgba(37, 99, 235, 0.36);
+      box-shadow: 0 0 16px rgba(96, 165, 250, 0.7);
     }
     .schema.instance {
       color: var(--cyan);
@@ -251,15 +350,16 @@
     }
     .sidebar-toggle {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 18px;
+      left: -18px;
       z-index: 8;
-      width: 32px;
-      height: 32px;
-      min-height: 32px;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
       display: grid;
       place-items: center;
       padding: 0;
+      border-radius: 999px;
       border-color: rgba(94, 234, 212, 0.3);
       color: var(--cyan);
       font-size: 18px;
@@ -274,10 +374,9 @@
     }
     main.sidebar-collapsed .sidebar {
       display: block;
-      overflow: hidden;
+      overflow: visible;
     }
-    main.sidebar-collapsed .inspector,
-    main.sidebar-collapsed .replay {
+    main.sidebar-collapsed .inspector {
       visibility: hidden;
       opacity: 0;
       pointer-events: none;
@@ -286,7 +385,6 @@
       min-height: 0;
       overflow: auto;
       padding: 18px;
-      padding-top: 58px;
       transition: opacity 140ms ease;
     }
     .eyebrow {
@@ -349,6 +447,43 @@
       border-color: var(--line-strong);
       color: var(--cyan);
     }
+    .quality-list {
+      display: grid;
+      gap: 8px;
+    }
+    .quality-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.7);
+    }
+    .quality-item strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    .quality-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .quality-tag {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 6px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .quality-tag.high { color: #fecdd3; background: rgba(251, 113, 133, 0.16); border: 1px solid rgba(251, 113, 133, 0.36); }
+    .quality-tag.medium { color: #fde68a; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.32); }
+    .quality-tag.low { color: #bfdbfe; background: rgba(96, 165, 250, 0.13); border: 1px solid rgba(96, 165, 250, 0.28); }
+    .quality-tag.info { color: #a7f3d0; background: rgba(20, 184, 166, 0.12); border: 1px solid rgba(20, 184, 166, 0.3); }
     pre {
       margin: 0;
       max-height: 260px;
@@ -368,22 +503,81 @@
       font-size: 13px;
       line-height: 1.5;
     }
-    .replay {
-      border-top: 1px solid var(--line);
-      padding: 14px;
-      background: var(--panel-strong);
-      transition: opacity 140ms ease;
+    .replay-dock {
+      position: absolute;
+      left: calc(50% + 130px);
+      bottom: 18px;
+      z-index: 9;
+      width: min(560px, calc(100% - 44px));
+      transform: translateX(-50%);
+      border: 1px solid rgba(94, 234, 212, 0.24);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(13, 18, 31, 0.9);
+      box-shadow: 0 18px 52px rgba(0, 0, 0, 0.4), 0 0 34px rgba(56, 220, 226, 0.08);
+      backdrop-filter: blur(18px);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .replay-dock.dragging {
+      cursor: grabbing;
+      box-shadow: 0 24px 72px rgba(0, 0, 0, 0.52), 0 0 42px rgba(56, 220, 226, 0.16);
     }
     .timeline {
       width: 100%;
       accent-color: var(--cyan);
+      cursor: pointer;
+    }
+    .timeline-stack {
+      display: grid;
+      gap: 8px;
+    }
+    .trace-window {
+      position: relative;
+      height: 22px;
+      cursor: pointer;
+    }
+    .trace-window-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 8px;
+      height: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+    }
+    .trace-window-fill {
+      position: absolute;
+      top: 8px;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(56, 220, 226, 0.26), rgba(34, 197, 94, 0.5));
+      box-shadow: 0 0 18px rgba(56, 220, 226, 0.28);
+    }
+    .trace-window-handle {
+      position: absolute;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(226, 232, 240, 0.95);
+      border-radius: 999px;
+      background: var(--cyan);
+      box-shadow: 0 0 18px rgba(56, 220, 226, 0.6);
+      transform: translate(-50%, -50%);
+      cursor: ew-resize;
+    }
+    .trace-window-handle.end {
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.48);
     }
     .controls {
       display: grid;
-      grid-template-columns: auto auto auto minmax(0, 1fr);
+      grid-template-columns: auto auto auto auto minmax(0, 1fr);
       align-items: center;
       gap: 8px;
-      margin: 10px 0;
+      margin-top: 8px;
     }
     button {
       min-height: 34px;
@@ -398,6 +592,62 @@
     button:hover {
       border-color: var(--line-strong);
       box-shadow: 0 0 22px rgba(56, 220, 226, 0.16);
+    }
+    .icon-button {
+      width: 38px;
+      min-height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-radius: 11px;
+    }
+    .icon-button svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .icon-pause {
+      display: none;
+    }
+    .icon-button.is-playing .icon-play {
+      display: none;
+    }
+    .icon-button.is-playing .icon-pause {
+      display: block;
+    }
+    .export-button {
+      position: relative;
+      color: var(--cyan);
+    }
+    .export-button::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      z-index: 20;
+      width: 260px;
+      transform: translateX(-50%) translateY(4px);
+      border: 1px solid rgba(94, 234, 212, 0.28);
+      border-radius: 8px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: rgba(2, 6, 23, 0.96);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.35;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+    .export-button:hover::after,
+    .export-button:focus-visible::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
     .counter {
       justify-self: end;
@@ -428,6 +678,9 @@
       gap: 8px;
       padding: 11px;
       border-bottom: 1px solid var(--line);
+    }
+    .event-card-header > * {
+      min-width: 0;
     }
     .entity-token {
       min-width: 0;
@@ -527,10 +780,21 @@
     .json-number { color: #f8d68a; }
     .json-boolean { color: #c4b5fd; }
     .json-null { color: #718096; }
+    .json-key-event { color: #fb7185; }
+    .json-key-endpoint { color: #38dce2; }
+    .json-key-value { color: #f59e0b; }
+    .json-key-identity { color: #22c55e; }
+    .json-key-boundary { color: #fbbf24; }
     .json-entity-module { color: var(--teal); font-weight: 800; }
     .json-entity-class { color: var(--violet); font-weight: 800; }
     .json-entity-method { color: var(--amber); font-weight: 800; }
     .json-entity-function { color: var(--green); font-weight: 800; }
+    .json-entity-package { color: #93c5fd; font-weight: 800; }
+    .json-entity-resource { color: #c4b5fd; font-weight: 800; }
+    .json-entity-external { color: #fbbf24; font-weight: 900; }
+    .json-event-type { color: #fb7185; font-weight: 900; }
+    .json-boundary-type { color: #fbbf24; font-weight: 850; }
+    .json-redacted { color: #f43f5e; font-weight: 900; }
     .resize-row {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -647,6 +911,14 @@
     <main id="replay-layout">
       <section class="stage">
         <div id="cy"></div>
+        <button class="heatmap-show" id="heatmap-show" type="button">Treemap</button>
+        <div class="heatmap hidden" id="module-heatmap">
+          <div class="heatmap-header">
+            <div class="heatmap-title">Module Treemap</div>
+            <button class="heatmap-toggle" id="heatmap-toggle" type="button">Hide</button>
+          </div>
+          <div class="heatmap-grid" id="heatmap-grid"></div>
+        </div>
         <div id="resize-handles" class="hidden">
           <div class="resize-handle edge vertical" data-handle="left" aria-hidden="true"></div>
           <div class="resize-handle edge vertical" data-handle="right" aria-hidden="true"></div>
@@ -657,10 +929,15 @@
           <div class="resize-handle corner" data-handle="bottom-left" aria-hidden="true"></div>
           <div class="resize-handle corner" data-handle="bottom-right" aria-hidden="true"></div>
         </div>
-        <div class="legend">
-          <div class="legend-title">Schemas</div>
+        <button class="legend-show hidden" id="legend-show" type="button">Legend</button>
+        <div class="legend" id="legend">
+          <div class="legend-header">
+            <div class="legend-title">Schemas</div>
+            <button class="legend-toggle" id="legend-toggle" type="button">Hide</button>
+          </div>
           <div class="legend-grid">
             <span class="pill"><span class="schema module"></span>module shell</span>
+            <span class="pill"><span class="schema package"></span>package shell</span>
             <span class="pill"><span class="schema instance"></span>instance shell</span>
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
@@ -670,6 +947,33 @@
             <span class="pill"><span class="schema return"></span>return value</span>
           </div>
         </div>
+        <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
+          <div class="timeline-stack">
+            <div class="trace-window" id="trace-window" role="slider" aria-label="Trace export window">
+              <div class="trace-window-track"></div>
+              <div class="trace-window-fill" id="trace-window-fill"></div>
+              <div class="trace-window-handle start" id="trace-window-start" title="Trace window start"></div>
+              <div class="trace-window-handle end" id="trace-window-end" title="Trace window end"></div>
+            </div>
+            <input class="timeline" id="timeline" min="0" max="0" value="0" type="range" aria-label="Execution event position">
+          </div>
+          <div class="controls">
+            <button class="icon-button" id="back" type="button" aria-label="Previous event" title="Previous event">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path><path d="M9 12h11"></path></svg>
+            </button>
+            <button class="icon-button" id="play" type="button" aria-label="Play replay" title="Play replay">
+              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>
+            </button>
+            <button class="icon-button" id="forward" type="button" aria-label="Next event" title="Next event">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path><path d="M4 12h11"></path></svg>
+            </button>
+            <button class="icon-button export-button" id="export-trace" type="button" aria-label="Export selected trace window" title="Export selected trace window" data-tooltip="Export the exact trace events visible in the selected execution window as JSON for LLM review, debugging notes, or architecture discussion.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path><path d="M5 17v4"></path><path d="M19 17v4"></path></svg>
+            </button>
+            <span class="counter" id="counter">0 / 0</span>
+          </div>
+        </section>
       </section>
       <aside class="sidebar" id="sidebar">
         <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse details panel" aria-expanded="true" title="Collapse details panel">›</button>
@@ -692,18 +996,11 @@
               </div>
             </div>
           </div>
-        </section>
-        <section class="replay">
-          <input class="timeline" id="timeline" min="0" max="0" value="0" type="range">
-          <div class="controls">
-            <button id="back" type="button">Prev</button>
-            <button id="play" type="button">Play</button>
-            <button id="forward" type="button">Next</button>
-            <span class="counter" id="counter">0 / 0</span>
+          <div class="section" id="current-event-section">
+            <div class="eyebrow">Current Event</div>
+            <div class="narrative" id="event-narrative">No event selected.</div>
+            <div id="event-focus"></div>
           </div>
-          <div class="eyebrow">Current Event</div>
-          <div class="narrative" id="event-narrative">No event selected.</div>
-          <div id="event-focus"></div>
           <div class="section">
             <h3>Trace Evidence</h3>
             <pre class="json-view" id="event-details">No event selected.</pre>
@@ -715,6 +1012,7 @@
   <script id="snapshot-data" type="application/json">__SKELETON_SNAPSHOT_JSON__</script>
   <script>
     const snapshot = JSON.parse(document.getElementById("snapshot-data").textContent);
+    const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
     const ownerMethods = new Map();
@@ -725,6 +1023,7 @@
     let hoveredContainerId = null;
     let activeResizeDrag = null;
     let activeNodeMove = null;
+    let activeReplayDockDrag = null;
     let resizeStartState = null;
     const dragStartPositions = new Map();
     const containerPadding = 56;
@@ -840,11 +1139,43 @@
 
     function isVisibleActor(node) {
       if (!node) return false;
-      return node.type === "module" || node.type === "instance";
+      return node.type === "package" || node.type === "module" || node.type === "instance";
+    }
+
+    function packagePrefixesForModule(moduleName) {
+      const parts = String(moduleName || "").split(".").filter(Boolean);
+      if (parts.length <= 2) return [];
+      return parts.slice(1, -1).map((_part, index) => parts.slice(0, index + 2).join("."));
+    }
+
+    function packageNameForModule(moduleName) {
+      const prefixes = packagePrefixesForModule(moduleName);
+      return prefixes.length ? prefixes[prefixes.length - 1] : null;
+    }
+
+    function packageIdForName(packageName) {
+      return `package:${packageName}`;
+    }
+
+    function packageIdForModule(moduleName) {
+      const packageName = packageNameForModule(moduleName);
+      return packageName ? packageIdForName(packageName) : undefined;
+    }
+
+    function parentPackageIdForPackage(packageName) {
+      const parts = String(packageName || "").split(".").filter(Boolean);
+      if (parts.length <= 2) return undefined;
+      return packageIdForName(parts.slice(0, -1).join("."));
     }
 
     function moduleIdForName(moduleName) {
       return `module:${moduleName}`;
+    }
+
+    function moduleLabelForNode(node) {
+      if (node.type !== "module") return node.label || node.id;
+      const moduleName = String(node.module || node.label || node.id);
+      return packageIdForModule(moduleName) ? moduleName.split(".").pop() : node.label || moduleName;
     }
 
     function parentForFunction(node) {
@@ -853,6 +1184,14 @@
     }
 
     function parentForActor(node) {
+      if (node.type === "package") {
+        return parentPackageIdForPackage(node.package_name);
+      }
+      if (node.type === "module") {
+        const moduleName = node.module || node.label;
+        if (packageNames.has(moduleName)) return packageIdForName(moduleName);
+        return packageIdForModule(moduleName);
+      }
       if (node.type === "instance") {
         return moduleIdForName(node.module);
       }
@@ -894,7 +1233,7 @@
 
     function ownerLabel(ownerId) {
       if (!ownerId) return "entrypoint";
-      const node = rawNodes.get(ownerId);
+      const node = rawNodes.get(ownerId) || visualNodeData(ownerId);
       if (node?.type === "instance") return instanceLabel(node);
       return node?.label || ownerId.replace(/^(instance|module|method):/, "");
     }
@@ -996,7 +1335,48 @@
       return Number(node?.[field] || 0) + methodTotal;
     }
 
-    const actorNodes = Array.from(rawNodes.values())
+    const packageNames = new Set();
+    for (const node of rawNodes.values()) {
+      if (node?.type !== "module") continue;
+      for (const packageName of packagePrefixesForModule(node.module || node.label)) {
+        packageNames.add(packageName);
+      }
+    }
+
+    const packageNodes = Array.from(packageNames)
+      .sort((left, right) => left.split(".").length - right.split(".").length || left.localeCompare(right))
+      .map((packageName) => {
+        const depth = packageName.split(".").length;
+        const baseWidth = containerDefaultMinWidth + 60 + depth * 18;
+        const baseHeight = containerDefaultMinHeight + 34 + depth * 14;
+        return {
+          data: {
+            id: packageIdForName(packageName),
+            label: packageName,
+            type: "package",
+            package_name: packageName,
+            parent: parentPackageIdForPackage(packageName),
+            roles: "",
+            loc: 0,
+            call_count: 0,
+            fan_in: 0,
+            fan_out: 0,
+            degree: 0,
+            size: 46,
+            width: baseWidth,
+            height: baseHeight,
+            base_width: baseWidth,
+            base_height: baseHeight,
+            manual_width: 0,
+            manual_height: 0,
+            min_width: baseWidth,
+            min_height: baseHeight
+          },
+          classes: "container package-container unseen hidden"
+        };
+      });
+
+    const runtimeActorNodes = Array.from(rawNodes.values())
       .filter((node) => isVisibleActor(node))
       .map((node) => {
         const adjacency = archAdjacency.get(node.id) || { incoming: new Set(), outgoing: new Set() };
@@ -1015,7 +1395,7 @@
         return {
           data: {
             id: node.id,
-            label: node.type === "instance" ? instanceLabel(node) : node.label || node.id,
+            label: node.type === "instance" ? instanceLabel(node) : moduleLabelForNode(node),
             type: node.type,
             parent: parentForActor(node),
             roles: roles.join(", "),
@@ -1035,7 +1415,7 @@
             min_height: baseHeight
           },
           classes: [
-            node.type === "module" || node.type === "instance" ? "container" : "",
+            node.type === "package" || node.type === "module" || node.type === "instance" ? "container" : "",
             node.type === "module" ? "module-container" : "",
             node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
@@ -1044,11 +1424,16 @@
           ].filter(Boolean).join(" ")
         };
       });
+    const actorNodes = [...packageNodes, ...runtimeActorNodes];
 
     const visibleActorIds = new Set(actorNodes.map((node) => node.data.id));
 
     function ioNodeWidth(label) {
       return Math.max(150, Math.min(200, String(label || "").length * 10 + 64));
+    }
+
+    function callableNodeWidth(label) {
+      return Math.max(58, Math.min(220, String(label || "").length * 7 + 30));
     }
 
     const methodNodes = Array.from(observedCallables.values())
@@ -1057,6 +1442,7 @@
         const isIo = node.type === "io";
         const isExternalService = node.type === "external_service";
         const ioWidth = ioNodeWidth(label);
+        const callableWidth = callableNodeWidth(label);
         return {
           data: {
             id: node.id,
@@ -1081,6 +1467,9 @@
             fan_out: Number(node.fan_out || 0),
             degree: Number(node.fan_in || 0) + Number(node.fan_out || 0),
             size: isIo ? 52 : isExternalService ? 78 : 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4),
+            callable_width: callableWidth,
+            callable_height: 32,
+            callable_label_width: callableWidth - 14,
             io_width: ioWidth,
             io_height: 86,
             io_label_width: ioWidth - 34
@@ -1093,10 +1482,11 @@
       ...visibleActorIds,
       ...methodNodes.map((node) => node.data.id)
     ]);
+    const packageNodeData = new Map(packageNodes.map((node) => [node.data.id, node.data]));
 
     function visualNodeData(id) {
       if (!id) return null;
-      return observedCallables.get(id) || rawNodes.get(id) || null;
+      return observedCallables.get(id) || rawNodes.get(id) || packageNodeData.get(id) || null;
     }
 
     const archEdges = Array.from(archEdgeCounts.values())
@@ -1224,6 +1614,15 @@
           "min-width": "data(width)",
           "min-height": "data(height)"
         } },
+        { selector: 'node[type = "package"]', style: {
+          "shape": "round-rectangle",
+          "background-color": "#1d4ed8",
+          "border-color": "#93c5fd",
+          "background-opacity": 0.12,
+          "border-style": "dashed",
+          "font-size": 12,
+          "text-margin-y": -12
+        } },
         { selector: 'node[type = "module"]', style: {
           "shape": "round-rectangle",
           "background-color": "#0f766e",
@@ -1242,12 +1641,18 @@
         } },
         { selector: 'node[type = "method"]', style: {
           "shape": "round-rectangle",
+          "width": "data(callable_width)",
+          "height": "data(callable_height)",
+          "text-max-width": "data(callable_label_width)",
           "background-color": "#b45309",
           "border-color": "#fcd34d",
           "font-size": 9
         } },
         { selector: 'node[type = "function"]', style: {
           "shape": "round-rectangle",
+          "width": "data(callable_width)",
+          "height": "data(callable_height)",
+          "text-max-width": "data(callable_label_width)",
           "background-color": "#15803d",
           "border-color": "#86efac",
           "border-style": "dashed",
@@ -1442,6 +1847,14 @@
     document.addEventListener("pointermove", updateManualNodeMove);
     document.addEventListener("pointerup", endManualNodeMove);
     document.addEventListener("pointercancel", endManualNodeMove);
+    document.getElementById("replay-dock").addEventListener("pointerdown", startReplayDockDrag);
+    document.addEventListener("pointermove", updateReplayDockDrag);
+    document.addEventListener("pointerup", endReplayDockDrag);
+    document.addEventListener("pointercancel", endReplayDockDrag);
+    document.getElementById("trace-window").addEventListener("pointerdown", startTraceWindowDrag);
+    document.addEventListener("pointermove", updateTraceWindowDrag);
+    document.addEventListener("pointerup", endTraceWindowDrag);
+    document.addEventListener("pointercancel", endTraceWindowDrag);
     cy.on("drag", "node", () => {
       hideResizeUI();
     });
@@ -1459,7 +1872,12 @@
     document.getElementById("back").addEventListener("click", () => step(-1));
     document.getElementById("forward").addEventListener("click", () => step(1));
     document.getElementById("play").addEventListener("click", togglePlay);
+    document.getElementById("export-trace").addEventListener("click", exportTraceWindow);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
+    document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
+    document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
+    document.getElementById("legend-toggle").addEventListener("click", toggleLegend);
+    document.getElementById("legend-show").addEventListener("click", toggleLegend);
     document.getElementById("timeline").addEventListener("input", (event) => {
       current = Number(event.target.value);
       renderEvent();
@@ -1475,7 +1893,13 @@
     let current = events.length ? 0 : -1;
     let playTimer = null;
     let currentReplayMetrics = null;
+    let traceWindowStart = 0;
+    let traceWindowEnd = Math.max(0, events.length - 1);
+    let activeTraceWindowHandle = null;
     const revealedElementIds = new Set();
+    const revealSequence = new Map();
+    const manuallyPositionedNodeIds = new Set();
+    let nextRevealSequence = 0;
     document.getElementById("counter").textContent = `0 / ${events.length}`;
     showOverview();
     renderEvent();
@@ -1620,6 +2044,9 @@
       if (!activeNodeMove) return;
       const node = cy.getElementById(activeNodeMove.id);
       enforceNodeMoveConstraints(node);
+      if (node && !node.empty()) {
+        manuallyPositionedNodeIds.add(node.id());
+      }
       cy.userPanningEnabled(true);
       if (activeNodeMove.pointerId !== undefined) {
         try {
@@ -1632,6 +2059,136 @@
       maybeRenderResizeControls();
       renderResizeHandles();
       event?.preventDefault?.();
+    }
+
+    function startReplayDockDrag(event) {
+      if (event.button !== 0 || isReplayDockInteractiveTarget(event.target)) return;
+      const dock = document.getElementById("replay-dock");
+      const stage = document.querySelector(".stage");
+      const dockRect = dock.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      activeReplayDockDrag = {
+        startX: event.clientX,
+        startY: event.clientY,
+        left: dockRect.left - stageRect.left,
+        top: dockRect.top - stageRect.top,
+        width: dockRect.width,
+        height: dockRect.height,
+        pointerId: event.pointerId
+      };
+      dock.classList.add("dragging");
+      dock.style.left = `${activeReplayDockDrag.left}px`;
+      dock.style.top = `${activeReplayDockDrag.top}px`;
+      dock.style.bottom = "auto";
+      dock.style.transform = "none";
+      dock.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    }
+
+    function updateReplayDockDrag(event) {
+      if (!activeReplayDockDrag) return;
+      const dock = document.getElementById("replay-dock");
+      const stage = document.querySelector(".stage");
+      const stageRect = stage.getBoundingClientRect();
+      const margin = 12;
+      const nextLeft = activeReplayDockDrag.left + event.clientX - activeReplayDockDrag.startX;
+      const nextTop = activeReplayDockDrag.top + event.clientY - activeReplayDockDrag.startY;
+      const clampedLeft = Math.min(Math.max(margin, nextLeft), Math.max(margin, stageRect.width - activeReplayDockDrag.width - margin));
+      const clampedTop = Math.min(Math.max(margin, nextTop), Math.max(margin, stageRect.height - activeReplayDockDrag.height - margin));
+      dock.style.left = `${clampedLeft}px`;
+      dock.style.top = `${clampedTop}px`;
+      event.preventDefault();
+    }
+
+    function endReplayDockDrag(event) {
+      if (!activeReplayDockDrag) return;
+      const dock = document.getElementById("replay-dock");
+      const pointerId = activeReplayDockDrag.pointerId;
+      activeReplayDockDrag = null;
+      dock.classList.remove("dragging");
+      try {
+        dock.releasePointerCapture?.(pointerId);
+      } catch (_error) {
+        // no-op: ignore platforms that do not support pointer capture.
+      }
+      event?.preventDefault?.();
+    }
+
+    function isReplayDockInteractiveTarget(target) {
+      return Boolean(target?.closest?.("button, input, svg, path, .trace-window"));
+    }
+
+    function startTraceWindowDrag(event) {
+      if (event.button !== 0) return;
+      const handle = event.target.closest?.(".trace-window-handle");
+      activeTraceWindowHandle = handle?.id === "trace-window-end"
+        ? "end"
+        : handle?.id === "trace-window-start"
+          ? "start"
+          : nearestTraceWindowHandle(event);
+      updateTraceWindowFromPointer(event);
+      document.getElementById("trace-window").setPointerCapture?.(event.pointerId);
+      stopPlay();
+      event.preventDefault();
+    }
+
+    function updateTraceWindowDrag(event) {
+      if (!activeTraceWindowHandle) return;
+      updateTraceWindowFromPointer(event);
+      event.preventDefault();
+    }
+
+    function endTraceWindowDrag(event) {
+      if (!activeTraceWindowHandle) return;
+      activeTraceWindowHandle = null;
+      try {
+        document.getElementById("trace-window").releasePointerCapture?.(event.pointerId);
+      } catch (_error) {
+        // no-op: ignore platforms that do not support pointer capture.
+      }
+      event?.preventDefault?.();
+    }
+
+    function nearestTraceWindowHandle(event) {
+      const index = eventIndexFromPointer(event);
+      return Math.abs(index - traceWindowStart) <= Math.abs(index - traceWindowEnd) ? "start" : "end";
+    }
+
+    function updateTraceWindowFromPointer(event) {
+      const index = eventIndexFromPointer(event);
+      if (activeTraceWindowHandle === "start") {
+        traceWindowStart = Math.min(index, traceWindowEnd);
+      } else {
+        traceWindowEnd = Math.max(index, traceWindowStart);
+      }
+      if (current < traceWindowStart) current = traceWindowStart;
+      if (current > traceWindowEnd) current = traceWindowEnd;
+      renderEvent();
+    }
+
+    function eventIndexFromPointer(event) {
+      const windowElement = document.getElementById("trace-window");
+      const rect = windowElement.getBoundingClientRect();
+      if (!events.length || rect.width <= 0) return 0;
+      const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+      return Math.round(ratio * Math.max(0, events.length - 1));
+    }
+
+    function renderTraceWindow() {
+      const maxIndex = Math.max(0, events.length - 1);
+      const startPercent = maxIndex ? (traceWindowStart / maxIndex) * 100 : 0;
+      const endPercent = maxIndex ? (traceWindowEnd / maxIndex) * 100 : 100;
+      const fill = document.getElementById("trace-window-fill");
+      const start = document.getElementById("trace-window-start");
+      const end = document.getElementById("trace-window-end");
+      fill.style.left = `${startPercent}%`;
+      fill.style.width = `${Math.max(0, endPercent - startPercent)}%`;
+      start.style.left = `${startPercent}%`;
+      end.style.left = `${endPercent}%`;
+      const windowElement = document.getElementById("trace-window");
+      windowElement.setAttribute("aria-valuemin", "1");
+      windowElement.setAttribute("aria-valuemax", String(events.length || 1));
+      windowElement.setAttribute("aria-valuetext", `Selected trace window ${traceWindowStart + 1} to ${traceWindowEnd + 1} of ${events.length || 1}`);
     }
 
     function canPlaceNodeAt(node, position) {
@@ -1765,6 +2322,7 @@
       if (!container || container.empty()) {
         return;
       }
+      manuallyPositionedNodeIds.add(container.id());
       maybeRenderResizeControls();
       renderResizeHandles();
     }
@@ -1918,6 +2476,7 @@
         x: container.position().x,
         y: container.position().y
       });
+      manuallyPositionedNodeIds.add(container.id());
       maybeRenderResizeControls();
     }
 
@@ -2047,6 +2606,39 @@
       }
     }
 
+    function applyAncestorContainerSizeLimits(container) {
+      let current = container;
+      while (current && !current.empty()) {
+        applyContainerSizeLimits(current);
+        resolveContainerPeerOverlap(current);
+        current = current.parent();
+      }
+    }
+
+    function resolveContainerPeerOverlap(container) {
+      if (!container || container.empty() || !container.isParent() || container.hasClass("unseen") || container.hasClass("hidden")) return;
+      const peers = visiblePeersForNode(container).filter((node) => !node.hasClass("unseen") && !node.hasClass("hidden"));
+      if (!peers.length) return;
+      const parent = container.parent();
+      const width = Number(container.width?.() || container.data("width") || containerDefaultMinWidth);
+      const height = Number(container.height?.() || container.data("height") || containerDefaultMinHeight);
+      if (!overlapsCandidateNode(container, container.position(), width, height, peers, 14)) return;
+      const anchor = visibleCentroid(peers);
+      let candidate = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        candidate = firstOpenPosition(anchor, peers, container, 28, parent);
+        if (candidate) break;
+        if (parent && !parent.empty()) {
+          parent.data("manual_width", Number(parent.data("manual_width") || 0) + Math.max(160, width / 5));
+          parent.data("manual_height", Number(parent.data("manual_height") || 0) + Math.max(120, height / 5));
+          applyContainerSizeLimits(parent);
+        }
+      }
+      if (candidate) {
+        container.position(candidate);
+      }
+    }
+
     function revealForOwner(ownerId, extraIds = []) {
       if (!ownerId) return;
       cy.elements().removeClass("focus current dimmed pulse");
@@ -2075,20 +2667,20 @@
     }
 
     function syncVisibilityToReplay(index) {
-      const visibleIds = visibleElementIdsAt(index);
+      const visibleIds = visibleElementIdsAt(traceWindowStart, index);
       cy.elements().forEach((element) => {
         if (!visibleIds.has(element.id())) {
           element.addClass("unseen hidden").removeClass("current focus pulse");
         }
       });
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
         revealEventElements(events[eventIndex]);
       }
     }
 
-    function visibleElementIdsAt(index) {
+    function visibleElementIdsAt(startIndex, endIndex) {
       const visibleIds = new Set();
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = startIndex; eventIndex <= endIndex; eventIndex += 1) {
         const event = events[eventIndex];
         if (!event) continue;
         collectEndpointElementIds(event.callee, visibleIds);
@@ -2109,8 +2701,15 @@
       if (instanceId) visibleIds.add(instanceId);
       const ownerId = ownerForEndpoint(endpoint);
       if (ownerId) visibleIds.add(ownerId);
+      addPackageElementIds(endpoint.module, visibleIds);
       const shell = rawNodes.get(ownerId);
       if (shell?.type === "instance") visibleIds.add(moduleIdForName(shell.module));
+    }
+
+    function addPackageElementIds(moduleName, visibleIds) {
+      for (const packageName of packagePrefixesForModule(moduleName)) {
+        visibleIds.add(packageIdForName(packageName));
+      }
     }
 
     function revealEndpoint(endpoint) {
@@ -2132,8 +2731,23 @@
     function revealShell(ownerId) {
       if (!ownerId) return;
       const node = rawNodes.get(ownerId);
-      if (node?.type === "instance") revealElement(moduleIdForName(node.module));
+      if (ownerId.startsWith("package:")) {
+        const packageName = ownerId.replace(/^package:/, "");
+        const parentPackageId = parentPackageIdForPackage(packageName);
+        if (parentPackageId) revealElement(parentPackageId);
+      }
+      if (node?.type === "module") revealPackageChain(node.module || node.label);
+      if (node?.type === "instance") {
+        revealPackageChain(node.module);
+        revealElement(moduleIdForName(node.module));
+      }
       revealElement(ownerId);
+    }
+
+    function revealPackageChain(moduleName) {
+      for (const packageName of packagePrefixesForModule(moduleName)) {
+        revealElement(packageIdForName(packageName));
+      }
     }
 
     function revealElement(id) {
@@ -2143,6 +2757,8 @@
       if (!revealedElementIds.has(id)) {
         placeNewElement(element);
         revealedElementIds.add(id);
+        revealSequence.set(id, nextRevealSequence);
+        nextRevealSequence += 1;
       }
       element.removeClass("unseen hidden");
       return element;
@@ -2181,23 +2797,18 @@
     }
 
     function placeNewChildElement(element, parent) {
-      const parentPosition = { ...parent.position() };
       applyContainerSizeLimits(parent);
       const siblings = parent.children().filter((node) => !node.hasClass("unseen") && node.id() !== element.id());
-      const minimumDistance = 46;
-      const anchor = siblings.length ? visibleCentroid(siblings) : parentPosition;
-      const siblingPeers = siblings.filter((node) => node.id() !== element.id());
-      let candidate = firstOpenPosition(anchor, siblingPeers, element, minimumDistance, parent);
-      if (!candidate) {
-        parent.data("manual_width", Number(parent.data("manual_width") || 0) + 64);
-        parent.data("manual_height", Number(parent.data("manual_height") || 0) + 44);
+      if (!siblings.length) {
+        element.position(parent.position());
+        keepNodeInsideParent(element);
         applyContainerSizeLimits(parent);
-        candidate = firstOpenPosition(anchor, siblingPeers, element, minimumDistance, parent);
+        applyAncestorContainerSizeLimits(parent);
+        return;
       }
-      element.position(candidate || parent.position());
-      keepNodeInsideParent(element);
-      applyContainerSizeLimits(parent);
-      parent.position(parentPosition);
+      const siblingNodes = siblings.toArray ? siblings.toArray() : Array.from(siblings);
+      packSiblingGroup(parent.id(), [...siblingNodes, element]);
+      applyAncestorContainerSizeLimits(parent);
     }
 
     function visibleCentroid(nodes) {
@@ -2216,7 +2827,8 @@
     function firstOpenPosition(anchor, visibleNodes, element, minimumDistance, parent = null) {
       const baseRadius = Math.max(40, minimumDistance);
       const angles = [0, Math.PI / 6, Math.PI / 3, Math.PI / 2, (2 * Math.PI) / 3, (5 * Math.PI) / 6, Math.PI, (7 * Math.PI) / 6, (4 * Math.PI) / 3, (3 * Math.PI) / 2, (5 * Math.PI) / 3, (11 * Math.PI) / 6];
-      const maxRadius = baseRadius * 12;
+      const elementSpan = Math.max(Number(element.width?.() || element.data("width") || element.data("size") || 42), Number(element.height?.() || element.data("height") || element.data("size") || 42));
+      const maxRadius = Math.max(baseRadius * 60, elementSpan * 4 + visibleNodes.length * 90);
       for (let radius = baseRadius; radius <= maxRadius; radius += baseRadius / 2) {
         for (const angle of angles) {
           const candidate = {
@@ -2228,17 +2840,146 @@
           }
         }
       }
-      if (!parent || parent.empty()) {
-        return { x: anchor.x + minimumDistance, y: anchor.y + minimumDistance };
+      return null;
+    }
+
+    function resolveVisibleSiblingOverlaps() {
+      for (let pass = 0; pass < 4; pass += 1) {
+        const visibleNodes = cy.nodes().filter((node) => !node.hasClass("unseen") && !node.hasClass("hidden"));
+        const groups = new Map();
+        visibleNodes.forEach((node) => {
+          const parent = node.parent();
+          const parentId = parent && !parent.empty() ? parent.id() : "__root__";
+          if (!groups.has(parentId)) groups.set(parentId, []);
+          groups.get(parentId).push(node);
+        });
+        const orderedGroups = Array.from(groups.entries()).sort(([leftParent], [rightParent]) => groupDepth(rightParent) - groupDepth(leftParent));
+        let packed = false;
+        for (const [parentId, nodes] of orderedGroups) {
+          if (nodes.length <= 1 || !siblingGroupOverlaps(nodes)) continue;
+          if (parentId === "__root__") {
+            packed = resolveRootSiblingOverlaps(nodes) || packed;
+          } else {
+            packSiblingGroup(parentId, nodes);
+            packed = true;
+          }
+        }
+        if (!packed) return;
       }
-      return parent.position();
+    }
+
+    function resolveRootSiblingOverlaps(nodes) {
+      const sorted = nodes.slice().sort((left, right) => rootPlacementRank(left) - rootPlacementRank(right));
+      let moved = false;
+      for (const node of sorted) {
+        const peers = sorted.filter((peer) => peer.id() !== node.id() && !peer.hasClass("unseen") && !peer.hasClass("hidden"));
+        if (!peers.length || !overlapsVisibleNode(node, node.position(), peers, 8)) continue;
+        const movable = !manuallyPositionedNodeIds.has(node.id());
+        const candidate = movable ? firstOpenPosition(visibleCentroid(peers), peers, node, 48, null) : null;
+        if (candidate) {
+          node.position(candidate);
+          moved = true;
+          continue;
+        }
+        const fallback = peers
+          .slice()
+          .reverse()
+          .find((peer) => !manuallyPositionedNodeIds.has(peer.id()));
+        if (!fallback) continue;
+        const fallbackPeers = sorted.filter((peer) => peer.id() !== fallback.id() && !peer.hasClass("unseen") && !peer.hasClass("hidden"));
+        const fallbackCandidate = firstOpenPosition(visibleCentroid(fallbackPeers), fallbackPeers, fallback, 48, null);
+        if (fallbackCandidate) {
+          fallback.position(fallbackCandidate);
+          moved = true;
+        }
+      }
+      return moved;
+    }
+
+    function rootPlacementRank(node) {
+      const manualWeight = manuallyPositionedNodeIds.has(node.id()) ? -1000000 : 0;
+      const sequence = revealSequence.has(node.id()) ? revealSequence.get(node.id()) : 100000;
+      return manualWeight + sequence;
+    }
+
+    function siblingGroupOverlaps(nodes) {
+      for (let index = 0; index < nodes.length; index += 1) {
+        const node = nodes[index];
+        const peers = nodes.filter((peer) => peer.id() !== node.id());
+        if (overlapsVisibleNode(node, node.position(), peers, 2)) return true;
+      }
+      return false;
+    }
+
+    function packSiblingGroup(parentId, nodes) {
+      const parent = parentId === "__root__" ? null : cy.getElementById(parentId);
+      const sorted = nodes.slice().sort((left, right) => {
+        const leftLabel = String(left.data("label") || left.id());
+        const rightLabel = String(right.data("label") || right.id());
+        return leftLabel.localeCompare(rightLabel);
+      });
+      const maxWidth = Math.max(...sorted.map((node) => Number(node.width?.() || node.data("width") || node.data("size") || 42)));
+      const maxHeight = Math.max(...sorted.map((node) => Number(node.height?.() || node.data("height") || node.data("size") || 42)));
+      const cellWidth = maxWidth + 58;
+      const cellHeight = maxHeight + 46;
+      const columns = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
+      const rows = Math.ceil(sorted.length / columns);
+      if (parent && !parent.empty()) {
+        const baseWidth = Number(parent.data("base_width") || containerDefaultMinWidth);
+        const baseHeight = Number(parent.data("base_height") || containerDefaultMinHeight);
+        const requiredWidth = columns * cellWidth + containerPadding;
+        const requiredHeight = rows * cellHeight + containerPadding;
+        parent.data("manual_width", Math.max(Number(parent.data("manual_width") || 0), requiredWidth - baseWidth));
+        parent.data("manual_height", Math.max(Number(parent.data("manual_height") || 0), requiredHeight - baseHeight));
+        applyContainerSizeLimits(parent);
+      }
+      const center = parent && !parent.empty() ? parent.position() : visibleCentroid(sorted);
+      const startX = center.x - ((columns - 1) * cellWidth) / 2;
+      const startY = center.y - ((rows - 1) * cellHeight) / 2;
+      sorted.forEach((node, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        node.position({
+          x: startX + column * cellWidth,
+          y: startY + row * cellHeight
+        });
+        keepNodeInsideParent(node);
+      });
+      if (parent && !parent.empty()) {
+        applyAncestorContainerSizeLimits(parent);
+      }
+    }
+
+    function groupDepth(parentId) {
+      if (parentId === "__root__") return 0;
+      const parent = cy.getElementById(parentId);
+      if (!parent || parent.empty()) return 0;
+      let depth = 1;
+      let current = parent.parent();
+      while (current && !current.empty()) {
+        depth += 1;
+        current = current.parent();
+      }
+      return depth;
+    }
+
+    function nodeArea(node) {
+      return nodeModelWidth(node) * nodeModelHeight(node);
+    }
+
+    function nodeModelWidth(node) {
+      return Math.max(Number(node.width?.() || 0), Number(node.data("width") || 0), Number(node.data("size") || 0), 42);
+    }
+
+    function nodeModelHeight(node) {
+      return Math.max(Number(node.height?.() || 0), Number(node.data("height") || 0), Number(node.data("size") || 0), 42);
     }
 
     function nodeBoundingBox(node, position = null, width = null, height = null) {
-      const nodeWidth = Number(width ?? (node.width?.() || node.data("width") || node.data("size") || 42));
-      const nodeHeight = Number(height ?? (node.height?.() || node.data("height") || node.data("size") || 42));
+      const nodeWidth = Number(width ?? nodeModelWidth(node));
+      const nodeHeight = Number(height ?? nodeModelHeight(node));
       const point = position || node.position();
-      const pad = 2;
+      const pad = node.isParent && node.isParent() ? 32 : 4;
       return {
         x1: point.x - nodeWidth / 2 - pad,
         y1: point.y - nodeHeight / 2 - pad,
@@ -2373,7 +3114,7 @@
         edgeWeights.set(edgeId, edge);
       }
 
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
         const event = events[eventIndex];
         const targetOwner = ownerForEndpoint(event.callee);
         const sourceOwner = ownerForEndpoint(event.caller);
@@ -2482,6 +3223,7 @@
         .join("");
       document.getElementById("details").innerHTML = `
         <div class="section"><h3>Most Active Actors</h3><div class="chips">${topActors || '<span class="empty">No runtime actors observed.</span>'}</div></div>
+        <div class="section"><h3>Quality Signals</h3>${qualitySignals()}</div>
         <div class="section"><h3>How To Read This</h3><div class="node-kind">
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
@@ -2490,6 +3232,21 @@
         </div></div>
       `;
       bindChipClicks();
+    }
+
+    function qualitySignals() {
+      const findings = Array.isArray(quality.findings) ? quality.findings.slice(0, 4) : [];
+      if (!findings.length) return '<div class="empty">No quality signals generated for this scenario.</div>';
+      return `<div class="quality-list">${findings.map((finding) => {
+        const severity = String(finding.severity || "info");
+        const evidence = Array.isArray(finding.evidence) ? finding.evidence.slice(0, 2).join(" · ") : "";
+        return `
+          <div class="quality-item">
+            <strong><span class="quality-tag ${escapeAttr(severity)}">${escapeHtml(severity)}</span>${escapeHtml(finding.title || "Quality signal")}</strong>
+            <span>${escapeHtml(finding.actor_label || finding.actor_id || "runtime")} ${evidence ? `· ${escapeHtml(evidence)}` : ""}</span>
+          </div>
+        `;
+      }).join("")}</div>`;
     }
 
     function showNode(id) {
@@ -2582,7 +3339,7 @@
 
     function step(direction) {
       if (!events.length) return;
-      current = Math.max(0, Math.min(events.length - 1, current + direction));
+      current = Math.max(traceWindowStart, Math.min(traceWindowEnd, current + direction));
       renderEvent();
     }
 
@@ -2591,9 +3348,12 @@
         stopPlay();
         return;
       }
-      document.getElementById("play").textContent = "Pause";
+      const play = document.getElementById("play");
+      play.classList.add("is-playing");
+      play.setAttribute("aria-label", "Pause replay");
+      play.setAttribute("title", "Pause replay");
       playTimer = window.setInterval(() => {
-        if (current >= events.length - 1) {
+        if (current >= traceWindowEnd) {
           stopPlay();
           return;
         }
@@ -2605,7 +3365,10 @@
       if (!playTimer) return;
       window.clearInterval(playTimer);
       playTimer = null;
-      document.getElementById("play").textContent = "Play";
+      const play = document.getElementById("play");
+      play.classList.remove("is-playing");
+      play.setAttribute("aria-label", "Play replay");
+      play.setAttribute("title", "Play replay");
     }
 
     function toggleSidebar() {
@@ -2623,8 +3386,158 @@
       }, 190);
     }
 
+    function toggleHeatmap() {
+      const heatmap = document.getElementById("module-heatmap");
+      const show = document.getElementById("heatmap-show");
+      const collapsed = heatmap.classList.toggle("hidden");
+      show.classList.toggle("hidden", !collapsed);
+    }
+
+    function toggleLegend() {
+      const legend = document.getElementById("legend");
+      const show = document.getElementById("legend-show");
+      const collapsed = legend.classList.toggle("hidden");
+      show.classList.toggle("hidden", !collapsed);
+    }
+
+    function exportTraceWindow() {
+      const start = Math.max(0, traceWindowStart);
+      const end = Math.min(events.length - 1, traceWindowEnd);
+      const selectedEvents = events.slice(start, end + 1);
+      const selectedIds = visibleElementIdsAt(start, end);
+      const selectedNodes = (snapshot.nodes || []).filter((node) => selectedIds.has(node.id));
+      const selectedEdges = (snapshot.edges || []).filter((edge) => selectedIds.has(edge.source) || selectedIds.has(edge.target));
+      const payload = {
+        schema_version: 1,
+        kind: "skeleton_trace_window",
+        project_root: snapshot.project_root || "",
+        selected_window: {
+          start_event_index: start,
+          end_event_index: end,
+          event_count: selectedEvents.length
+        },
+        llm_note: "This export contains the exact Skeleton execution-window events selected in the replay UI, plus related nodes and edges. Use it to discuss the runtime behavior without relying on screenshots.",
+        events: selectedEvents,
+        nodes: selectedNodes,
+        edges: selectedEdges,
+        quality: quality
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `skeleton-trace-window-${start + 1}-${end + 1}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function renderModuleHeatmap(index) {
+      const grid = document.getElementById("heatmap-grid");
+      const modules = moduleHeatmapAt(index);
+      if (!modules.length) {
+        grid.innerHTML = '<div class="empty">No module touches observed yet.</div>';
+        return;
+      }
+      const activeModules = new Set([events[index]?.caller?.module, events[index]?.callee?.module].filter(Boolean));
+      const rect = grid.getBoundingClientRect();
+      const layout = treemapLayout(modules, Math.max(1, rect.width || 398), Math.max(1, rect.height || 220));
+      grid.innerHTML = layout.map(({ module, x, y, width, height }) => {
+        const hue = Math.max(0, 188 - Math.min(150, module.fan_out * 26));
+        const lightness = activeModules.has(module.module) ? 56 : Math.max(34, 50 - Math.min(14, module.touches * 0.7));
+        const label = shortModuleLabel(module.module);
+        const activeClass = activeModules.has(module.module) ? " active" : "";
+        const smallClass = width < 34 || height < 20 ? " small" : "";
+        const hover = `${module.module}\nSize: ${module.touches} observed module touches in the selected trace window.\nColor hue: fan-out ${module.fan_out}; more fan-out shifts toward warmer warning colors.\nBrightness: ${activeModules.has(module.module) ? "currently active in this event" : "historical activity in this window"}.`;
+        return `<div class="heatmap-tile${activeClass}${smallClass}" title="${escapeAttr(hover)}" style="left:${x}px;top:${y}px;width:${width}px;height:${height}px;background-color:hsl(${hue} 78% ${lightness}%);">${escapeHtml(label)}</div>`;
+      }).join("");
+    }
+
+    function moduleHeatmapAt(index) {
+      const modules = new Map();
+      function record(moduleName) {
+        if (!moduleName || !rawNodes.has(moduleIdForName(moduleName))) return null;
+        if (!modules.has(moduleName)) modules.set(moduleName, { module: moduleName, touches: 0, fan_out: 0, outgoing: new Set() });
+        return modules.get(moduleName);
+      }
+      for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
+        const event = events[eventIndex];
+        if (!event) continue;
+        const callee = record(event.callee?.module);
+        if (callee) callee.touches += 1;
+        const caller = record(event.caller?.module);
+        if (caller) caller.touches += 1;
+        if (event.event_type === "call" && caller && callee && caller.module !== callee.module) {
+          caller.outgoing.add(callee.module);
+        }
+      }
+      return Array.from(modules.values())
+        .map((module) => ({ ...module, fan_out: module.outgoing.size, value: Math.max(1, module.touches) }))
+        .sort((left, right) => right.touches - left.touches || right.fan_out - left.fan_out || left.module.localeCompare(right.module))
+        .slice(0, 80);
+    }
+
+    function treemapLayout(modules, width, height) {
+      const items = modules
+        .map((module) => ({ module, value: Math.max(1, Number(module.value || module.touches || 1)) }))
+        .sort((left, right) => right.value - left.value || left.module.module.localeCompare(right.module.module));
+      const rects = [];
+      layoutTreemapSlice(items, 0, 0, width, height, rects);
+      return rects.map((rect) => ({
+        ...rect,
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width: Math.max(1, Math.round(rect.width)),
+        height: Math.max(1, Math.round(rect.height))
+      }));
+    }
+
+    function layoutTreemapSlice(items, x, y, width, height, rects) {
+      if (!items.length || width <= 0 || height <= 0) return;
+      if (items.length === 1) {
+        rects.push({ module: items[0].module, x, y, width, height });
+        return;
+      }
+      const total = items.reduce((sum, item) => sum + item.value, 0);
+      const split = balancedTreemapSplit(items, total);
+      const first = items.slice(0, split);
+      const second = items.slice(split);
+      const firstTotal = first.reduce((sum, item) => sum + item.value, 0);
+      const ratio = total ? firstTotal / total : 0.5;
+      if (width >= height) {
+        const firstWidth = Math.max(1, width * ratio);
+        layoutTreemapSlice(first, x, y, firstWidth, height, rects);
+        layoutTreemapSlice(second, x + firstWidth, y, Math.max(1, width - firstWidth), height, rects);
+      } else {
+        const firstHeight = Math.max(1, height * ratio);
+        layoutTreemapSlice(first, x, y, width, firstHeight, rects);
+        layoutTreemapSlice(second, x, y + firstHeight, width, Math.max(1, height - firstHeight), rects);
+      }
+    }
+
+    function balancedTreemapSplit(items, total) {
+      let accumulated = 0;
+      for (let index = 0; index < items.length - 1; index += 1) {
+        const next = accumulated + items[index].value;
+        if (next >= total / 2) {
+          return index === 0 ? 1 : (Math.abs(total / 2 - accumulated) < Math.abs(next - total / 2) ? index : index + 1);
+        }
+        accumulated = next;
+      }
+      return Math.max(1, Math.floor(items.length / 2));
+    }
+
+    function shortModuleLabel(moduleName) {
+      const parts = String(moduleName || "").split(".").filter(Boolean);
+      return parts.length ? parts[parts.length - 1] : String(moduleName || "");
+    }
+
     function renderEvent() {
       cy.elements().removeClass("current dimmed focus pulse");
+      if (events.length) {
+        current = Math.max(traceWindowStart, Math.min(traceWindowEnd, current));
+      }
       const event = events[current];
       if (!event) return;
       const sourceOwner = focusOwnerForEndpoint(event.caller);
@@ -2632,6 +3545,8 @@
       syncVisibilityToReplay(current);
       currentReplayMetrics = replayMetricsAt(current);
       applyReplayMetrics(currentReplayMetrics);
+      resolveVisibleSiblingOverlaps();
+      renderModuleHeatmap(current);
       const sourceNode = visualCallableId(event.caller);
       const targetNode = visualCallableId(event.callee);
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
@@ -2644,8 +3559,9 @@
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
       if (targetInstance) cy.getElementById(targetInstance).addClass("current");
       if (runtimeEdge) runtimeEdge.addClass("current");
+      renderTraceWindow();
       document.getElementById("timeline").value = String(current);
-      document.getElementById("counter").textContent = `${current + 1} / ${events.length}`;
+      document.getElementById("counter").textContent = `${current + 1} / ${events.length} · ${traceWindowStart + 1}-${traceWindowEnd + 1}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
       document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
@@ -2781,7 +3697,7 @@
       return escaped.replace(
         /(&quot;[^&]*?&quot;)(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/g,
         (match, quoted, colon, booleanValue) => {
-          if (quoted && colon) return `<span class="json-key">${quoted}</span>${colon}`;
+          if (quoted && colon) return `<span class="json-key ${jsonKeyClass(quoted)}">${quoted}</span>${colon}`;
           if (quoted) return `<span class="${jsonStringClass(quoted)}">${quoted}</span>`;
           if (booleanValue === "true" || booleanValue === "false") return `<span class="json-boolean">${match}</span>`;
           if (booleanValue === "null") return `<span class="json-null">${match}</span>`;
@@ -2790,10 +3706,26 @@
       );
     }
 
+    function jsonKeyClass(quoted) {
+      const key = quoted.replace(/^&quot;|&quot;$/g, "");
+      if (["event_type", "order", "timestamp", "depth", "schema_version"].includes(key)) return "json-key-event";
+      if (["caller", "callee"].includes(key)) return "json-key-endpoint";
+      if (["args", "return_value", "value", "summary", "len"].includes(key)) return "json-key-value";
+      if (["module", "class_name", "function", "qualified_name", "node_id", "instance_id", "object_id", "file", "line"].includes(key)) return "json-key-identity";
+      if (["endpoint_type", "resource_category", "service_name", "service_kind"].includes(key)) return "json-key-boundary";
+      return "";
+    }
+
     function jsonStringClass(quoted) {
       const value = quoted.replace(/^&quot;|&quot;$/g, "");
+      if (value === "call" || value === "return") return "json-event-type";
+      if (value === "external_service" || value === "resource" || value === "network" || value === "file" || value === "stdout" || value === "db") return "json-boundary-type";
+      if (value === "redacted") return "json-redacted";
+      if (value.startsWith("package:")) return "json-entity-package";
       if (value.startsWith("module:")) return "json-entity-module";
       if (value.startsWith("class:")) return "json-entity-class";
+      if (value.startsWith("resource:")) return "json-entity-resource";
+      if (value.startsWith("external_service:")) return "json-entity-external";
       if (value.startsWith("function:")) return "json-entity-function";
       if (value.includes(".") && value.includes("Greeter")) return "json-entity-method";
       return "json-string";

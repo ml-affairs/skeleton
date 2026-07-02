@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
-from skeleton_replay.analysis import SnapshotBuilder, SnapshotMetrics
+from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter, SnapshotBuilder, SnapshotMetrics
 from skeleton_replay.interface import ColorMode, HtmlReportOpener, OutputPathResolver, SkeletonConsole
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
@@ -54,6 +55,16 @@ class RunConfiguration:
         """Return the workflow narrative output path."""
         return self.out_dir / "workflow.md"
 
+    @property
+    def quality_path(self) -> Path:
+        """Return the machine-readable quality report path."""
+        return self.out_dir / "quality.json"
+
+    @property
+    def quality_markdown_path(self) -> Path:
+        """Return the human-readable quality report path."""
+        return self.out_dir / "architecture_quality.md"
+
     def trace_options(self) -> TraceOptions:
         """Return runtime tracing options for this command."""
         return TraceOptions(
@@ -73,6 +84,8 @@ class RunCommand:
     runner: TargetScriptRunner = field(default_factory=TargetScriptRunner)
     report_writer: HtmlReportWriter = field(default_factory=HtmlReportWriter)
     workflow_writer: WorkflowNarrativeWriter = field(default_factory=WorkflowNarrativeWriter)
+    quality_analyzer: ArchitectureQualityAnalyzer = field(default_factory=ArchitectureQualityAnalyzer)
+    quality_writer: ArchitectureQualityWriter = field(default_factory=ArchitectureQualityWriter)
     output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
     report_opener: ReportOpener = field(default_factory=HtmlReportOpener)
 
@@ -101,6 +114,13 @@ class RunCommand:
         snapshot = SnapshotBuilder(config.project_root).build(config.trace_path, config.snapshot_path)
         metrics = SnapshotMetrics.from_snapshot(snapshot)
 
+        self.console.step("Analyzing design-quality signals")
+        quality = self.quality_analyzer.analyze(snapshot)
+        snapshot["quality"] = quality
+        config.snapshot_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True), encoding="utf-8")
+        self.quality_writer.write_json(quality, config.quality_path)
+        self.quality_writer.write_markdown(quality, config.quality_markdown_path)
+
         self.console.step("Writing LLM-readable workflow narrative")
         self.workflow_writer.write(snapshot, config.workflow_path)
 
@@ -124,6 +144,8 @@ class RunCommand:
             trace_path=config.trace_path,
             snapshot_path=config.snapshot_path,
             workflow_path=config.workflow_path,
+            quality_path=config.quality_path,
+            quality_markdown_path=config.quality_markdown_path,
             report_path=report_path,
             report_opened=report_opened,
         )

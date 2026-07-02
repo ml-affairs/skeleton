@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from skeleton_replay.analysis import SnapshotBuilder, SnapshotMetrics
+from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter, SnapshotBuilder, SnapshotMetrics
 from skeleton_replay.interface import HtmlReportOpener, OutputPathResolver
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
@@ -19,6 +20,8 @@ class TraceSessionResult:
     trace_path: Path
     snapshot_path: Path
     workflow_path: Path
+    quality_path: Path
+    quality_markdown_path: Path
     report_path: Path | None
     report_opened: bool
     event_count: int
@@ -47,6 +50,8 @@ class TraceSession:
     runner: TargetScriptRunner = field(default_factory=TargetScriptRunner)
     report_writer: HtmlReportWriter = field(default_factory=HtmlReportWriter)
     workflow_writer: WorkflowNarrativeWriter = field(default_factory=WorkflowNarrativeWriter)
+    quality_analyzer: ArchitectureQualityAnalyzer = field(default_factory=ArchitectureQualityAnalyzer)
+    quality_writer: ArchitectureQualityWriter = field(default_factory=ArchitectureQualityWriter)
     output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
     report_opener: HtmlReportOpener = field(default_factory=HtmlReportOpener)
 
@@ -77,8 +82,15 @@ class TraceSession:
         trace_path = trace_result.trace_path if trace_result else out_dir / "trace.jsonl"
         snapshot_path = out_dir / "snapshot.json"
         workflow_path = out_dir / "workflow.md"
+        quality_path = out_dir / "quality.json"
+        quality_markdown_path = out_dir / "architecture_quality.md"
         snapshot = SnapshotBuilder(project_root).build(trace_path, snapshot_path)
         metrics = SnapshotMetrics.from_snapshot(snapshot)
+        quality = self.quality_analyzer.analyze(snapshot)
+        snapshot["quality"] = quality
+        snapshot_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True), encoding="utf-8")
+        self.quality_writer.write_json(quality, quality_path)
+        self.quality_writer.write_markdown(quality, quality_markdown_path)
         self.workflow_writer.write(snapshot, workflow_path)
 
         report_path: Path | None = None
@@ -94,6 +106,8 @@ class TraceSession:
             trace_path=trace_path,
             snapshot_path=snapshot_path,
             workflow_path=workflow_path,
+            quality_path=quality_path,
+            quality_markdown_path=quality_markdown_path,
             report_path=report_path,
             report_opened=report_opened,
             event_count=event_count,

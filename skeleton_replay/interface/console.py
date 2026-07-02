@@ -68,6 +68,8 @@ class SkeletonConsole:
         snapshot_path: Path,
         workflow_path: Path,
         report_path: Path | None,
+        quality_path: Path | None = None,
+        quality_markdown_path: Path | None = None,
         report_opened: bool = False,
     ) -> None:
         """Render the final run summary."""
@@ -76,6 +78,10 @@ class SkeletonConsole:
         self.write(f"  {self._muted('trace   ')} {trace_path}")
         self.write(f"  {self._muted('snapshot')} {snapshot_path}")
         self.write(f"  {self._muted('workflow')} {workflow_path}")
+        if quality_path:
+            self.write(f"  {self._muted('quality ')} {quality_path}")
+        if quality_markdown_path:
+            self.write(f"  {self._muted('design  ')} {quality_markdown_path}")
         if report_path:
             self.write(f"  {self._muted('report  ')} {report_path}")
         self.write("")

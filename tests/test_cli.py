@@ -63,6 +63,8 @@ class TestRunCommand:
         assert (out_dir / "trace.jsonl").exists()
         assert (out_dir / "snapshot.json").exists()
         assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
         assert (out_dir / "report.html").exists()
         assert (out_dir / "trace.jsonl").stat().st_size > 0
         assert (out_dir / "report.html").stat().st_size > 0
@@ -97,10 +99,13 @@ class TestRunCommand:
         assert (out_dir / "trace.jsonl").exists()
         assert (out_dir / "snapshot.json").exists()
         assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
         assert (out_dir / "report.html").exists()
 
         snapshot = json.loads((out_dir / "snapshot.json").read_text(encoding="utf-8"))
         assert snapshot["event_count"] > 0
+        assert snapshot["quality"]["summary"]["events"] == snapshot["event_count"]
         assert any(node["id"] == "function:app.main" for node in snapshot["nodes"])
         assert any(node["id"] == "function:service.Greeter.greet" for node in snapshot["nodes"])
         assert not any(node["id"] == "function:service.Greeter" for node in snapshot["nodes"])
