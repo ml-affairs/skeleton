@@ -5,6 +5,21 @@ All notable changes to Skeleton are documented in this file.
 The format follows the spirit of Keep a Changelog, and versions follow
 Semantic Versioning while the project is public-alpha software.
 
+## [0.4.0] - 2026-07-02
+
+### Added
+
+- Structured return aggregation in `snapshot.json` for repeated compatible dictionary-like return records.
+- Report and workflow rendering for structured-return groups as semantic tables with raw event expansion.
+- Configurable structured-return tuning and display-label templates through `pyproject.toml`.
+- Concise graph hover cards for latest edge and instance evidence.
+- Shared artifact-generation pipeline for CLI and Python API report outputs.
+
+### Changed
+
+- The report collapses low-complexity structured-return calls by default while preserving raw trace events.
+- Instance labels prefer semantic record identity when derived from structured returns, with technical `Class@0x...` identity retained underneath.
+
 ## [0.3.0] - 2026-07-02
 
 ### Added
