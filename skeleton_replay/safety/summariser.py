@@ -15,7 +15,7 @@ class ValueSummariser:
     """Creates JSON-safe summaries of runtime values without walking objects."""
 
     max_string: int = 120
-    max_container_items: int = 5
+    max_container_items: int = 12
     max_depth: int = 2
     secret_keywords: tuple[str, ...] = SECRET_KEYWORDS
 

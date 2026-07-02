@@ -146,7 +146,7 @@ callable names, so it should be added deliberately with tests.
 Do not treat these as stable API contracts yet:
 
 - trace JSON schema beyond `schema_version: 1`
-- snapshot projection details used only by the HTML report
+- derived snapshot presentation details used by workflow and HTML reports
 - report JavaScript internals
 - exact output styling or graph layout behavior
 - private helpers inside runtime, analysis, safety, interface, or reporting

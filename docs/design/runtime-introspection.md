@@ -219,6 +219,54 @@ Instead it records summaries:
 
 The raw objects are discarded after summarisation.
 
+## Structured Return Aggregation
+
+Some applications materialize many small metadata dictionaries during setup or
+inspection. In the raw trace these are still ordinary call and return events,
+and `trace.jsonl` keeps them in chronological order.
+
+The snapshot, workflow narrative, and HTML report add a presentation layer over
+those raw events. When the same callable repeatedly returns compatible safe
+dictionary previews with mostly scalar values, Skeleton emits
+`structured_return_groups` in `snapshot.json`. The detection model is generic:
+it uses observed return shape, key overlap, scalar summaries, repeated records,
+and low call complexity. Names such as `payload`, `to_dict`, `metadata`, or
+`schema` are weak hints only; an arbitrary function name can still group when
+the observed data matches, and a `payload()` method with real child calls or
+resource behavior stays in the normal graph.
+
+Groups can promote semantic fields such as `name`, `id`, `key`, `kind`, `type`,
+`lane`, `owner`, `role`, `stage`, `event_type`, and `active` when those keys are
+present in safe previews. Optional `pyproject.toml` settings can tune record
+thresholds, key overlap, labels, and row display fields without requiring
+application decorators or trace-schema changes.
+
+```toml
+[tool.skeleton.structured_returns]
+enabled = true
+min_records = 3
+min_key_overlap = 0.75
+collapse_by_default = true
+label_fields = ["name", "id", "key", "kind", "type", "lane", "owner", "role", "stage", "event_type"]
+
+[tool.skeleton.structured_returns.groups]
+"*.PromptContextLaneBoundary.payload" = "Prompt context lane catalog"
+
+[tool.skeleton.display_labels]
+"*.PromptContextLaneBoundary" = "{lane}"
+```
+
+The report renders these derived groups as cards and tables by default, with
+expandable raw event evidence. Exported trace windows include overlapping
+structured-return groups so LLM and debugging review get both the concise table
+and the exact call/return evidence. This keeps catalog or manifest
+materialization from dominating the primary architecture graph with repeated
+instance-method labels, while preserving exact raw event order, caller/callee
+names, timestamps, arguments, return summaries, and object ids for debugging.
+
+Structured return groups should be read as derived presentation evidence, not
+data loss and not necessarily workflow actions.
+
 ## Important Limitations
 
 Skeleton should be honest about what this mechanism can and cannot know.

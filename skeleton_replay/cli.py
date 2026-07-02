@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
-from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter, SnapshotBuilder, SnapshotMetrics
-from skeleton_replay.interface import ColorMode, HtmlReportOpener, OutputPathResolver, SkeletonConsole
+from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
+from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, ColorMode, HtmlReportOpener, OutputPathResolver, SkeletonConsole
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
 
@@ -111,36 +110,40 @@ class RunCommand:
             self.console.error(f"Target raised {type(exc).__name__}: {exc}")
 
         self.console.step("Building architecture snapshot")
-        snapshot = SnapshotBuilder(config.project_root).build(config.trace_path, config.snapshot_path)
-        metrics = SnapshotMetrics.from_snapshot(snapshot)
-
         self.console.step("Analyzing design-quality signals")
-        quality = self.quality_analyzer.analyze(snapshot)
-        snapshot["quality"] = quality
-        config.snapshot_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True), encoding="utf-8")
-        self.quality_writer.write_json(quality, config.quality_path)
-        self.quality_writer.write_markdown(quality, config.quality_markdown_path)
-
         self.console.step("Writing LLM-readable workflow narrative")
-        self.workflow_writer.write(snapshot, config.workflow_path)
-
-        report_path = None
-        report_opened = False
         if config.html_enabled:
             self.console.step("Rendering interactive HTML replay")
-            self.report_writer.write(snapshot, config.report_path)
-            report_path = config.report_path
-            if config.open_report:
-                self.console.step("Opening HTML replay")
-                report_opened = self.report_opener.open(config.report_path)
-                if not report_opened:
-                    self.console.warning(f"Could not open report automatically: {config.report_path}")
+        artifact_result = ArtifactGenerationPipeline(
+            report_writer=self.report_writer,
+            workflow_writer=self.workflow_writer,
+            quality_analyzer=self.quality_analyzer,
+            quality_writer=self.quality_writer,
+        ).generate(
+            project_root=config.project_root,
+            paths=ArtifactPaths(
+                trace_path=config.trace_path,
+                snapshot_path=config.snapshot_path,
+                workflow_path=config.workflow_path,
+                quality_path=config.quality_path,
+                quality_markdown_path=config.quality_markdown_path,
+                report_path=config.report_path if config.html_enabled else None,
+            ),
+        )
 
-        event_count = result.event_count if result else metrics.event_count
+        report_path = artifact_result.report_path
+        report_opened = False
+        if report_path is not None and config.open_report:
+            self.console.step("Opening HTML replay")
+            report_opened = self.report_opener.open(report_path)
+            if not report_opened:
+                self.console.warning(f"Could not open report automatically: {report_path}")
+
+        event_count = result.event_count if result else artifact_result.metrics.event_count
         self.console.summary(
             event_count=event_count,
-            node_count=metrics.node_count,
-            edge_count=metrics.edge_count,
+            node_count=artifact_result.metrics.node_count,
+            edge_count=artifact_result.metrics.edge_count,
             trace_path=config.trace_path,
             snapshot_path=config.snapshot_path,
             workflow_path=config.workflow_path,

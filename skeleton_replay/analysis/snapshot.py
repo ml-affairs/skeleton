@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from skeleton_replay.analysis.static import StaticProjectScanner
+from skeleton_replay.analysis.structured_returns import StructuredReturnConfig, StructuredReturnGroupAnalyzer
 from skeleton_replay.runtime.events import Endpoint, TraceEvent
 
 JsonObject = dict[str, Any]
@@ -62,6 +63,7 @@ class SnapshotBuilder:
         """Convert a JSONL trace into a graph-oriented snapshot."""
         events = TraceReader(trace_path).read()
         static_index = StaticProjectScanner(self.project_root).scan()
+        structured_return_config = StructuredReturnConfig.from_project(self.project_root)
         nodes: dict[str, JsonObject] = {}
         edges: dict[str, JsonObject] = {}
 
@@ -117,6 +119,7 @@ class SnapshotBuilder:
             "nodes": list(nodes.values()),
             "edges": list(edges.values()),
             "events": [event.to_json() for event in events],
+            "structured_return_groups": StructuredReturnGroupAnalyzer(config=structured_return_config).analyze(events),
         }
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True), encoding="utf-8")
