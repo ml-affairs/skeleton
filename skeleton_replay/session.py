@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter, SnapshotBuilder, SnapshotMetrics
-from skeleton_replay.interface import HtmlReportOpener, OutputPathResolver
+from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
+from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
 
@@ -84,24 +83,28 @@ class TraceSession:
         workflow_path = out_dir / "workflow.md"
         quality_path = out_dir / "quality.json"
         quality_markdown_path = out_dir / "architecture_quality.md"
-        snapshot = SnapshotBuilder(project_root).build(trace_path, snapshot_path)
-        metrics = SnapshotMetrics.from_snapshot(snapshot)
-        quality = self.quality_analyzer.analyze(snapshot)
-        snapshot["quality"] = quality
-        snapshot_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True), encoding="utf-8")
-        self.quality_writer.write_json(quality, quality_path)
-        self.quality_writer.write_markdown(quality, quality_markdown_path)
-        self.workflow_writer.write(snapshot, workflow_path)
-
-        report_path: Path | None = None
+        report_path = out_dir / "report.html" if self.html_enabled else None
+        artifact_result = ArtifactGenerationPipeline(
+            report_writer=self.report_writer,
+            workflow_writer=self.workflow_writer,
+            quality_analyzer=self.quality_analyzer,
+            quality_writer=self.quality_writer,
+        ).generate(
+            project_root=project_root,
+            paths=ArtifactPaths(
+                trace_path=trace_path,
+                snapshot_path=snapshot_path,
+                workflow_path=workflow_path,
+                quality_path=quality_path,
+                quality_markdown_path=quality_markdown_path,
+                report_path=report_path,
+            ),
+        )
         report_opened = False
-        if self.html_enabled:
-            report_path = out_dir / "report.html"
-            self.report_writer.write(snapshot, report_path)
-            if self.open_report:
-                report_opened = self.report_opener.open(report_path)
+        if report_path is not None and self.open_report:
+            report_opened = self.report_opener.open(report_path)
 
-        event_count = trace_result.event_count if trace_result else metrics.event_count
+        event_count = trace_result.event_count if trace_result else artifact_result.metrics.event_count
         return TraceSessionResult(
             trace_path=trace_path,
             snapshot_path=snapshot_path,
@@ -111,8 +114,8 @@ class TraceSession:
             report_path=report_path,
             report_opened=report_opened,
             event_count=event_count,
-            node_count=metrics.node_count,
-            edge_count=metrics.edge_count,
+            node_count=artifact_result.metrics.node_count,
+            edge_count=artifact_result.metrics.edge_count,
             target_exit_code=target_exit_code,
             target_error=target_error,
         )

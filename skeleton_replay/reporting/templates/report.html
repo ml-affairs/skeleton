@@ -484,6 +484,61 @@
     .quality-tag.medium { color: #fde68a; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.32); }
     .quality-tag.low { color: #bfdbfe; background: rgba(96, 165, 250, 0.13); border: 1px solid rgba(96, 165, 250, 0.28); }
     .quality-tag.info { color: #a7f3d0; background: rgba(20, 184, 166, 0.12); border: 1px solid rgba(20, 184, 166, 0.3); }
+    .structured-return-group-list {
+      display: grid;
+      gap: 10px;
+    }
+    .structured-return-group-card {
+      border: 1px solid rgba(94, 234, 212, 0.24);
+      border-radius: 8px;
+      padding: 11px;
+      background: rgba(15, 23, 42, 0.74);
+    }
+    .structured-return-group-card strong {
+      display: block;
+      margin-bottom: 4px;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .structured-return-group-card .group-meta {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .structured-return-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .structured-return-table th,
+    .structured-return-table td {
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      padding: 6px 7px;
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+    .structured-return-table th {
+      color: var(--muted);
+      background: rgba(2, 6, 23, 0.46);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .structured-return-raw-events {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .structured-return-raw-events summary {
+      cursor: pointer;
+      color: var(--cyan);
+      font-weight: 750;
+    }
     pre {
       margin: 0;
       max-height: 260px;
@@ -878,6 +933,88 @@
     .resize-handle[data-handle='bottom-left'] {
       cursor: nesw-resize;
     }
+    .hover-tooltip {
+      position: absolute;
+      z-index: 30;
+      width: min(330px, calc(100% - 32px));
+      pointer-events: none;
+      border: 1px solid rgba(94, 234, 212, 0.34);
+      border-radius: 10px;
+      padding: 11px;
+      color: var(--ink);
+      background: rgba(2, 6, 23, 0.94);
+      box-shadow: 0 22px 54px rgba(0, 0, 0, 0.42), 0 0 28px rgba(56, 220, 226, 0.12);
+      backdrop-filter: blur(16px);
+    }
+    .hover-tooltip .tip-eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      color: var(--cyan);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hover-tooltip .tip-title {
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      font-weight: 850;
+      line-height: 1.25;
+    }
+    .hover-tooltip .tip-subtitle {
+      margin-top: 4px;
+      overflow-wrap: anywhere;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .hover-tooltip .tip-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .hover-tooltip .tip-stat {
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 8px;
+      padding: 7px;
+      background: rgba(15, 23, 42, 0.7);
+    }
+    .hover-tooltip .tip-stat span {
+      display: block;
+      color: var(--faint);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .hover-tooltip .tip-stat strong {
+      display: block;
+      margin-top: 3px;
+      overflow-wrap: anywhere;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+    .hover-tooltip .tip-line {
+      margin-top: 9px;
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .hover-tooltip .tip-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(94, 234, 212, 0.22);
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: #a7f3d0;
+      background: rgba(20, 184, 166, 0.1);
+      font-size: 10px;
+      font-weight: 800;
+    }
     .hidden {
       display: none !important;
     }
@@ -929,6 +1066,7 @@
           <div class="resize-handle corner" data-handle="bottom-left" aria-hidden="true"></div>
           <div class="resize-handle corner" data-handle="bottom-right" aria-hidden="true"></div>
         </div>
+        <div class="hover-tooltip hidden" id="hover-tooltip" role="status" aria-live="polite"></div>
         <button class="legend-show hidden" id="legend-show" type="button">Legend</button>
         <div class="legend" id="legend">
           <div class="legend-header">
@@ -981,6 +1119,7 @@
           <div class="eyebrow" id="detail-kind">Architecture</div>
           <h2 id="detail-title">Runtime actors</h2>
           <div class="node-kind" id="detail-summary">Modules contain runtime instances and functions. Instances contain the methods observed on that object.</div>
+          <div id="structured-return-summary"></div>
           <div id="details"></div>
           <div class="section hidden" id="resize-controls">
             <h3>Container Size</h3>
@@ -1015,6 +1154,13 @@
     const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
+    const structuredReturnGroups = snapshot.structured_return_groups || [];
+    const structuredReturnEventOrders = new Set(structuredReturnGroups.filter((group) => group.collapse_by_default !== false).flatMap((group) => group.raw_event_orders || []));
+    const structuredReturnInstanceIds = new Set(structuredReturnGroups.filter((group) => group.collapse_by_default !== false).flatMap((group) => (group.raw_events || []).map((event) => event.callee_object_id).filter(Boolean)));
+    const structuredReturnLabelsByInstanceId = structuredReturnInstanceLabels();
+    const nonClusteredInstanceIds = new Set(events
+      .filter((event) => !structuredReturnEventOrders.has(event.order))
+      .flatMap((event) => [event.caller?.instance_id, event.callee?.instance_id].filter(Boolean)));
     const ownerMethods = new Map();
     const archEdgeCounts = new Map();
     const archAdjacency = new Map();
@@ -1025,6 +1171,7 @@
     let activeNodeMove = null;
     let activeReplayDockDrag = null;
     let resizeStartState = null;
+    let activeHoverElement = null;
     const dragStartPositions = new Map();
     const containerPadding = 56;
     const containerDefaultMinHeight = 100;
@@ -1139,7 +1286,12 @@
 
     function isVisibleActor(node) {
       if (!node) return false;
+      if (node.type === "instance" && structuredReturnInstanceIds.has(node.object_id) && !nonClusteredInstanceIds.has(node.object_id)) return false;
       return node.type === "package" || node.type === "module" || node.type === "instance";
+    }
+
+    function isStructuredReturnEvent(event) {
+      return Boolean(event && structuredReturnEventOrders.has(event.order));
     }
 
     function packagePrefixesForModule(moduleName) {
@@ -1239,9 +1391,30 @@
     }
 
     function instanceLabel(node) {
+      const semantic = semanticInstanceLabel(node);
       const objectId = String(node.object_id || node.id || "");
       const suffix = objectId.includes("@") ? objectId.split("@").pop() : objectId.replace(/^instance:/, "");
-      return `${node.class_name || node.label || "instance"}@${suffix}`;
+      const technical = `${node.class_name || node.label || "instance"}@${suffix}`;
+      return semantic ? `${semantic}\n${technical}` : technical;
+    }
+
+    function semanticInstanceLabel(node) {
+      const objectId = String(node?.object_id || node?.instance_id || node?.id || "").replace(/^instance:/, "");
+      return structuredReturnLabelsByInstanceId.get(objectId) || null;
+    }
+
+    function structuredReturnInstanceLabels() {
+      const labels = new Map();
+      for (const group of structuredReturnGroups) {
+        const rawEvents = Array.isArray(group.raw_events) ? group.raw_events : [];
+        const records = Array.isArray(group.records) ? group.records : [];
+        for (const record of records) {
+          const orders = new Set(record.raw_event_orders || [record.call_event_order, record.return_event_order].filter((order) => order !== undefined));
+          const event = rawEvents.find((candidate) => orders.has(candidate.order) && candidate.callee_object_id);
+          if (event && record.label) labels.set(event.callee_object_id, String(record.label));
+        }
+      }
+      return labels;
     }
 
     function addOwnerMethod(ownerId, methodId) {
@@ -1317,6 +1490,7 @@
     }
 
     for (const event of events) {
+      if (isStructuredReturnEvent(event)) continue;
       addObservedCallable(event.callee);
       if (event.caller) addObservedCallable(event.caller);
       if (event.event_type !== "call") continue;
@@ -1505,6 +1679,7 @@
 
     const callEdgeCounts = new Map();
     for (const event of events) {
+      if (isStructuredReturnEvent(event)) continue;
       if (event.event_type !== "call" || !event.caller) continue;
       const source = visualCallableId(event.caller);
       const target = visualCallableId(event.callee);
@@ -1539,6 +1714,7 @@
 
     const returnEdgeCounts = new Map();
     for (const event of events) {
+      if (isStructuredReturnEvent(event)) continue;
       if (event.event_type !== "return" || !event.caller) continue;
       const source = visualCallableId(event.callee);
       const target = visualCallableId(event.caller);
@@ -1824,6 +2000,12 @@
     });
 
     cy.on("tap", "node", (event) => selectNode(event.target.id()));
+    cy.on("mouseover", "edge", (event) => showHoverTooltipForEdge(event.target, event.renderedPosition));
+    cy.on("mousemove", "edge", (event) => moveHoverTooltip(event.renderedPosition));
+    cy.on("mouseout", "edge", hideHoverTooltip);
+    cy.on("mouseover", 'node[type = "instance"]', (event) => showHoverTooltipForInstance(event.target, event.renderedPosition));
+    cy.on("mousemove", 'node[type = "instance"]', (event) => moveHoverTooltip(event.renderedPosition));
+    cy.on("mouseout", 'node[type = "instance"]', hideHoverTooltip);
     cy.on("mousemove", (event) => {
       if (activeResizeDrag || selectedContainerId) {
         return;
@@ -1841,6 +2023,7 @@
         hoveredContainerId = null;
         maybeRenderResizeControls();
       }
+      hideHoverTooltip();
     });
     const cyElement = document.getElementById("cy");
     cyElement.addEventListener("pointerdown", startManualNodeMove);
@@ -1901,6 +2084,7 @@
     const manuallyPositionedNodeIds = new Set();
     let nextRevealSequence = 0;
     document.getElementById("counter").textContent = `0 / ${events.length}`;
+    renderStructuredReturnSummary();
     showOverview();
     renderEvent();
 
@@ -3188,8 +3372,8 @@
         const metric = metrics.edges.get(edge.data.id);
         cy.getElementById(edge.data.id).data({
           weight: Number(metric?.weight || 1),
-          first_seen: metric?.first_seen,
-          last_seen: metric?.last_seen
+          first_seen: metric?.first_seen ?? edge.data.first_seen,
+          last_seen: metric?.last_seen ?? edge.data.last_seen
         });
       }
     }
@@ -3232,6 +3416,224 @@
         </div></div>
       `;
       bindChipClicks();
+    }
+
+    function renderStructuredReturnSummary() {
+      const container = document.getElementById("structured-return-summary");
+      if (!container) return;
+      container.innerHTML = structuredReturnGroupCards();
+    }
+
+    function structuredReturnGroupCards() {
+      if (!structuredReturnGroups.length) return "";
+      return `
+        <div class="section">
+          <h3>Structured Return Groups</h3>
+          <div class="node-kind">These records were derived from repeated structured return values. Raw events remain available below.</div>
+          <div class="structured-return-group-list">${structuredReturnGroups.map((group) => structuredReturnGroupCard(group)).join("")}</div>
+        </div>
+      `;
+    }
+
+    function structuredReturnGroupCard(group) {
+      const columns = Array.isArray(group.columns) ? group.columns : [];
+      const rows = Array.isArray(group.records) ? group.records : [];
+      const rawEvents = Array.isArray(group.raw_events) ? group.raw_events : [];
+      const rawOrders = Array.isArray(group.raw_event_orders) ? group.raw_event_orders.join(", ") : "";
+      const activeSummary = Number.isFinite(Number(group.active_count)) && Number.isFinite(Number(group.inactive_count)) && (Number(group.active_count) || Number(group.inactive_count))
+        ? ` · active ${escapeHtml(group.active_count)} / inactive ${escapeHtml(group.inactive_count)}`
+        : "";
+      return `
+        <div class="structured-return-group-card">
+          <strong>${escapeHtml(group.label || group.qualified_name || group.id || "structured return group")}</strong>
+          <div class="group-meta">${escapeHtml(group.qualified_name || "")} · records ${escapeHtml(group.record_count || rows.length || 0)} · key overlap ${escapeHtml(group.key_overlap || "")}${activeSummary} · raw events ${escapeHtml(rawOrders)}</div>
+          ${structuredReturnTable(columns, rows)}
+          <details class="structured-return-raw-events">
+            <summary>Raw event details</summary>
+            <pre>${escapeHtml(JSON.stringify(rawEvents, null, 2))}</pre>
+          </details>
+        </div>
+      `;
+    }
+
+    function structuredReturnTable(columns, rows) {
+      if (!columns.length || !rows.length) return '<div class="empty">No compatible table preview was captured.</div>';
+      const header = ["record", ...columns].map((column) => `<th>${escapeHtml(column)}</th>`).join("");
+      const body = rows.map((row) => {
+        const values = row.values || {};
+        return `<tr><td>${escapeHtml(row.label || row.event_order || "")}</td>${columns.map((column) => `<td>${escapeHtml(valueCell(values[column]))}</td>`).join("")}</tr>`;
+      }).join("");
+      return `<table class="structured-return-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function valueCell(value) {
+      if (value === undefined || value === null) return "";
+      if (typeof value === "string") return value;
+      return JSON.stringify(value);
+    }
+
+    function showHoverTooltipForEdge(edge, renderedPosition) {
+      if (!edge || edge.empty()) return;
+      activeHoverElement = edge.id();
+      const latestEvent = latestEventForEdge(edge.data());
+      showHoverTooltip(edgeTooltipHtml(edge.data(), latestEvent), renderedPosition);
+    }
+
+    function showHoverTooltipForInstance(node, renderedPosition) {
+      if (!node || node.empty()) return;
+      activeHoverElement = node.id();
+      const latestEvent = latestEventForInstance(node.id());
+      showHoverTooltip(instanceTooltipHtml(node.data(), latestEvent), renderedPosition);
+    }
+
+    function showHoverTooltip(html, renderedPosition) {
+      const tooltip = document.getElementById("hover-tooltip");
+      tooltip.innerHTML = html;
+      tooltip.classList.remove("hidden");
+      moveHoverTooltip(renderedPosition);
+    }
+
+    function moveHoverTooltip(renderedPosition) {
+      const tooltip = document.getElementById("hover-tooltip");
+      if (!renderedPosition || tooltip.classList.contains("hidden")) return;
+      const stage = document.querySelector(".stage");
+      const stageRect = stage.getBoundingClientRect();
+      const width = Math.max(1, tooltip.offsetWidth || 320);
+      const height = Math.max(1, tooltip.offsetHeight || 160);
+      const margin = 14;
+      const x = Math.min(Math.max(margin, renderedPosition.x + 18), Math.max(margin, stageRect.width - width - margin));
+      const y = Math.min(Math.max(margin, renderedPosition.y + 18), Math.max(margin, stageRect.height - height - margin));
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+    }
+
+    function hideHoverTooltip(event) {
+      if (event?.target?.id && activeHoverElement && event.target.id() !== activeHoverElement) return;
+      activeHoverElement = null;
+      const tooltip = document.getElementById("hover-tooltip");
+      tooltip.classList.add("hidden");
+      tooltip.innerHTML = "";
+    }
+
+    function latestEventForEdge(edgeData) {
+      const index = latestEventIndex();
+      for (let eventIndex = index; eventIndex >= traceWindowStart; eventIndex -= 1) {
+        const event = events[eventIndex];
+        if (!event || isStructuredReturnEvent(event)) continue;
+        if (edgeMatchesEvent(edgeData, event)) return event;
+      }
+      for (let eventIndex = events.length - 1; eventIndex >= 0; eventIndex -= 1) {
+        const event = events[eventIndex];
+        if (!event || isStructuredReturnEvent(event)) continue;
+        if (edgeMatchesEvent(edgeData, event)) return event;
+      }
+      return null;
+    }
+
+    function edgeMatchesEvent(edgeData, event) {
+      if (!edgeData || !event) return false;
+      if (edgeData.type === "runtime-call") {
+        return event.event_type === "call"
+          && visualCallableId(event.caller) === edgeData.source
+          && visualCallableId(event.callee) === edgeData.target;
+      }
+      if (edgeData.type === "runtime-return") {
+        return event.event_type === "return"
+          && visualCallableId(event.callee) === edgeData.source
+          && visualCallableId(event.caller) === edgeData.target;
+      }
+      return false;
+    }
+
+    function latestEventForInstance(instanceId) {
+      const index = latestEventIndex();
+      for (let eventIndex = index; eventIndex >= traceWindowStart; eventIndex -= 1) {
+        const event = events[eventIndex];
+        if (!event || isStructuredReturnEvent(event)) continue;
+        if (instanceTouchesEvent(instanceId, event)) return event;
+      }
+      for (let eventIndex = events.length - 1; eventIndex >= 0; eventIndex -= 1) {
+        const event = events[eventIndex];
+        if (!event || isStructuredReturnEvent(event)) continue;
+        if (instanceTouchesEvent(instanceId, event)) return event;
+      }
+      return null;
+    }
+
+    function latestEventIndex() {
+      if (!events.length) return -1;
+      if (current >= traceWindowStart && current <= traceWindowEnd) return current;
+      return traceWindowEnd;
+    }
+
+    function instanceTouchesEvent(instanceId, event) {
+      return instanceForEndpoint(event.caller) === instanceId || instanceForEndpoint(event.callee) === instanceId;
+    }
+
+    function edgeTooltipHtml(edgeData, event) {
+      const sourceLabel = ownerLabel(shellForNode(visualNodeData(edgeData.source)) || ownerForNode(visualNodeData(edgeData.source)) || edgeData.source);
+      const targetLabel = ownerLabel(shellForNode(visualNodeData(edgeData.target)) || ownerForNode(visualNodeData(edgeData.target)) || edgeData.target);
+      const kind = edgeData.type === "runtime-return" ? "Return edge" : "Call edge";
+      const eventLabel = event ? `event ${event.order}` : "no matching event";
+      const latest = event ? latestEventSummary(event) : "No event metadata is available for this edge.";
+      return `
+        <div class="tip-eyebrow"><span>${escapeHtml(kind)}</span><span class="tip-pill">${escapeHtml(eventLabel)}</span></div>
+        <div class="tip-title">${escapeHtml(sourceLabel)} → ${escapeHtml(targetLabel)}</div>
+        <div class="tip-subtitle">${escapeHtml(edgeData.type || "runtime edge")} · observed ${escapeHtml(edgeData.weight || 1)} time(s)</div>
+        <div class="tip-grid">
+          <div class="tip-stat"><span>first seen</span><strong>${escapeHtml(edgeData.first_seen ?? "n/a")}</strong></div>
+          <div class="tip-stat"><span>last seen</span><strong>${escapeHtml(edgeData.last_seen ?? "n/a")}</strong></div>
+        </div>
+        <div class="tip-line">${latest}</div>
+      `;
+    }
+
+    function instanceTooltipHtml(nodeData, event) {
+      const methods = Array.from(ownerMethods.get(nodeData.id) || [])
+        .map((methodId) => visualNodeData(methodId))
+        .filter(Boolean);
+      const latest = event ? latestEventSummary(event) : "No recent event metadata is available for this instance.";
+      const methodNames = methods.slice(0, 3).map((method) => method.function || method.label || method.id).join(", ");
+      return `
+        <div class="tip-eyebrow"><span>Instance</span><span class="tip-pill">${escapeHtml(nodeData.class_name || nodeData.type || "actor")}</span></div>
+        <div class="tip-title">${escapeHtml(nodeData.class_name || nodeData.label || "instance")}</div>
+        <div class="tip-subtitle">${escapeHtml(nodeData.module || "")}${methodNames ? ` · ${escapeHtml(methodNames)}` : ""}</div>
+        <div class="tip-grid">
+          <div class="tip-stat"><span>calls</span><strong>${escapeHtml(nodeData.call_count || 0)}</strong></div>
+          <div class="tip-stat"><span>fan out</span><strong>${escapeHtml(nodeData.fan_out || 0)}</strong></div>
+        </div>
+        <div class="tip-line">${latest}</div>
+      `;
+    }
+
+    function latestEventSummary(event) {
+      const actor = event.event_type === "call" ? event.callee : event.callee;
+      const name = actor?.qualified_name || actor?.function || "runtime";
+      const evidence = event.event_type === "call" ? conciseArgs(event.args) : conciseReturn(event.return_value);
+      return `<strong>${escapeHtml(name)}</strong> ${escapeHtml(event.event_type)}${evidence ? ` · ${evidence}` : ""}`;
+    }
+
+    function conciseArgs(args) {
+      if (!args || !Object.keys(args).length) return "no args";
+      return Object.entries(args)
+        .slice(0, 2)
+        .map(([key, value]) => `${escapeHtml(key)}=${escapeHtml(shortSummary(value))}`)
+        .join(" · ");
+    }
+
+    function conciseReturn(value) {
+      if (!value) return "no return summary";
+      return escapeHtml(shortSummary(value));
+    }
+
+    function shortSummary(value) {
+      if (!value) return "none";
+      if (value.type === "redacted") return "redacted";
+      if (value.value !== undefined) return String(value.value);
+      if (value.len !== undefined && value.type) return `${value.type} len=${value.len}`;
+      if (value.summary) return String(value.summary);
+      if (value.object_id) return String(value.type || "object");
+      return String(value.type || "value");
     }
 
     function qualitySignals() {
@@ -3404,9 +3806,11 @@
       const start = Math.max(0, traceWindowStart);
       const end = Math.min(events.length - 1, traceWindowEnd);
       const selectedEvents = events.slice(start, end + 1);
+      const selectedEventOrders = new Set(selectedEvents.map((event) => event.order));
       const selectedIds = visibleElementIdsAt(start, end);
       const selectedNodes = (snapshot.nodes || []).filter((node) => selectedIds.has(node.id));
       const selectedEdges = (snapshot.edges || []).filter((edge) => selectedIds.has(edge.source) || selectedIds.has(edge.target));
+      const selectedStructuredReturnGroups = structuredReturnGroupsForWindow(selectedEventOrders);
       const payload = {
         schema_version: 1,
         kind: "skeleton_trace_window",
@@ -3420,6 +3824,7 @@
         events: selectedEvents,
         nodes: selectedNodes,
         edges: selectedEdges,
+        structured_return_groups: selectedStructuredReturnGroups,
         quality: quality
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -3431,6 +3836,14 @@
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+    }
+
+    function structuredReturnGroupsForWindow(selectedEventOrders) {
+      if (!selectedEventOrders || !selectedEventOrders.size) return [];
+      return structuredReturnGroups.filter((group) => {
+        const rawOrders = Array.isArray(group.raw_event_orders) ? group.raw_event_orders : [];
+        return rawOrders.some((order) => selectedEventOrders.has(order));
+      });
     }
 
     function renderModuleHeatmap(index) {

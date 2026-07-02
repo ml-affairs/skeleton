@@ -182,6 +182,9 @@ class TestHtmlReportWriter:
         assert "function moduleLabelForNode" in html
         assert "const packageNodes" in html
         assert "function instanceForEndpoint" in html
+        assert "function semanticInstanceLabel" in html
+        assert "function structuredReturnInstanceLabels" in html
+        assert "structuredReturnLabelsByInstanceId" in html
         assert "function syncVisibilityToReplay" in html
         assert "function visibleElementIdsAt" in html
         assert "function collectEndpointElementIds" in html
@@ -239,6 +242,7 @@ class TestHtmlReportWriter:
         assert 'id="resize-handles"' in html
         assert "function replayMetricsAt" in html
         assert "function applyReplayMetrics" in html
+        assert "first_seen: metric?.first_seen ?? edge.data.first_seen" in html
         assert "window.cy = cy" in html
         assert 'node.type === "package" || node.type === "module" || node.type === "instance" ? "container" : ""' in html
         assert "parent: parentForFunction(node)" in html
@@ -276,6 +280,18 @@ class TestHtmlReportWriter:
         assert 'window.setTimeout(() => active.removeClass("pulse"), 420)' in html
         assert 'id="event-focus"' in html
         assert "function eventFocusCard" in html
+        assert 'id="structured-return-summary"' in html
+        assert "function renderStructuredReturnSummary" in html
+        assert 'id="hover-tooltip"' in html
+        assert "function showHoverTooltipForEdge" in html
+        assert "function showHoverTooltipForInstance" in html
+        assert "function latestEventForEdge" in html
+        assert "function latestEventForInstance" in html
+        assert "function edgeTooltipHtml" in html
+        assert "function instanceTooltipHtml" in html
+        assert 'cy.on("mouseover", "edge"' in html
+        assert 'cy.on("mouseover", \'node[type = "instance"]\'' in html
+        assert "tip-pill" in html
         assert "function keepCurrentNodesInView" in html
         assert "activeNodes.renderedBoundingBox" in html
         assert "cy.pan({ x: pan.x + dx, y: pan.y + dy })" in html

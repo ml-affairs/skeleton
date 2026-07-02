@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from skeleton_replay.analysis.structured_returns import STRUCTURED_RETURN_NOTE
+
 JsonObject = dict[str, Any]
 
 
@@ -26,6 +28,7 @@ class WorkflowNarrativeWriter:
         nodes = list(snapshot.get("nodes", []))
         edges = list(snapshot.get("edges", []))
         events = list(snapshot.get("events", []))
+        structured_return_groups = [group for group in list(snapshot.get("structured_return_groups", [])) if isinstance(group, dict)]
         lines = [
             "# Skeleton Workflow",
             "",
@@ -46,6 +49,7 @@ class WorkflowNarrativeWriter:
             "",
             *self._edge_lines(edges),
             "",
+            *self._structured_return_section(structured_return_groups),
             "## Event Timeline",
             "",
             *self._event_lines(events),
@@ -84,6 +88,50 @@ class WorkflowNarrativeWriter:
 
     def _edge_line(self, edge: JsonObject) -> str:
         return f"- `{edge.get('id', '')}`: `{edge.get('source', '')}` -> `{edge.get('target', '')}` calls={edge.get('call_count', 0)} first_seen={edge.get('first_seen', '')} last_seen={edge.get('last_seen', '')}"
+
+    def _structured_return_section(self, groups: list[JsonObject]) -> list[str]:
+        if not groups:
+            return []
+        lines = [
+            "## Structured Return Groups",
+            "",
+            STRUCTURED_RETURN_NOTE,
+            "",
+        ]
+        for group in groups[: self.max_events]:
+            lines.extend(self._structured_return_group_lines(group))
+            lines.append("")
+        return lines
+
+    def _structured_return_group_lines(self, group: JsonObject) -> list[str]:
+        raw_event_orders = ", ".join(str(order) for order in list(group.get("raw_event_orders", [])))
+        label = group.get("label", group.get("qualified_name", ""))
+        qualified_name = group.get("qualified_name", "")
+        record_count = group.get("record_count", 0)
+        key_overlap = group.get("key_overlap", "")
+        lines = [
+            f"- `{label}` from `{qualified_name}` records={record_count} key_overlap={key_overlap} raw_events=`{raw_event_orders}`",
+        ]
+        table_columns = [str(column) for column in list(group.get("columns", []))]
+        records = [record for record in list(group.get("records", [])) if isinstance(record, dict)]
+        if table_columns and records:
+            lines.extend(self._structured_return_table_lines(table_columns, records[: self.max_events]))
+        return lines
+
+    def _structured_return_table_lines(self, table_columns: list[str], records: list[JsonObject]) -> list[str]:
+        header = "| " + " | ".join(table_columns) + " |"
+        separator = "| " + " | ".join("---" for _column in table_columns) + " |"
+        rows = [header, separator]
+        for record in records:
+            values = record.get("values", {})
+            value_map = values if isinstance(values, dict) else {}
+            rows.append("| " + " | ".join(self._cell_text(value_map.get(column, "")) for column in table_columns) + " |")
+        return rows
+
+    @staticmethod
+    def _cell_text(value: object) -> str:
+        text = str(value)
+        return text.replace("|", "\\|").replace("\n", " ")
 
     def _event_lines(self, events: list[object]) -> list[str]:
         if not events:
