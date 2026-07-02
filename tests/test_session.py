@@ -38,11 +38,15 @@ class TestTraceSession:
         assert result.trace_path.exists()
         assert result.snapshot_path.exists()
         assert result.workflow_path.exists()
+        assert result.quality_path.exists()
+        assert result.quality_markdown_path.exists()
         assert result.report_path is not None
         assert result.report_path.exists()
         assert result.trace_path.stat().st_size > 0
         assert result.snapshot_path.stat().st_size > 0
         assert result.workflow_path.stat().st_size > 0
+        assert result.quality_path.stat().st_size > 0
+        assert result.quality_markdown_path.stat().st_size > 0
         assert result.report_path.stat().st_size > 0
         assert result.event_count > 0
         assert result.node_count > 0
@@ -69,6 +73,8 @@ class TestTraceSession:
         assert result.trace_path == out_dir / "trace.jsonl"
         assert result.snapshot_path == out_dir / "snapshot.json"
         assert result.workflow_path == out_dir / "workflow.md"
+        assert result.quality_path == out_dir / "quality.json"
+        assert result.quality_markdown_path == out_dir / "architecture_quality.md"
         assert result.report_path == out_dir / "report.html"
         assert not result.report_opened
         assert result.event_count > 0
@@ -77,10 +83,13 @@ class TestTraceSession:
         assert result.trace_path.exists()
         assert result.snapshot_path.exists()
         assert result.workflow_path.exists()
+        assert result.quality_path.exists()
+        assert result.quality_markdown_path.exists()
         assert result.report_path.exists()
 
         snapshot = json.loads(result.snapshot_path.read_text(encoding="utf-8"))
         assert snapshot["event_count"] == result.event_count
+        assert snapshot["quality"]["summary"]["events"] == result.event_count
 
     def test_run_script_can_skip_html_report(self, tmp_path: Path) -> None:
         # Given
@@ -98,4 +107,6 @@ class TestTraceSession:
         assert result.trace_path.exists()
         assert result.snapshot_path.exists()
         assert result.workflow_path.exists()
+        assert result.quality_path.exists()
+        assert result.quality_markdown_path.exists()
         assert not (out_dir / "report.html").exists()

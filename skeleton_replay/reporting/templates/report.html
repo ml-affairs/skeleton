@@ -147,6 +147,78 @@
       backdrop-filter: blur(12px);
       box-shadow: var(--shadow);
     }
+    .heatmap {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 6;
+      width: min(390px, calc(100% - 36px));
+      max-height: 32vh;
+      display: grid;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7, 10, 18, 0.76);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+    .heatmap-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .heatmap-title {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .heatmap-grid {
+      min-height: 72px;
+      max-height: 23vh;
+      overflow: auto;
+      display: flex;
+      align-items: flex-end;
+      align-content: flex-start;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .heatmap-tile {
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f8fafc;
+      font-size: 9px;
+      font-weight: 850;
+      line-height: 1.05;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 2px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+      transition: width 180ms ease, height 180ms ease, background-color 180ms ease, border-color 180ms ease;
+    }
+    .heatmap-tile.active {
+      border-color: #ffffff;
+      box-shadow: 0 0 16px rgba(56, 220, 226, 0.5);
+    }
+    .heatmap-toggle {
+      min-height: 26px;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .heatmap-show {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 7;
+      min-height: 30px;
+      padding: 6px 9px;
+      color: var(--cyan);
+    }
     .legend-title {
       color: var(--cyan);
       font-size: 11px;
@@ -184,6 +256,12 @@
       color: var(--teal);
       border-radius: 5px;
       background: rgba(20, 184, 166, 0.45);
+    }
+    .schema.package {
+      color: #60a5fa;
+      border-radius: 5px;
+      background: rgba(37, 99, 235, 0.36);
+      box-shadow: 0 0 16px rgba(96, 165, 250, 0.7);
     }
     .schema.instance {
       color: var(--cyan);
@@ -251,15 +329,16 @@
     }
     .sidebar-toggle {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 18px;
+      left: -18px;
       z-index: 8;
-      width: 32px;
-      height: 32px;
-      min-height: 32px;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
       display: grid;
       place-items: center;
       padding: 0;
+      border-radius: 999px;
       border-color: rgba(94, 234, 212, 0.3);
       color: var(--cyan);
       font-size: 18px;
@@ -274,10 +353,9 @@
     }
     main.sidebar-collapsed .sidebar {
       display: block;
-      overflow: hidden;
+      overflow: visible;
     }
-    main.sidebar-collapsed .inspector,
-    main.sidebar-collapsed .replay {
+    main.sidebar-collapsed .inspector {
       visibility: hidden;
       opacity: 0;
       pointer-events: none;
@@ -286,7 +364,6 @@
       min-height: 0;
       overflow: auto;
       padding: 18px;
-      padding-top: 58px;
       transition: opacity 140ms ease;
     }
     .eyebrow {
@@ -349,6 +426,43 @@
       border-color: var(--line-strong);
       color: var(--cyan);
     }
+    .quality-list {
+      display: grid;
+      gap: 8px;
+    }
+    .quality-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.7);
+    }
+    .quality-item strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    .quality-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .quality-tag {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 6px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .quality-tag.high { color: #fecdd3; background: rgba(251, 113, 133, 0.16); border: 1px solid rgba(251, 113, 133, 0.36); }
+    .quality-tag.medium { color: #fde68a; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.32); }
+    .quality-tag.low { color: #bfdbfe; background: rgba(96, 165, 250, 0.13); border: 1px solid rgba(96, 165, 250, 0.28); }
+    .quality-tag.info { color: #a7f3d0; background: rgba(20, 184, 166, 0.12); border: 1px solid rgba(20, 184, 166, 0.3); }
     pre {
       margin: 0;
       max-height: 260px;
@@ -368,11 +482,19 @@
       font-size: 13px;
       line-height: 1.5;
     }
-    .replay {
-      border-top: 1px solid var(--line);
-      padding: 14px;
-      background: var(--panel-strong);
-      transition: opacity 140ms ease;
+    .replay-dock {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      z-index: 9;
+      width: min(560px, calc(100% - 44px));
+      transform: translateX(-50%);
+      border: 1px solid rgba(94, 234, 212, 0.24);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(13, 18, 31, 0.9);
+      box-shadow: 0 18px 52px rgba(0, 0, 0, 0.4), 0 0 34px rgba(56, 220, 226, 0.08);
+      backdrop-filter: blur(18px);
     }
     .timeline {
       width: 100%;
@@ -383,7 +505,7 @@
       grid-template-columns: auto auto auto minmax(0, 1fr);
       align-items: center;
       gap: 8px;
-      margin: 10px 0;
+      margin-top: 8px;
     }
     button {
       min-height: 34px;
@@ -398,6 +520,32 @@
     button:hover {
       border-color: var(--line-strong);
       box-shadow: 0 0 22px rgba(56, 220, 226, 0.16);
+    }
+    .icon-button {
+      width: 38px;
+      min-height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-radius: 11px;
+    }
+    .icon-button svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .icon-pause {
+      display: none;
+    }
+    .icon-button.is-playing .icon-play {
+      display: none;
+    }
+    .icon-button.is-playing .icon-pause {
+      display: block;
     }
     .counter {
       justify-self: end;
@@ -428,6 +576,9 @@
       gap: 8px;
       padding: 11px;
       border-bottom: 1px solid var(--line);
+    }
+    .event-card-header > * {
+      min-width: 0;
     }
     .entity-token {
       min-width: 0;
@@ -527,10 +678,21 @@
     .json-number { color: #f8d68a; }
     .json-boolean { color: #c4b5fd; }
     .json-null { color: #718096; }
+    .json-key-event { color: #fb7185; }
+    .json-key-endpoint { color: #38dce2; }
+    .json-key-value { color: #f59e0b; }
+    .json-key-identity { color: #22c55e; }
+    .json-key-boundary { color: #fbbf24; }
     .json-entity-module { color: var(--teal); font-weight: 800; }
     .json-entity-class { color: var(--violet); font-weight: 800; }
     .json-entity-method { color: var(--amber); font-weight: 800; }
     .json-entity-function { color: var(--green); font-weight: 800; }
+    .json-entity-package { color: #93c5fd; font-weight: 800; }
+    .json-entity-resource { color: #c4b5fd; font-weight: 800; }
+    .json-entity-external { color: #fbbf24; font-weight: 900; }
+    .json-event-type { color: #fb7185; font-weight: 900; }
+    .json-boundary-type { color: #fbbf24; font-weight: 850; }
+    .json-redacted { color: #f43f5e; font-weight: 900; }
     .resize-row {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -647,6 +809,14 @@
     <main id="replay-layout">
       <section class="stage">
         <div id="cy"></div>
+        <button class="heatmap-show hidden" id="heatmap-show" type="button">Heatmap</button>
+        <div class="heatmap" id="module-heatmap">
+          <div class="heatmap-header">
+            <div class="heatmap-title">Module Heatmap</div>
+            <button class="heatmap-toggle" id="heatmap-toggle" type="button">Hide</button>
+          </div>
+          <div class="heatmap-grid" id="heatmap-grid"></div>
+        </div>
         <div id="resize-handles" class="hidden">
           <div class="resize-handle edge vertical" data-handle="left" aria-hidden="true"></div>
           <div class="resize-handle edge vertical" data-handle="right" aria-hidden="true"></div>
@@ -661,6 +831,7 @@
           <div class="legend-title">Schemas</div>
           <div class="legend-grid">
             <span class="pill"><span class="schema module"></span>module shell</span>
+            <span class="pill"><span class="schema package"></span>package shell</span>
             <span class="pill"><span class="schema instance"></span>instance shell</span>
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
@@ -670,6 +841,22 @@
             <span class="pill"><span class="schema return"></span>return value</span>
           </div>
         </div>
+        <section class="replay-dock" aria-label="Execution replay controls">
+          <input class="timeline" id="timeline" min="0" max="0" value="0" type="range" aria-label="Execution event position">
+          <div class="controls">
+            <button class="icon-button" id="back" type="button" aria-label="Previous event" title="Previous event">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path><path d="M9 12h11"></path></svg>
+            </button>
+            <button class="icon-button" id="play" type="button" aria-label="Play replay" title="Play replay">
+              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>
+            </button>
+            <button class="icon-button" id="forward" type="button" aria-label="Next event" title="Next event">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path><path d="M4 12h11"></path></svg>
+            </button>
+            <span class="counter" id="counter">0 / 0</span>
+          </div>
+        </section>
       </section>
       <aside class="sidebar" id="sidebar">
         <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse details panel" aria-expanded="true" title="Collapse details panel">›</button>
@@ -692,18 +879,11 @@
               </div>
             </div>
           </div>
-        </section>
-        <section class="replay">
-          <input class="timeline" id="timeline" min="0" max="0" value="0" type="range">
-          <div class="controls">
-            <button id="back" type="button">Prev</button>
-            <button id="play" type="button">Play</button>
-            <button id="forward" type="button">Next</button>
-            <span class="counter" id="counter">0 / 0</span>
+          <div class="section" id="current-event-section">
+            <div class="eyebrow">Current Event</div>
+            <div class="narrative" id="event-narrative">No event selected.</div>
+            <div id="event-focus"></div>
           </div>
-          <div class="eyebrow">Current Event</div>
-          <div class="narrative" id="event-narrative">No event selected.</div>
-          <div id="event-focus"></div>
           <div class="section">
             <h3>Trace Evidence</h3>
             <pre class="json-view" id="event-details">No event selected.</pre>
@@ -715,6 +895,7 @@
   <script id="snapshot-data" type="application/json">__SKELETON_SNAPSHOT_JSON__</script>
   <script>
     const snapshot = JSON.parse(document.getElementById("snapshot-data").textContent);
+    const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
     const ownerMethods = new Map();
@@ -840,11 +1021,43 @@
 
     function isVisibleActor(node) {
       if (!node) return false;
-      return node.type === "module" || node.type === "instance";
+      return node.type === "package" || node.type === "module" || node.type === "instance";
+    }
+
+    function packagePrefixesForModule(moduleName) {
+      const parts = String(moduleName || "").split(".").filter(Boolean);
+      if (parts.length <= 2) return [];
+      return parts.slice(1, -1).map((_part, index) => parts.slice(0, index + 2).join("."));
+    }
+
+    function packageNameForModule(moduleName) {
+      const prefixes = packagePrefixesForModule(moduleName);
+      return prefixes.length ? prefixes[prefixes.length - 1] : null;
+    }
+
+    function packageIdForName(packageName) {
+      return `package:${packageName}`;
+    }
+
+    function packageIdForModule(moduleName) {
+      const packageName = packageNameForModule(moduleName);
+      return packageName ? packageIdForName(packageName) : undefined;
+    }
+
+    function parentPackageIdForPackage(packageName) {
+      const parts = String(packageName || "").split(".").filter(Boolean);
+      if (parts.length <= 2) return undefined;
+      return packageIdForName(parts.slice(0, -1).join("."));
     }
 
     function moduleIdForName(moduleName) {
       return `module:${moduleName}`;
+    }
+
+    function moduleLabelForNode(node) {
+      if (node.type !== "module") return node.label || node.id;
+      const moduleName = String(node.module || node.label || node.id);
+      return packageIdForModule(moduleName) ? moduleName.split(".").pop() : node.label || moduleName;
     }
 
     function parentForFunction(node) {
@@ -853,6 +1066,14 @@
     }
 
     function parentForActor(node) {
+      if (node.type === "package") {
+        return parentPackageIdForPackage(node.package_name);
+      }
+      if (node.type === "module") {
+        const moduleName = node.module || node.label;
+        if (packageNames.has(moduleName)) return packageIdForName(moduleName);
+        return packageIdForModule(moduleName);
+      }
       if (node.type === "instance") {
         return moduleIdForName(node.module);
       }
@@ -894,7 +1115,7 @@
 
     function ownerLabel(ownerId) {
       if (!ownerId) return "entrypoint";
-      const node = rawNodes.get(ownerId);
+      const node = rawNodes.get(ownerId) || visualNodeData(ownerId);
       if (node?.type === "instance") return instanceLabel(node);
       return node?.label || ownerId.replace(/^(instance|module|method):/, "");
     }
@@ -996,7 +1217,48 @@
       return Number(node?.[field] || 0) + methodTotal;
     }
 
-    const actorNodes = Array.from(rawNodes.values())
+    const packageNames = new Set();
+    for (const node of rawNodes.values()) {
+      if (node?.type !== "module") continue;
+      for (const packageName of packagePrefixesForModule(node.module || node.label)) {
+        packageNames.add(packageName);
+      }
+    }
+
+    const packageNodes = Array.from(packageNames)
+      .sort((left, right) => left.split(".").length - right.split(".").length || left.localeCompare(right))
+      .map((packageName) => {
+        const depth = packageName.split(".").length;
+        const baseWidth = containerDefaultMinWidth + 60 + depth * 18;
+        const baseHeight = containerDefaultMinHeight + 34 + depth * 14;
+        return {
+          data: {
+            id: packageIdForName(packageName),
+            label: packageName,
+            type: "package",
+            package_name: packageName,
+            parent: parentPackageIdForPackage(packageName),
+            roles: "",
+            loc: 0,
+            call_count: 0,
+            fan_in: 0,
+            fan_out: 0,
+            degree: 0,
+            size: 46,
+            width: baseWidth,
+            height: baseHeight,
+            base_width: baseWidth,
+            base_height: baseHeight,
+            manual_width: 0,
+            manual_height: 0,
+            min_width: baseWidth,
+            min_height: baseHeight
+          },
+          classes: "container package-container unseen hidden"
+        };
+      });
+
+    const runtimeActorNodes = Array.from(rawNodes.values())
       .filter((node) => isVisibleActor(node))
       .map((node) => {
         const adjacency = archAdjacency.get(node.id) || { incoming: new Set(), outgoing: new Set() };
@@ -1015,7 +1277,7 @@
         return {
           data: {
             id: node.id,
-            label: node.type === "instance" ? instanceLabel(node) : node.label || node.id,
+            label: node.type === "instance" ? instanceLabel(node) : moduleLabelForNode(node),
             type: node.type,
             parent: parentForActor(node),
             roles: roles.join(", "),
@@ -1035,7 +1297,7 @@
             min_height: baseHeight
           },
           classes: [
-            node.type === "module" || node.type === "instance" ? "container" : "",
+            node.type === "package" || node.type === "module" || node.type === "instance" ? "container" : "",
             node.type === "module" ? "module-container" : "",
             node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
@@ -1044,11 +1306,16 @@
           ].filter(Boolean).join(" ")
         };
       });
+    const actorNodes = [...packageNodes, ...runtimeActorNodes];
 
     const visibleActorIds = new Set(actorNodes.map((node) => node.data.id));
 
     function ioNodeWidth(label) {
       return Math.max(150, Math.min(200, String(label || "").length * 10 + 64));
+    }
+
+    function callableNodeWidth(label) {
+      return Math.max(58, Math.min(220, String(label || "").length * 7 + 30));
     }
 
     const methodNodes = Array.from(observedCallables.values())
@@ -1057,6 +1324,7 @@
         const isIo = node.type === "io";
         const isExternalService = node.type === "external_service";
         const ioWidth = ioNodeWidth(label);
+        const callableWidth = callableNodeWidth(label);
         return {
           data: {
             id: node.id,
@@ -1081,6 +1349,9 @@
             fan_out: Number(node.fan_out || 0),
             degree: Number(node.fan_in || 0) + Number(node.fan_out || 0),
             size: isIo ? 52 : isExternalService ? 78 : 22 + Math.min(22, Number(node.call_count || 0) * 5 + Number(node.fan_out || 0) * 4),
+            callable_width: callableWidth,
+            callable_height: 32,
+            callable_label_width: callableWidth - 14,
             io_width: ioWidth,
             io_height: 86,
             io_label_width: ioWidth - 34
@@ -1093,10 +1364,11 @@
       ...visibleActorIds,
       ...methodNodes.map((node) => node.data.id)
     ]);
+    const packageNodeData = new Map(packageNodes.map((node) => [node.data.id, node.data]));
 
     function visualNodeData(id) {
       if (!id) return null;
-      return observedCallables.get(id) || rawNodes.get(id) || null;
+      return observedCallables.get(id) || rawNodes.get(id) || packageNodeData.get(id) || null;
     }
 
     const archEdges = Array.from(archEdgeCounts.values())
@@ -1224,6 +1496,15 @@
           "min-width": "data(width)",
           "min-height": "data(height)"
         } },
+        { selector: 'node[type = "package"]', style: {
+          "shape": "round-rectangle",
+          "background-color": "#1d4ed8",
+          "border-color": "#93c5fd",
+          "background-opacity": 0.12,
+          "border-style": "dashed",
+          "font-size": 12,
+          "text-margin-y": -12
+        } },
         { selector: 'node[type = "module"]', style: {
           "shape": "round-rectangle",
           "background-color": "#0f766e",
@@ -1242,12 +1523,18 @@
         } },
         { selector: 'node[type = "method"]', style: {
           "shape": "round-rectangle",
+          "width": "data(callable_width)",
+          "height": "data(callable_height)",
+          "text-max-width": "data(callable_label_width)",
           "background-color": "#b45309",
           "border-color": "#fcd34d",
           "font-size": 9
         } },
         { selector: 'node[type = "function"]', style: {
           "shape": "round-rectangle",
+          "width": "data(callable_width)",
+          "height": "data(callable_height)",
+          "text-max-width": "data(callable_label_width)",
           "background-color": "#15803d",
           "border-color": "#86efac",
           "border-style": "dashed",
@@ -1460,6 +1747,8 @@
     document.getElementById("forward").addEventListener("click", () => step(1));
     document.getElementById("play").addEventListener("click", togglePlay);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
+    document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
+    document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
     document.getElementById("timeline").addEventListener("input", (event) => {
       current = Number(event.target.value);
       renderEvent();
@@ -1476,6 +1765,9 @@
     let playTimer = null;
     let currentReplayMetrics = null;
     const revealedElementIds = new Set();
+    const revealSequence = new Map();
+    const manuallyPositionedNodeIds = new Set();
+    let nextRevealSequence = 0;
     document.getElementById("counter").textContent = `0 / ${events.length}`;
     showOverview();
     renderEvent();
@@ -1620,6 +1912,9 @@
       if (!activeNodeMove) return;
       const node = cy.getElementById(activeNodeMove.id);
       enforceNodeMoveConstraints(node);
+      if (node && !node.empty()) {
+        manuallyPositionedNodeIds.add(node.id());
+      }
       cy.userPanningEnabled(true);
       if (activeNodeMove.pointerId !== undefined) {
         try {
@@ -1765,6 +2060,7 @@
       if (!container || container.empty()) {
         return;
       }
+      manuallyPositionedNodeIds.add(container.id());
       maybeRenderResizeControls();
       renderResizeHandles();
     }
@@ -1918,6 +2214,7 @@
         x: container.position().x,
         y: container.position().y
       });
+      manuallyPositionedNodeIds.add(container.id());
       maybeRenderResizeControls();
     }
 
@@ -2047,6 +2344,39 @@
       }
     }
 
+    function applyAncestorContainerSizeLimits(container) {
+      let current = container;
+      while (current && !current.empty()) {
+        applyContainerSizeLimits(current);
+        resolveContainerPeerOverlap(current);
+        current = current.parent();
+      }
+    }
+
+    function resolveContainerPeerOverlap(container) {
+      if (!container || container.empty() || !container.isParent() || container.hasClass("unseen") || container.hasClass("hidden")) return;
+      const peers = visiblePeersForNode(container).filter((node) => !node.hasClass("unseen") && !node.hasClass("hidden"));
+      if (!peers.length) return;
+      const parent = container.parent();
+      const width = Number(container.width?.() || container.data("width") || containerDefaultMinWidth);
+      const height = Number(container.height?.() || container.data("height") || containerDefaultMinHeight);
+      if (!overlapsCandidateNode(container, container.position(), width, height, peers, 14)) return;
+      const anchor = visibleCentroid(peers);
+      let candidate = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        candidate = firstOpenPosition(anchor, peers, container, 28, parent);
+        if (candidate) break;
+        if (parent && !parent.empty()) {
+          parent.data("manual_width", Number(parent.data("manual_width") || 0) + Math.max(160, width / 5));
+          parent.data("manual_height", Number(parent.data("manual_height") || 0) + Math.max(120, height / 5));
+          applyContainerSizeLimits(parent);
+        }
+      }
+      if (candidate) {
+        container.position(candidate);
+      }
+    }
+
     function revealForOwner(ownerId, extraIds = []) {
       if (!ownerId) return;
       cy.elements().removeClass("focus current dimmed pulse");
@@ -2109,8 +2439,15 @@
       if (instanceId) visibleIds.add(instanceId);
       const ownerId = ownerForEndpoint(endpoint);
       if (ownerId) visibleIds.add(ownerId);
+      addPackageElementIds(endpoint.module, visibleIds);
       const shell = rawNodes.get(ownerId);
       if (shell?.type === "instance") visibleIds.add(moduleIdForName(shell.module));
+    }
+
+    function addPackageElementIds(moduleName, visibleIds) {
+      for (const packageName of packagePrefixesForModule(moduleName)) {
+        visibleIds.add(packageIdForName(packageName));
+      }
     }
 
     function revealEndpoint(endpoint) {
@@ -2132,8 +2469,23 @@
     function revealShell(ownerId) {
       if (!ownerId) return;
       const node = rawNodes.get(ownerId);
-      if (node?.type === "instance") revealElement(moduleIdForName(node.module));
+      if (ownerId.startsWith("package:")) {
+        const packageName = ownerId.replace(/^package:/, "");
+        const parentPackageId = parentPackageIdForPackage(packageName);
+        if (parentPackageId) revealElement(parentPackageId);
+      }
+      if (node?.type === "module") revealPackageChain(node.module || node.label);
+      if (node?.type === "instance") {
+        revealPackageChain(node.module);
+        revealElement(moduleIdForName(node.module));
+      }
       revealElement(ownerId);
+    }
+
+    function revealPackageChain(moduleName) {
+      for (const packageName of packagePrefixesForModule(moduleName)) {
+        revealElement(packageIdForName(packageName));
+      }
     }
 
     function revealElement(id) {
@@ -2143,6 +2495,8 @@
       if (!revealedElementIds.has(id)) {
         placeNewElement(element);
         revealedElementIds.add(id);
+        revealSequence.set(id, nextRevealSequence);
+        nextRevealSequence += 1;
       }
       element.removeClass("unseen hidden");
       return element;
@@ -2181,23 +2535,18 @@
     }
 
     function placeNewChildElement(element, parent) {
-      const parentPosition = { ...parent.position() };
       applyContainerSizeLimits(parent);
       const siblings = parent.children().filter((node) => !node.hasClass("unseen") && node.id() !== element.id());
-      const minimumDistance = 46;
-      const anchor = siblings.length ? visibleCentroid(siblings) : parentPosition;
-      const siblingPeers = siblings.filter((node) => node.id() !== element.id());
-      let candidate = firstOpenPosition(anchor, siblingPeers, element, minimumDistance, parent);
-      if (!candidate) {
-        parent.data("manual_width", Number(parent.data("manual_width") || 0) + 64);
-        parent.data("manual_height", Number(parent.data("manual_height") || 0) + 44);
+      if (!siblings.length) {
+        element.position(parent.position());
+        keepNodeInsideParent(element);
         applyContainerSizeLimits(parent);
-        candidate = firstOpenPosition(anchor, siblingPeers, element, minimumDistance, parent);
+        applyAncestorContainerSizeLimits(parent);
+        return;
       }
-      element.position(candidate || parent.position());
-      keepNodeInsideParent(element);
-      applyContainerSizeLimits(parent);
-      parent.position(parentPosition);
+      const siblingNodes = siblings.toArray ? siblings.toArray() : Array.from(siblings);
+      packSiblingGroup(parent.id(), [...siblingNodes, element]);
+      applyAncestorContainerSizeLimits(parent);
     }
 
     function visibleCentroid(nodes) {
@@ -2216,7 +2565,8 @@
     function firstOpenPosition(anchor, visibleNodes, element, minimumDistance, parent = null) {
       const baseRadius = Math.max(40, minimumDistance);
       const angles = [0, Math.PI / 6, Math.PI / 3, Math.PI / 2, (2 * Math.PI) / 3, (5 * Math.PI) / 6, Math.PI, (7 * Math.PI) / 6, (4 * Math.PI) / 3, (3 * Math.PI) / 2, (5 * Math.PI) / 3, (11 * Math.PI) / 6];
-      const maxRadius = baseRadius * 12;
+      const elementSpan = Math.max(Number(element.width?.() || element.data("width") || element.data("size") || 42), Number(element.height?.() || element.data("height") || element.data("size") || 42));
+      const maxRadius = Math.max(baseRadius * 60, elementSpan * 4 + visibleNodes.length * 90);
       for (let radius = baseRadius; radius <= maxRadius; radius += baseRadius / 2) {
         for (const angle of angles) {
           const candidate = {
@@ -2228,17 +2578,146 @@
           }
         }
       }
-      if (!parent || parent.empty()) {
-        return { x: anchor.x + minimumDistance, y: anchor.y + minimumDistance };
+      return null;
+    }
+
+    function resolveVisibleSiblingOverlaps() {
+      for (let pass = 0; pass < 4; pass += 1) {
+        const visibleNodes = cy.nodes().filter((node) => !node.hasClass("unseen") && !node.hasClass("hidden"));
+        const groups = new Map();
+        visibleNodes.forEach((node) => {
+          const parent = node.parent();
+          const parentId = parent && !parent.empty() ? parent.id() : "__root__";
+          if (!groups.has(parentId)) groups.set(parentId, []);
+          groups.get(parentId).push(node);
+        });
+        const orderedGroups = Array.from(groups.entries()).sort(([leftParent], [rightParent]) => groupDepth(rightParent) - groupDepth(leftParent));
+        let packed = false;
+        for (const [parentId, nodes] of orderedGroups) {
+          if (nodes.length <= 1 || !siblingGroupOverlaps(nodes)) continue;
+          if (parentId === "__root__") {
+            packed = resolveRootSiblingOverlaps(nodes) || packed;
+          } else {
+            packSiblingGroup(parentId, nodes);
+            packed = true;
+          }
+        }
+        if (!packed) return;
       }
-      return parent.position();
+    }
+
+    function resolveRootSiblingOverlaps(nodes) {
+      const sorted = nodes.slice().sort((left, right) => rootPlacementRank(left) - rootPlacementRank(right));
+      let moved = false;
+      for (const node of sorted) {
+        const peers = sorted.filter((peer) => peer.id() !== node.id() && !peer.hasClass("unseen") && !peer.hasClass("hidden"));
+        if (!peers.length || !overlapsVisibleNode(node, node.position(), peers, 8)) continue;
+        const movable = !manuallyPositionedNodeIds.has(node.id());
+        const candidate = movable ? firstOpenPosition(visibleCentroid(peers), peers, node, 48, null) : null;
+        if (candidate) {
+          node.position(candidate);
+          moved = true;
+          continue;
+        }
+        const fallback = peers
+          .slice()
+          .reverse()
+          .find((peer) => !manuallyPositionedNodeIds.has(peer.id()));
+        if (!fallback) continue;
+        const fallbackPeers = sorted.filter((peer) => peer.id() !== fallback.id() && !peer.hasClass("unseen") && !peer.hasClass("hidden"));
+        const fallbackCandidate = firstOpenPosition(visibleCentroid(fallbackPeers), fallbackPeers, fallback, 48, null);
+        if (fallbackCandidate) {
+          fallback.position(fallbackCandidate);
+          moved = true;
+        }
+      }
+      return moved;
+    }
+
+    function rootPlacementRank(node) {
+      const manualWeight = manuallyPositionedNodeIds.has(node.id()) ? -1000000 : 0;
+      const sequence = revealSequence.has(node.id()) ? revealSequence.get(node.id()) : 100000;
+      return manualWeight + sequence;
+    }
+
+    function siblingGroupOverlaps(nodes) {
+      for (let index = 0; index < nodes.length; index += 1) {
+        const node = nodes[index];
+        const peers = nodes.filter((peer) => peer.id() !== node.id());
+        if (overlapsVisibleNode(node, node.position(), peers, 2)) return true;
+      }
+      return false;
+    }
+
+    function packSiblingGroup(parentId, nodes) {
+      const parent = parentId === "__root__" ? null : cy.getElementById(parentId);
+      const sorted = nodes.slice().sort((left, right) => {
+        const leftLabel = String(left.data("label") || left.id());
+        const rightLabel = String(right.data("label") || right.id());
+        return leftLabel.localeCompare(rightLabel);
+      });
+      const maxWidth = Math.max(...sorted.map((node) => Number(node.width?.() || node.data("width") || node.data("size") || 42)));
+      const maxHeight = Math.max(...sorted.map((node) => Number(node.height?.() || node.data("height") || node.data("size") || 42)));
+      const cellWidth = maxWidth + 58;
+      const cellHeight = maxHeight + 46;
+      const columns = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
+      const rows = Math.ceil(sorted.length / columns);
+      if (parent && !parent.empty()) {
+        const baseWidth = Number(parent.data("base_width") || containerDefaultMinWidth);
+        const baseHeight = Number(parent.data("base_height") || containerDefaultMinHeight);
+        const requiredWidth = columns * cellWidth + containerPadding;
+        const requiredHeight = rows * cellHeight + containerPadding;
+        parent.data("manual_width", Math.max(Number(parent.data("manual_width") || 0), requiredWidth - baseWidth));
+        parent.data("manual_height", Math.max(Number(parent.data("manual_height") || 0), requiredHeight - baseHeight));
+        applyContainerSizeLimits(parent);
+      }
+      const center = parent && !parent.empty() ? parent.position() : visibleCentroid(sorted);
+      const startX = center.x - ((columns - 1) * cellWidth) / 2;
+      const startY = center.y - ((rows - 1) * cellHeight) / 2;
+      sorted.forEach((node, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        node.position({
+          x: startX + column * cellWidth,
+          y: startY + row * cellHeight
+        });
+        keepNodeInsideParent(node);
+      });
+      if (parent && !parent.empty()) {
+        applyAncestorContainerSizeLimits(parent);
+      }
+    }
+
+    function groupDepth(parentId) {
+      if (parentId === "__root__") return 0;
+      const parent = cy.getElementById(parentId);
+      if (!parent || parent.empty()) return 0;
+      let depth = 1;
+      let current = parent.parent();
+      while (current && !current.empty()) {
+        depth += 1;
+        current = current.parent();
+      }
+      return depth;
+    }
+
+    function nodeArea(node) {
+      return nodeModelWidth(node) * nodeModelHeight(node);
+    }
+
+    function nodeModelWidth(node) {
+      return Math.max(Number(node.width?.() || 0), Number(node.data("width") || 0), Number(node.data("size") || 0), 42);
+    }
+
+    function nodeModelHeight(node) {
+      return Math.max(Number(node.height?.() || 0), Number(node.data("height") || 0), Number(node.data("size") || 0), 42);
     }
 
     function nodeBoundingBox(node, position = null, width = null, height = null) {
-      const nodeWidth = Number(width ?? (node.width?.() || node.data("width") || node.data("size") || 42));
-      const nodeHeight = Number(height ?? (node.height?.() || node.data("height") || node.data("size") || 42));
+      const nodeWidth = Number(width ?? nodeModelWidth(node));
+      const nodeHeight = Number(height ?? nodeModelHeight(node));
       const point = position || node.position();
-      const pad = 2;
+      const pad = node.isParent && node.isParent() ? 32 : 4;
       return {
         x1: point.x - nodeWidth / 2 - pad,
         y1: point.y - nodeHeight / 2 - pad,
@@ -2482,6 +2961,7 @@
         .join("");
       document.getElementById("details").innerHTML = `
         <div class="section"><h3>Most Active Actors</h3><div class="chips">${topActors || '<span class="empty">No runtime actors observed.</span>'}</div></div>
+        <div class="section"><h3>Quality Signals</h3>${qualitySignals()}</div>
         <div class="section"><h3>How To Read This</h3><div class="node-kind">
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
@@ -2490,6 +2970,21 @@
         </div></div>
       `;
       bindChipClicks();
+    }
+
+    function qualitySignals() {
+      const findings = Array.isArray(quality.findings) ? quality.findings.slice(0, 4) : [];
+      if (!findings.length) return '<div class="empty">No quality signals generated for this scenario.</div>';
+      return `<div class="quality-list">${findings.map((finding) => {
+        const severity = String(finding.severity || "info");
+        const evidence = Array.isArray(finding.evidence) ? finding.evidence.slice(0, 2).join(" · ") : "";
+        return `
+          <div class="quality-item">
+            <strong><span class="quality-tag ${escapeAttr(severity)}">${escapeHtml(severity)}</span>${escapeHtml(finding.title || "Quality signal")}</strong>
+            <span>${escapeHtml(finding.actor_label || finding.actor_id || "runtime")} ${evidence ? `· ${escapeHtml(evidence)}` : ""}</span>
+          </div>
+        `;
+      }).join("")}</div>`;
     }
 
     function showNode(id) {
@@ -2591,7 +3086,10 @@
         stopPlay();
         return;
       }
-      document.getElementById("play").textContent = "Pause";
+      const play = document.getElementById("play");
+      play.classList.add("is-playing");
+      play.setAttribute("aria-label", "Pause replay");
+      play.setAttribute("title", "Pause replay");
       playTimer = window.setInterval(() => {
         if (current >= events.length - 1) {
           stopPlay();
@@ -2605,7 +3103,10 @@
       if (!playTimer) return;
       window.clearInterval(playTimer);
       playTimer = null;
-      document.getElementById("play").textContent = "Play";
+      const play = document.getElementById("play");
+      play.classList.remove("is-playing");
+      play.setAttribute("aria-label", "Play replay");
+      play.setAttribute("title", "Play replay");
     }
 
     function toggleSidebar() {
@@ -2623,6 +3124,60 @@
       }, 190);
     }
 
+    function toggleHeatmap() {
+      const heatmap = document.getElementById("module-heatmap");
+      const show = document.getElementById("heatmap-show");
+      const collapsed = heatmap.classList.toggle("hidden");
+      show.classList.toggle("hidden", !collapsed);
+    }
+
+    function renderModuleHeatmap(index) {
+      const grid = document.getElementById("heatmap-grid");
+      const modules = moduleHeatmapAt(index);
+      if (!modules.length) {
+        grid.innerHTML = '<div class="empty">No module touches observed yet.</div>';
+        return;
+      }
+      const activeModules = new Set([events[index]?.caller?.module, events[index]?.callee?.module].filter(Boolean));
+      grid.innerHTML = modules.map((module) => {
+        const size = Math.round(20 + Math.min(74, Math.sqrt(module.touches) * 13));
+        const hue = Math.max(0, 188 - Math.min(150, module.fan_out * 26));
+        const lightness = Math.max(34, 50 - Math.min(14, module.touches * 0.7));
+        const label = shortModuleLabel(module.module);
+        const activeClass = activeModules.has(module.module) ? " active" : "";
+        return `<div class="heatmap-tile${activeClass}" title="${escapeAttr(module.module)} · touches ${module.touches} · fan-out ${module.fan_out}" style="width:${size}px;height:${size}px;background-color:hsl(${hue} 78% ${lightness}%);">${escapeHtml(label)}</div>`;
+      }).join("");
+    }
+
+    function moduleHeatmapAt(index) {
+      const modules = new Map();
+      function record(moduleName) {
+        if (!moduleName || !rawNodes.has(moduleIdForName(moduleName))) return null;
+        if (!modules.has(moduleName)) modules.set(moduleName, { module: moduleName, touches: 0, fan_out: 0, outgoing: new Set() });
+        return modules.get(moduleName);
+      }
+      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+        const event = events[eventIndex];
+        if (!event) continue;
+        const callee = record(event.callee?.module);
+        if (callee) callee.touches += 1;
+        const caller = record(event.caller?.module);
+        if (caller) caller.touches += 1;
+        if (event.event_type === "call" && caller && callee && caller.module !== callee.module) {
+          caller.outgoing.add(callee.module);
+        }
+      }
+      return Array.from(modules.values())
+        .map((module) => ({ ...module, fan_out: module.outgoing.size }))
+        .sort((left, right) => right.touches - left.touches || right.fan_out - left.fan_out || left.module.localeCompare(right.module))
+        .slice(0, 80);
+    }
+
+    function shortModuleLabel(moduleName) {
+      const parts = String(moduleName || "").split(".").filter(Boolean);
+      return parts.length ? parts[parts.length - 1] : String(moduleName || "");
+    }
+
     function renderEvent() {
       cy.elements().removeClass("current dimmed focus pulse");
       const event = events[current];
@@ -2632,6 +3187,8 @@
       syncVisibilityToReplay(current);
       currentReplayMetrics = replayMetricsAt(current);
       applyReplayMetrics(currentReplayMetrics);
+      resolveVisibleSiblingOverlaps();
+      renderModuleHeatmap(current);
       const sourceNode = visualCallableId(event.caller);
       const targetNode = visualCallableId(event.callee);
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
@@ -2781,7 +3338,7 @@
       return escaped.replace(
         /(&quot;[^&]*?&quot;)(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/g,
         (match, quoted, colon, booleanValue) => {
-          if (quoted && colon) return `<span class="json-key">${quoted}</span>${colon}`;
+          if (quoted && colon) return `<span class="json-key ${jsonKeyClass(quoted)}">${quoted}</span>${colon}`;
           if (quoted) return `<span class="${jsonStringClass(quoted)}">${quoted}</span>`;
           if (booleanValue === "true" || booleanValue === "false") return `<span class="json-boolean">${match}</span>`;
           if (booleanValue === "null") return `<span class="json-null">${match}</span>`;
@@ -2790,10 +3347,26 @@
       );
     }
 
+    function jsonKeyClass(quoted) {
+      const key = quoted.replace(/^&quot;|&quot;$/g, "");
+      if (["event_type", "order", "timestamp", "depth", "schema_version"].includes(key)) return "json-key-event";
+      if (["caller", "callee"].includes(key)) return "json-key-endpoint";
+      if (["args", "return_value", "value", "summary", "len"].includes(key)) return "json-key-value";
+      if (["module", "class_name", "function", "qualified_name", "node_id", "instance_id", "object_id", "file", "line"].includes(key)) return "json-key-identity";
+      if (["endpoint_type", "resource_category", "service_name", "service_kind"].includes(key)) return "json-key-boundary";
+      return "";
+    }
+
     function jsonStringClass(quoted) {
       const value = quoted.replace(/^&quot;|&quot;$/g, "");
+      if (value === "call" || value === "return") return "json-event-type";
+      if (value === "external_service" || value === "resource" || value === "network" || value === "file" || value === "stdout" || value === "db") return "json-boundary-type";
+      if (value === "redacted") return "json-redacted";
+      if (value.startsWith("package:")) return "json-entity-package";
       if (value.startsWith("module:")) return "json-entity-module";
       if (value.startsWith("class:")) return "json-entity-class";
+      if (value.startsWith("resource:")) return "json-entity-resource";
+      if (value.startsWith("external_service:")) return "json-entity-external";
       if (value.startsWith("function:")) return "json-entity-function";
       if (value.includes(".") && value.includes("Greeter")) return "json-entity-method";
       return "json-string";
