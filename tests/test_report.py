@@ -139,6 +139,16 @@ class TestHtmlReportWriter:
         assert "replay-dock" in html
         assert "startReplayDockDrag" in html
         assert "updateReplayDockDrag" in html
+        assert 'id="trace-window"' in html
+        assert 'id="trace-window-start"' in html
+        assert 'id="trace-window-end"' in html
+        assert 'id="export-trace"' in html
+        assert "Export the exact trace events visible in the selected execution window as JSON for LLM review" in html
+        assert "function exportTraceWindow" in html
+        assert 'kind: "skeleton_trace_window"' in html
+        assert "selected_window" in html
+        assert "function startTraceWindowDrag" in html
+        assert "function renderTraceWindow" in html
         assert "Module Treemap" in html
         assert '<button class="heatmap-show" id="heatmap-show" type="button">Treemap</button>' in html
         assert '<div class="heatmap hidden" id="module-heatmap">' in html
@@ -146,6 +156,8 @@ class TestHtmlReportWriter:
         assert "function toggleLegend" in html
         assert "function treemapLayout" in html
         assert "function layoutTreemapSlice" in html
+        assert "Size: ${module.touches} observed module touches" in html
+        assert "Color hue: fan-out ${module.fan_out}" in html
         assert 'aria-label="Previous event"' in html
         assert 'aria-label="Play replay"' in html
         assert 'aria-label="Next event"' in html

@@ -5,6 +5,25 @@ All notable changes to Skeleton are documented in this file.
 The format follows the spirit of Keep a Changelog, and versions follow
 Semantic Versioning while the project is public-alpha software.
 
+## [0.3.0] - Unreleased
+
+### Added
+
+- Architecture quality artifacts: `quality.json` for machines and `architecture_quality.md` for humans and LLMs.
+- Compact report quality signals for runtime hotspots, high fan-out workflows, broad module surfaces, large modules, and external boundary evidence.
+- Floating replay controls that can be moved on the architecture plane.
+- Trace execution window selector with left and right handles for isolating a period of interest.
+- Export selected trace-window JSON from the report, including exact events, related nodes/edges, quality evidence, and an LLM-readable note.
+- Module treemap overlay with rectangles sized by observed module touches in the selected trace window and colored by fan-out/activity.
+- Treemap hover details explaining the metrics behind each rectangle's size, color, and active state.
+- Hide/show controls for both the module treemap and graph legend.
+
+### Changed
+
+- Replay stepping, graph visibility, time-aware metrics, and the module treemap now respect the selected trace execution window.
+- The report side panel stays focused on actor details, current event explanation, and trace evidence while replay navigation lives on the graph plane.
+- Root-level module, package, and resource placement better avoids overlap as entities appear during replay.
+
 ## [0.2.0] - 2026-07-01
 
 ### Added

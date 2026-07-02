@@ -529,9 +529,52 @@
       accent-color: var(--cyan);
       cursor: pointer;
     }
+    .timeline-stack {
+      display: grid;
+      gap: 8px;
+    }
+    .trace-window {
+      position: relative;
+      height: 22px;
+      cursor: pointer;
+    }
+    .trace-window-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 8px;
+      height: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+    }
+    .trace-window-fill {
+      position: absolute;
+      top: 8px;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(56, 220, 226, 0.26), rgba(34, 197, 94, 0.5));
+      box-shadow: 0 0 18px rgba(56, 220, 226, 0.28);
+    }
+    .trace-window-handle {
+      position: absolute;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(226, 232, 240, 0.95);
+      border-radius: 999px;
+      background: var(--cyan);
+      box-shadow: 0 0 18px rgba(56, 220, 226, 0.6);
+      transform: translate(-50%, -50%);
+      cursor: ew-resize;
+    }
+    .trace-window-handle.end {
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.48);
+    }
     .controls {
       display: grid;
-      grid-template-columns: auto auto auto minmax(0, 1fr);
+      grid-template-columns: auto auto auto auto minmax(0, 1fr);
       align-items: center;
       gap: 8px;
       margin-top: 8px;
@@ -575,6 +618,36 @@
     }
     .icon-button.is-playing .icon-pause {
       display: block;
+    }
+    .export-button {
+      position: relative;
+      color: var(--cyan);
+    }
+    .export-button::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      z-index: 20;
+      width: 260px;
+      transform: translateX(-50%) translateY(4px);
+      border: 1px solid rgba(94, 234, 212, 0.28);
+      border-radius: 8px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: rgba(2, 6, 23, 0.96);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.35;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+    .export-button:hover::after,
+    .export-button:focus-visible::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
     .counter {
       justify-self: end;
@@ -875,7 +948,15 @@
           </div>
         </div>
         <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
-          <input class="timeline" id="timeline" min="0" max="0" value="0" type="range" aria-label="Execution event position">
+          <div class="timeline-stack">
+            <div class="trace-window" id="trace-window" role="slider" aria-label="Trace export window">
+              <div class="trace-window-track"></div>
+              <div class="trace-window-fill" id="trace-window-fill"></div>
+              <div class="trace-window-handle start" id="trace-window-start" title="Trace window start"></div>
+              <div class="trace-window-handle end" id="trace-window-end" title="Trace window end"></div>
+            </div>
+            <input class="timeline" id="timeline" min="0" max="0" value="0" type="range" aria-label="Execution event position">
+          </div>
           <div class="controls">
             <button class="icon-button" id="back" type="button" aria-label="Previous event" title="Previous event">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path><path d="M9 12h11"></path></svg>
@@ -886,6 +967,9 @@
             </button>
             <button class="icon-button" id="forward" type="button" aria-label="Next event" title="Next event">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path><path d="M4 12h11"></path></svg>
+            </button>
+            <button class="icon-button export-button" id="export-trace" type="button" aria-label="Export selected trace window" title="Export selected trace window" data-tooltip="Export the exact trace events visible in the selected execution window as JSON for LLM review, debugging notes, or architecture discussion.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path><path d="M5 17v4"></path><path d="M19 17v4"></path></svg>
             </button>
             <span class="counter" id="counter">0 / 0</span>
           </div>
@@ -1767,6 +1851,10 @@
     document.addEventListener("pointermove", updateReplayDockDrag);
     document.addEventListener("pointerup", endReplayDockDrag);
     document.addEventListener("pointercancel", endReplayDockDrag);
+    document.getElementById("trace-window").addEventListener("pointerdown", startTraceWindowDrag);
+    document.addEventListener("pointermove", updateTraceWindowDrag);
+    document.addEventListener("pointerup", endTraceWindowDrag);
+    document.addEventListener("pointercancel", endTraceWindowDrag);
     cy.on("drag", "node", () => {
       hideResizeUI();
     });
@@ -1784,6 +1872,7 @@
     document.getElementById("back").addEventListener("click", () => step(-1));
     document.getElementById("forward").addEventListener("click", () => step(1));
     document.getElementById("play").addEventListener("click", togglePlay);
+    document.getElementById("export-trace").addEventListener("click", exportTraceWindow);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
     document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
@@ -1804,6 +1893,9 @@
     let current = events.length ? 0 : -1;
     let playTimer = null;
     let currentReplayMetrics = null;
+    let traceWindowStart = 0;
+    let traceWindowEnd = Math.max(0, events.length - 1);
+    let activeTraceWindowHandle = null;
     const revealedElementIds = new Set();
     const revealSequence = new Map();
     const manuallyPositionedNodeIds = new Set();
@@ -2023,7 +2115,80 @@
     }
 
     function isReplayDockInteractiveTarget(target) {
-      return Boolean(target?.closest?.("button, input, svg, path"));
+      return Boolean(target?.closest?.("button, input, svg, path, .trace-window"));
+    }
+
+    function startTraceWindowDrag(event) {
+      if (event.button !== 0) return;
+      const handle = event.target.closest?.(".trace-window-handle");
+      activeTraceWindowHandle = handle?.id === "trace-window-end"
+        ? "end"
+        : handle?.id === "trace-window-start"
+          ? "start"
+          : nearestTraceWindowHandle(event);
+      updateTraceWindowFromPointer(event);
+      document.getElementById("trace-window").setPointerCapture?.(event.pointerId);
+      stopPlay();
+      event.preventDefault();
+    }
+
+    function updateTraceWindowDrag(event) {
+      if (!activeTraceWindowHandle) return;
+      updateTraceWindowFromPointer(event);
+      event.preventDefault();
+    }
+
+    function endTraceWindowDrag(event) {
+      if (!activeTraceWindowHandle) return;
+      activeTraceWindowHandle = null;
+      try {
+        document.getElementById("trace-window").releasePointerCapture?.(event.pointerId);
+      } catch (_error) {
+        // no-op: ignore platforms that do not support pointer capture.
+      }
+      event?.preventDefault?.();
+    }
+
+    function nearestTraceWindowHandle(event) {
+      const index = eventIndexFromPointer(event);
+      return Math.abs(index - traceWindowStart) <= Math.abs(index - traceWindowEnd) ? "start" : "end";
+    }
+
+    function updateTraceWindowFromPointer(event) {
+      const index = eventIndexFromPointer(event);
+      if (activeTraceWindowHandle === "start") {
+        traceWindowStart = Math.min(index, traceWindowEnd);
+      } else {
+        traceWindowEnd = Math.max(index, traceWindowStart);
+      }
+      if (current < traceWindowStart) current = traceWindowStart;
+      if (current > traceWindowEnd) current = traceWindowEnd;
+      renderEvent();
+    }
+
+    function eventIndexFromPointer(event) {
+      const windowElement = document.getElementById("trace-window");
+      const rect = windowElement.getBoundingClientRect();
+      if (!events.length || rect.width <= 0) return 0;
+      const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+      return Math.round(ratio * Math.max(0, events.length - 1));
+    }
+
+    function renderTraceWindow() {
+      const maxIndex = Math.max(0, events.length - 1);
+      const startPercent = maxIndex ? (traceWindowStart / maxIndex) * 100 : 0;
+      const endPercent = maxIndex ? (traceWindowEnd / maxIndex) * 100 : 100;
+      const fill = document.getElementById("trace-window-fill");
+      const start = document.getElementById("trace-window-start");
+      const end = document.getElementById("trace-window-end");
+      fill.style.left = `${startPercent}%`;
+      fill.style.width = `${Math.max(0, endPercent - startPercent)}%`;
+      start.style.left = `${startPercent}%`;
+      end.style.left = `${endPercent}%`;
+      const windowElement = document.getElementById("trace-window");
+      windowElement.setAttribute("aria-valuemin", "1");
+      windowElement.setAttribute("aria-valuemax", String(events.length || 1));
+      windowElement.setAttribute("aria-valuetext", `Selected trace window ${traceWindowStart + 1} to ${traceWindowEnd + 1} of ${events.length || 1}`);
     }
 
     function canPlaceNodeAt(node, position) {
@@ -2502,20 +2667,20 @@
     }
 
     function syncVisibilityToReplay(index) {
-      const visibleIds = visibleElementIdsAt(index);
+      const visibleIds = visibleElementIdsAt(traceWindowStart, index);
       cy.elements().forEach((element) => {
         if (!visibleIds.has(element.id())) {
           element.addClass("unseen hidden").removeClass("current focus pulse");
         }
       });
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
         revealEventElements(events[eventIndex]);
       }
     }
 
-    function visibleElementIdsAt(index) {
+    function visibleElementIdsAt(startIndex, endIndex) {
       const visibleIds = new Set();
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = startIndex; eventIndex <= endIndex; eventIndex += 1) {
         const event = events[eventIndex];
         if (!event) continue;
         collectEndpointElementIds(event.callee, visibleIds);
@@ -2949,7 +3114,7 @@
         edgeWeights.set(edgeId, edge);
       }
 
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
         const event = events[eventIndex];
         const targetOwner = ownerForEndpoint(event.callee);
         const sourceOwner = ownerForEndpoint(event.caller);
@@ -3174,7 +3339,7 @@
 
     function step(direction) {
       if (!events.length) return;
-      current = Math.max(0, Math.min(events.length - 1, current + direction));
+      current = Math.max(traceWindowStart, Math.min(traceWindowEnd, current + direction));
       renderEvent();
     }
 
@@ -3188,7 +3353,7 @@
       play.setAttribute("aria-label", "Pause replay");
       play.setAttribute("title", "Pause replay");
       playTimer = window.setInterval(() => {
-        if (current >= events.length - 1) {
+        if (current >= traceWindowEnd) {
           stopPlay();
           return;
         }
@@ -3235,6 +3400,39 @@
       show.classList.toggle("hidden", !collapsed);
     }
 
+    function exportTraceWindow() {
+      const start = Math.max(0, traceWindowStart);
+      const end = Math.min(events.length - 1, traceWindowEnd);
+      const selectedEvents = events.slice(start, end + 1);
+      const selectedIds = visibleElementIdsAt(start, end);
+      const selectedNodes = (snapshot.nodes || []).filter((node) => selectedIds.has(node.id));
+      const selectedEdges = (snapshot.edges || []).filter((edge) => selectedIds.has(edge.source) || selectedIds.has(edge.target));
+      const payload = {
+        schema_version: 1,
+        kind: "skeleton_trace_window",
+        project_root: snapshot.project_root || "",
+        selected_window: {
+          start_event_index: start,
+          end_event_index: end,
+          event_count: selectedEvents.length
+        },
+        llm_note: "This export contains the exact Skeleton execution-window events selected in the replay UI, plus related nodes and edges. Use it to discuss the runtime behavior without relying on screenshots.",
+        events: selectedEvents,
+        nodes: selectedNodes,
+        edges: selectedEdges,
+        quality: quality
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `skeleton-trace-window-${start + 1}-${end + 1}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    }
+
     function renderModuleHeatmap(index) {
       const grid = document.getElementById("heatmap-grid");
       const modules = moduleHeatmapAt(index);
@@ -3251,7 +3449,8 @@
         const label = shortModuleLabel(module.module);
         const activeClass = activeModules.has(module.module) ? " active" : "";
         const smallClass = width < 34 || height < 20 ? " small" : "";
-        return `<div class="heatmap-tile${activeClass}${smallClass}" title="${escapeAttr(module.module)} · touches ${module.touches} · fan-out ${module.fan_out}" style="left:${x}px;top:${y}px;width:${width}px;height:${height}px;background-color:hsl(${hue} 78% ${lightness}%);">${escapeHtml(label)}</div>`;
+        const hover = `${module.module}\nSize: ${module.touches} observed module touches in the selected trace window.\nColor hue: fan-out ${module.fan_out}; more fan-out shifts toward warmer warning colors.\nBrightness: ${activeModules.has(module.module) ? "currently active in this event" : "historical activity in this window"}.`;
+        return `<div class="heatmap-tile${activeClass}${smallClass}" title="${escapeAttr(hover)}" style="left:${x}px;top:${y}px;width:${width}px;height:${height}px;background-color:hsl(${hue} 78% ${lightness}%);">${escapeHtml(label)}</div>`;
       }).join("");
     }
 
@@ -3262,7 +3461,7 @@
         if (!modules.has(moduleName)) modules.set(moduleName, { module: moduleName, touches: 0, fan_out: 0, outgoing: new Set() });
         return modules.get(moduleName);
       }
-      for (let eventIndex = 0; eventIndex <= index; eventIndex += 1) {
+      for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
         const event = events[eventIndex];
         if (!event) continue;
         const callee = record(event.callee?.module);
@@ -3336,6 +3535,9 @@
 
     function renderEvent() {
       cy.elements().removeClass("current dimmed focus pulse");
+      if (events.length) {
+        current = Math.max(traceWindowStart, Math.min(traceWindowEnd, current));
+      }
       const event = events[current];
       if (!event) return;
       const sourceOwner = focusOwnerForEndpoint(event.caller);
@@ -3357,8 +3559,9 @@
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
       if (targetInstance) cy.getElementById(targetInstance).addClass("current");
       if (runtimeEdge) runtimeEdge.addClass("current");
+      renderTraceWindow();
       document.getElementById("timeline").value = String(current);
-      document.getElementById("counter").textContent = `${current + 1} / ${events.length}`;
+      document.getElementById("counter").textContent = `${current + 1} / ${events.length} · ${traceWindowStart + 1}-${traceWindowEnd + 1}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
       document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
