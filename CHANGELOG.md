@@ -5,7 +5,7 @@ All notable changes to Skeleton are documented in this file.
 The format follows the spirit of Keep a Changelog, and versions follow
 Semantic Versioning while the project is public-alpha software.
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-07-02
 
 ### Added
 
