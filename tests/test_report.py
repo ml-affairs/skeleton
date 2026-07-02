@@ -137,10 +137,19 @@ class TestHtmlReportWriter:
         assert "Quality Signals" in html
         assert "function qualitySignals" in html
         assert "replay-dock" in html
+        assert "startReplayDockDrag" in html
+        assert "updateReplayDockDrag" in html
+        assert "Module Treemap" in html
+        assert '<button class="heatmap-show" id="heatmap-show" type="button">Treemap</button>' in html
+        assert '<div class="heatmap hidden" id="module-heatmap">' in html
+        assert '<button class="legend-show hidden" id="legend-show" type="button">Legend</button>' in html
+        assert "function toggleLegend" in html
+        assert "function treemapLayout" in html
+        assert "function layoutTreemapSlice" in html
         assert 'aria-label="Previous event"' in html
         assert 'aria-label="Play replay"' in html
         assert 'aria-label="Next event"' in html
-        assert '<section class="replay-dock" aria-label="Execution replay controls">' in html
+        assert '<section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">' in html
         assert '<div class="section" id="current-event-section">' in html
         assert "const revealSequence = new Map()" in html
         assert "const manuallyPositionedNodeIds = new Set()" in html
@@ -193,7 +202,6 @@ class TestHtmlReportWriter:
         assert '"shape": "diamond"' in html
         assert '<span class="pill"><span class="schema external"></span>external service</span>' in html
         assert 'id="module-heatmap"' in html
-        assert "Module Heatmap" in html
         assert "function renderModuleHeatmap" in html
         assert "function moduleHeatmapAt" in html
         assert "function toggleHeatmap" in html

@@ -136,10 +136,11 @@
       position: absolute;
       left: 18px;
       bottom: 18px;
+      z-index: 6;
       display: grid;
       gap: 9px;
       max-width: calc(100% - 36px);
-      pointer-events: none;
+      pointer-events: auto;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 11px;
@@ -147,13 +148,31 @@
       backdrop-filter: blur(12px);
       box-shadow: var(--shadow);
     }
+    .legend-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .legend-toggle,
+    .legend-show {
+      min-height: 26px;
+      padding: 4px 8px;
+      color: var(--cyan);
+      font-size: 11px;
+    }
+    .legend-show {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      z-index: 7;
+    }
     .heatmap {
       position: absolute;
       top: 18px;
       left: 18px;
       z-index: 6;
-      width: min(390px, calc(100% - 36px));
-      max-height: 32vh;
+      width: min(420px, calc(100% - 36px));
       display: grid;
       gap: 9px;
       padding: 11px;
@@ -177,21 +196,20 @@
       text-transform: uppercase;
     }
     .heatmap-grid {
-      min-height: 72px;
-      max-height: 23vh;
-      overflow: auto;
-      display: flex;
-      align-items: flex-end;
-      align-content: flex-start;
-      flex-wrap: wrap;
-      gap: 5px;
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 7px;
+      background: rgba(2, 6, 23, 0.42);
     }
     .heatmap-tile {
+      position: absolute;
       display: grid;
       place-items: center;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       color: #f8fafc;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 850;
       line-height: 1.05;
       text-align: center;
@@ -199,11 +217,14 @@
       text-overflow: ellipsis;
       border-radius: 2px;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-      transition: width 180ms ease, height 180ms ease, background-color 180ms ease, border-color 180ms ease;
+      transition: left 180ms ease, top 180ms ease, width 180ms ease, height 180ms ease, background-color 180ms ease, border-color 180ms ease;
     }
     .heatmap-tile.active {
       border-color: #ffffff;
       box-shadow: 0 0 16px rgba(56, 220, 226, 0.5);
+    }
+    .heatmap-tile.small {
+      font-size: 0;
     }
     .heatmap-toggle {
       min-height: 26px;
@@ -484,7 +505,7 @@
     }
     .replay-dock {
       position: absolute;
-      left: 50%;
+      left: calc(50% + 130px);
       bottom: 18px;
       z-index: 9;
       width: min(560px, calc(100% - 44px));
@@ -495,10 +516,18 @@
       background: rgba(13, 18, 31, 0.9);
       box-shadow: 0 18px 52px rgba(0, 0, 0, 0.4), 0 0 34px rgba(56, 220, 226, 0.08);
       backdrop-filter: blur(18px);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .replay-dock.dragging {
+      cursor: grabbing;
+      box-shadow: 0 24px 72px rgba(0, 0, 0, 0.52), 0 0 42px rgba(56, 220, 226, 0.16);
     }
     .timeline {
       width: 100%;
       accent-color: var(--cyan);
+      cursor: pointer;
     }
     .controls {
       display: grid;
@@ -809,10 +838,10 @@
     <main id="replay-layout">
       <section class="stage">
         <div id="cy"></div>
-        <button class="heatmap-show hidden" id="heatmap-show" type="button">Heatmap</button>
-        <div class="heatmap" id="module-heatmap">
+        <button class="heatmap-show" id="heatmap-show" type="button">Treemap</button>
+        <div class="heatmap hidden" id="module-heatmap">
           <div class="heatmap-header">
-            <div class="heatmap-title">Module Heatmap</div>
+            <div class="heatmap-title">Module Treemap</div>
             <button class="heatmap-toggle" id="heatmap-toggle" type="button">Hide</button>
           </div>
           <div class="heatmap-grid" id="heatmap-grid"></div>
@@ -827,8 +856,12 @@
           <div class="resize-handle corner" data-handle="bottom-left" aria-hidden="true"></div>
           <div class="resize-handle corner" data-handle="bottom-right" aria-hidden="true"></div>
         </div>
-        <div class="legend">
-          <div class="legend-title">Schemas</div>
+        <button class="legend-show hidden" id="legend-show" type="button">Legend</button>
+        <div class="legend" id="legend">
+          <div class="legend-header">
+            <div class="legend-title">Schemas</div>
+            <button class="legend-toggle" id="legend-toggle" type="button">Hide</button>
+          </div>
           <div class="legend-grid">
             <span class="pill"><span class="schema module"></span>module shell</span>
             <span class="pill"><span class="schema package"></span>package shell</span>
@@ -841,7 +874,7 @@
             <span class="pill"><span class="schema return"></span>return value</span>
           </div>
         </div>
-        <section class="replay-dock" aria-label="Execution replay controls">
+        <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
           <input class="timeline" id="timeline" min="0" max="0" value="0" type="range" aria-label="Execution event position">
           <div class="controls">
             <button class="icon-button" id="back" type="button" aria-label="Previous event" title="Previous event">
@@ -906,6 +939,7 @@
     let hoveredContainerId = null;
     let activeResizeDrag = null;
     let activeNodeMove = null;
+    let activeReplayDockDrag = null;
     let resizeStartState = null;
     const dragStartPositions = new Map();
     const containerPadding = 56;
@@ -1729,6 +1763,10 @@
     document.addEventListener("pointermove", updateManualNodeMove);
     document.addEventListener("pointerup", endManualNodeMove);
     document.addEventListener("pointercancel", endManualNodeMove);
+    document.getElementById("replay-dock").addEventListener("pointerdown", startReplayDockDrag);
+    document.addEventListener("pointermove", updateReplayDockDrag);
+    document.addEventListener("pointerup", endReplayDockDrag);
+    document.addEventListener("pointercancel", endReplayDockDrag);
     cy.on("drag", "node", () => {
       hideResizeUI();
     });
@@ -1749,6 +1787,8 @@
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
     document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
+    document.getElementById("legend-toggle").addEventListener("click", toggleLegend);
+    document.getElementById("legend-show").addEventListener("click", toggleLegend);
     document.getElementById("timeline").addEventListener("input", (event) => {
       current = Number(event.target.value);
       renderEvent();
@@ -1927,6 +1967,63 @@
       maybeRenderResizeControls();
       renderResizeHandles();
       event?.preventDefault?.();
+    }
+
+    function startReplayDockDrag(event) {
+      if (event.button !== 0 || isReplayDockInteractiveTarget(event.target)) return;
+      const dock = document.getElementById("replay-dock");
+      const stage = document.querySelector(".stage");
+      const dockRect = dock.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      activeReplayDockDrag = {
+        startX: event.clientX,
+        startY: event.clientY,
+        left: dockRect.left - stageRect.left,
+        top: dockRect.top - stageRect.top,
+        width: dockRect.width,
+        height: dockRect.height,
+        pointerId: event.pointerId
+      };
+      dock.classList.add("dragging");
+      dock.style.left = `${activeReplayDockDrag.left}px`;
+      dock.style.top = `${activeReplayDockDrag.top}px`;
+      dock.style.bottom = "auto";
+      dock.style.transform = "none";
+      dock.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    }
+
+    function updateReplayDockDrag(event) {
+      if (!activeReplayDockDrag) return;
+      const dock = document.getElementById("replay-dock");
+      const stage = document.querySelector(".stage");
+      const stageRect = stage.getBoundingClientRect();
+      const margin = 12;
+      const nextLeft = activeReplayDockDrag.left + event.clientX - activeReplayDockDrag.startX;
+      const nextTop = activeReplayDockDrag.top + event.clientY - activeReplayDockDrag.startY;
+      const clampedLeft = Math.min(Math.max(margin, nextLeft), Math.max(margin, stageRect.width - activeReplayDockDrag.width - margin));
+      const clampedTop = Math.min(Math.max(margin, nextTop), Math.max(margin, stageRect.height - activeReplayDockDrag.height - margin));
+      dock.style.left = `${clampedLeft}px`;
+      dock.style.top = `${clampedTop}px`;
+      event.preventDefault();
+    }
+
+    function endReplayDockDrag(event) {
+      if (!activeReplayDockDrag) return;
+      const dock = document.getElementById("replay-dock");
+      const pointerId = activeReplayDockDrag.pointerId;
+      activeReplayDockDrag = null;
+      dock.classList.remove("dragging");
+      try {
+        dock.releasePointerCapture?.(pointerId);
+      } catch (_error) {
+        // no-op: ignore platforms that do not support pointer capture.
+      }
+      event?.preventDefault?.();
+    }
+
+    function isReplayDockInteractiveTarget(target) {
+      return Boolean(target?.closest?.("button, input, svg, path"));
     }
 
     function canPlaceNodeAt(node, position) {
@@ -3131,6 +3228,13 @@
       show.classList.toggle("hidden", !collapsed);
     }
 
+    function toggleLegend() {
+      const legend = document.getElementById("legend");
+      const show = document.getElementById("legend-show");
+      const collapsed = legend.classList.toggle("hidden");
+      show.classList.toggle("hidden", !collapsed);
+    }
+
     function renderModuleHeatmap(index) {
       const grid = document.getElementById("heatmap-grid");
       const modules = moduleHeatmapAt(index);
@@ -3139,13 +3243,15 @@
         return;
       }
       const activeModules = new Set([events[index]?.caller?.module, events[index]?.callee?.module].filter(Boolean));
-      grid.innerHTML = modules.map((module) => {
-        const size = Math.round(20 + Math.min(74, Math.sqrt(module.touches) * 13));
+      const rect = grid.getBoundingClientRect();
+      const layout = treemapLayout(modules, Math.max(1, rect.width || 398), Math.max(1, rect.height || 220));
+      grid.innerHTML = layout.map(({ module, x, y, width, height }) => {
         const hue = Math.max(0, 188 - Math.min(150, module.fan_out * 26));
-        const lightness = Math.max(34, 50 - Math.min(14, module.touches * 0.7));
+        const lightness = activeModules.has(module.module) ? 56 : Math.max(34, 50 - Math.min(14, module.touches * 0.7));
         const label = shortModuleLabel(module.module);
         const activeClass = activeModules.has(module.module) ? " active" : "";
-        return `<div class="heatmap-tile${activeClass}" title="${escapeAttr(module.module)} · touches ${module.touches} · fan-out ${module.fan_out}" style="width:${size}px;height:${size}px;background-color:hsl(${hue} 78% ${lightness}%);">${escapeHtml(label)}</div>`;
+        const smallClass = width < 34 || height < 20 ? " small" : "";
+        return `<div class="heatmap-tile${activeClass}${smallClass}" title="${escapeAttr(module.module)} · touches ${module.touches} · fan-out ${module.fan_out}" style="left:${x}px;top:${y}px;width:${width}px;height:${height}px;background-color:hsl(${hue} 78% ${lightness}%);">${escapeHtml(label)}</div>`;
       }).join("");
     }
 
@@ -3168,9 +3274,59 @@
         }
       }
       return Array.from(modules.values())
-        .map((module) => ({ ...module, fan_out: module.outgoing.size }))
+        .map((module) => ({ ...module, fan_out: module.outgoing.size, value: Math.max(1, module.touches) }))
         .sort((left, right) => right.touches - left.touches || right.fan_out - left.fan_out || left.module.localeCompare(right.module))
         .slice(0, 80);
+    }
+
+    function treemapLayout(modules, width, height) {
+      const items = modules
+        .map((module) => ({ module, value: Math.max(1, Number(module.value || module.touches || 1)) }))
+        .sort((left, right) => right.value - left.value || left.module.module.localeCompare(right.module.module));
+      const rects = [];
+      layoutTreemapSlice(items, 0, 0, width, height, rects);
+      return rects.map((rect) => ({
+        ...rect,
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width: Math.max(1, Math.round(rect.width)),
+        height: Math.max(1, Math.round(rect.height))
+      }));
+    }
+
+    function layoutTreemapSlice(items, x, y, width, height, rects) {
+      if (!items.length || width <= 0 || height <= 0) return;
+      if (items.length === 1) {
+        rects.push({ module: items[0].module, x, y, width, height });
+        return;
+      }
+      const total = items.reduce((sum, item) => sum + item.value, 0);
+      const split = balancedTreemapSplit(items, total);
+      const first = items.slice(0, split);
+      const second = items.slice(split);
+      const firstTotal = first.reduce((sum, item) => sum + item.value, 0);
+      const ratio = total ? firstTotal / total : 0.5;
+      if (width >= height) {
+        const firstWidth = Math.max(1, width * ratio);
+        layoutTreemapSlice(first, x, y, firstWidth, height, rects);
+        layoutTreemapSlice(second, x + firstWidth, y, Math.max(1, width - firstWidth), height, rects);
+      } else {
+        const firstHeight = Math.max(1, height * ratio);
+        layoutTreemapSlice(first, x, y, width, firstHeight, rects);
+        layoutTreemapSlice(second, x, y + firstHeight, width, Math.max(1, height - firstHeight), rects);
+      }
+    }
+
+    function balancedTreemapSplit(items, total) {
+      let accumulated = 0;
+      for (let index = 0; index < items.length - 1; index += 1) {
+        const next = accumulated + items[index].value;
+        if (next >= total / 2) {
+          return index === 0 ? 1 : (Math.abs(total / 2 - accumulated) < Math.abs(next - total / 2) ? index : index + 1);
+        }
+        accumulated = next;
+      }
+      return Math.max(1, Math.floor(items.length / 2));
     }
 
     function shortModuleLabel(moduleName) {
