@@ -9,7 +9,7 @@ from pathlib import Path
 from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
 from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
-from skeleton_replay.runtime import TargetScriptRunner, TraceOptions, TraceResult
+from skeleton_replay.runtime import TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,7 @@ class TraceSession:
     max_events: int | None = None
     html_enabled: bool = True
     open_report: bool = False
+    pytest_runner: TargetPytestRunner = field(default_factory=TargetPytestRunner)
     runner: TargetScriptRunner = field(default_factory=TargetScriptRunner)
     report_writer: HtmlReportWriter = field(default_factory=HtmlReportWriter)
     workflow_writer: WorkflowNarrativeWriter = field(default_factory=WorkflowNarrativeWriter)
@@ -78,6 +79,36 @@ class TraceSession:
             target_exit_code = 1
             target_error = f"{type(exc).__name__}: {exc}"
 
+        return self._result_from_trace(project_root=project_root, out_dir=out_dir, trace_result=trace_result, target_exit_code=target_exit_code, target_error=target_error)
+
+    def run_pytest(self, pytest_args: Sequence[str] = ()) -> TraceSessionResult:
+        """Trace a pytest invocation and return generated artifact paths and metrics."""
+        project_root = self._resolved_project_root()
+        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=self._requested_out_dir())
+        trace_options = TraceOptions(
+            project_root=project_root,
+            out_dir=out_dir,
+            include=self.include,
+            exclude=self.exclude,
+            max_events=self.max_events,
+        )
+
+        trace_result: TraceResult | None = None
+        target_exit_code = 0
+        target_error: str | None = None
+        try:
+            trace_result = self.pytest_runner.run(list(pytest_args), trace_options)
+            target_exit_code = trace_result.target_exit_code
+        except SystemExit as exc:
+            target_exit_code = self._system_exit_code(exc)
+        except Exception as exc:
+            target_exit_code = 1
+            target_error = f"{type(exc).__name__}: {exc}"
+
+        return self._result_from_trace(project_root=project_root, out_dir=out_dir, trace_result=trace_result, target_exit_code=target_exit_code, target_error=target_error)
+
+    def _result_from_trace(self, *, project_root: Path, out_dir: Path, trace_result: TraceResult | None, target_exit_code: int, target_error: str | None) -> TraceSessionResult:
+        """Generate artifacts from a trace result and return public session metadata."""
         trace_path = trace_result.trace_path if trace_result else out_dir / "trace.jsonl"
         snapshot_path = out_dir / "snapshot.json"
         workflow_path = out_dir / "workflow.md"

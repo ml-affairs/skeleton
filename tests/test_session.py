@@ -110,3 +110,54 @@ class TestTraceSession:
         assert result.quality_path.exists()
         assert result.quality_markdown_path.exists()
         assert not (out_dir / "report.html").exists()
+
+    def test_run_pytest_writes_artifacts_for_selected_test(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "pytest-artifacts"
+        session = TraceSession(project_root=project_root, out_dir=out_dir)
+
+        # When
+        result = session.run_pytest(["-q", "-p", "no:cov", str(project_root / "test_checkout.py::test_builds_receipt_total")])
+
+        # Then
+        assert result.succeeded
+        assert result.target_exit_code == 0
+        assert result.target_error is None
+        assert result.trace_path.exists()
+        assert result.snapshot_path.exists()
+        assert result.workflow_path.exists()
+        assert result.quality_path.exists()
+        assert result.quality_markdown_path.exists()
+        assert result.report_path is not None
+        assert result.report_path.exists()
+
+        snapshot = json.loads(result.snapshot_path.read_text(encoding="utf-8"))
+        observed_nodes = {node["id"] for node in snapshot["nodes"]}
+        assert "function:test_checkout.test_builds_receipt_total" in observed_nodes
+        assert "function:calculator.build_receipt" in observed_nodes
+        assert "function:calculator.PriceCalculator.total" in observed_nodes
+
+    def test_run_pytest_preserves_failure_exit_code_and_partial_artifacts(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "pytest-failure-artifacts"
+        session = TraceSession(project_root=project_root, out_dir=out_dir, html_enabled=False)
+
+        # When
+        result = session.run_pytest(["-q", "-p", "no:cov", str(project_root / "failure_scenario.py::test_failing_receipt_total")])
+
+        # Then
+        assert not result.succeeded
+        assert result.target_exit_code == 1
+        assert result.target_error is None
+        assert result.trace_path.exists()
+        assert result.snapshot_path.exists()
+        assert result.workflow_path.exists()
+        assert result.quality_path.exists()
+        assert result.quality_markdown_path.exists()
+        assert result.report_path is None
+
+        snapshot = json.loads(result.snapshot_path.read_text(encoding="utf-8"))
+        assert snapshot["event_count"] == result.event_count
+        assert snapshot["event_count"] > 0

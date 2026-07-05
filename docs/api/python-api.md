@@ -8,6 +8,7 @@ Skeleton's primary interface is still the CLI:
 
 ```bash
 python -m skeleton_replay run path/to/script.py
+python -m skeleton_replay pytest -- tests/test_checkout.py -q
 ```
 
 The public Python API is `TraceSession`. Most lower-level classes remain
@@ -41,6 +42,22 @@ print(result.workflow_path)
 print(result.report_path)
 ```
 
+The same session can trace an existing pytest invocation:
+
+```python
+from pathlib import Path
+
+from skeleton_replay import TraceSession
+
+result = TraceSession(
+    project_root=Path("."),
+    out_dir=Path(".skeleton/pytest-checkout"),
+).run_pytest(["tests/test_checkout.py", "-q"])
+
+print(result.target_exit_code)
+print(result.report_path)
+```
+
 Constructor fields:
 
 | Field | Purpose |
@@ -55,7 +72,7 @@ Constructor fields:
 
 ### `TraceSessionResult`
 
-Returned by `TraceSession.run_script`.
+Returned by `TraceSession.run_script` and `TraceSession.run_pytest`.
 
 | Field | Meaning |
 | --- | --- |
@@ -67,8 +84,8 @@ Returned by `TraceSession.run_script`.
 | `event_count` | Number of captured trace events. |
 | `node_count` | Number of snapshot nodes. |
 | `edge_count` | Number of observed runtime call edges. |
-| `target_exit_code` | Exit code from the traced script. |
-| `target_error` | String summary when the traced script raised an exception. |
+| `target_exit_code` | Exit code from the traced script or pytest invocation. |
+| `target_error` | String summary when the traced script or pytest runner raised an exception. |
 | `succeeded` | Convenience property for `target_exit_code == 0`. |
 
 ## Current Importable Building Blocks
@@ -79,6 +96,9 @@ The current pipeline is:
 CliApplication
   -> RunCommand
     -> TargetScriptRunner
+      -> RuntimeTracer
+  -> PytestCommand
+    -> TargetPytestRunner
       -> RuntimeTracer
     -> SnapshotBuilder
     -> WorkflowNarrativeWriter
@@ -113,6 +133,13 @@ Runs a Python script under `RuntimeTracer` with adjusted `sys.argv` and
 `sys.path`.
 
 This currently powers all target execution.
+
+### `TargetPytestRunner`
+
+Runs pytest in-process under `RuntimeTracer`, preserving pytest's exit code
+while writing the same replay artifacts. Importing pytest is delayed until the
+runner is used, so Skeleton's runtime package still has no hard pytest
+dependency for script-only users.
 
 ### `RuntimeTracer`
 

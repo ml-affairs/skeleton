@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from skeleton_replay.cli import CliApplication, RunCommand
+from skeleton_replay.cli import CliApplication, PytestCommand, RunCommand
 from skeleton_replay.interface import OutputPathResolver, SkeletonConsole
 
 
@@ -141,6 +141,43 @@ class TestRunCommand:
         assert opener.opened == [out_dir / "report.html"]
 
 
+class TestPytestCommand:
+    """CLI pytest command behavior."""
+
+    def test_writes_artifacts_and_preserves_pytest_exit_code(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "pytest-command-artifacts"
+        opener = RecordingReportOpener()
+        command = PytestCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            report_opener=opener,
+        )
+        args = Namespace(
+            pytest_args=["-q", "-p", "no:cov", str(project_root / "test_checkout.py::test_builds_receipt_total")],
+            project_root=project_root,
+            out_dir=out_dir,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=False,
+            no_open=True,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "report.html").exists()
+        assert opener.opened == []
+
+
 class TestOutputPathResolver:
     """Output directory resolution behavior."""
 
@@ -190,6 +227,34 @@ class TestCliApplication:
                 "--out-dir",
                 str(out_dir),
                 str(project_root / "app.py"),
+            ]
+        )
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "report.html").exists()
+
+    def test_parses_pytest_command_without_opening(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "cli-pytest-reports"
+
+        # When
+        exit_code = CliApplication().run(
+            [
+                "pytest",
+                "--color",
+                "never",
+                "--no-open",
+                "--project-root",
+                str(project_root),
+                "--out-dir",
+                str(out_dir),
+                "--",
+                "-q",
+                "-p",
+                "no:cov",
+                str(project_root / "test_checkout.py::test_builds_receipt_total"),
             ]
         )
 

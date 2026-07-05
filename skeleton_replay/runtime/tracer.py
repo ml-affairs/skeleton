@@ -35,6 +35,7 @@ class TraceResult:
 
     trace_path: Path
     event_count: int
+    target_exit_code: int = 0
 
 
 class RuntimeTracer:

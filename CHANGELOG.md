@@ -5,6 +5,13 @@ All notable changes to Skeleton are documented in this file.
 The format follows the spirit of Keep a Changelog, and versions follow
 Semantic Versioning while the project is public-alpha software.
 
+## Unreleased
+
+### Added
+
+- `skeleton pytest` for tracing existing pytest sessions and selected test nodes.
+- `TraceSession.run_pytest()` for generating replay artifacts from pytest scenarios through the Python API.
+
 ## [0.4.0] - 2026-07-02
 
 ### Added

@@ -129,10 +129,18 @@ make demo-no-open
 skeleton run [options] path/to/script.py [args...]
 ```
 
+Existing pytest scenarios can also be traced without adding decorators or
+test-suite hooks:
+
+```bash
+skeleton pytest [options] -- tests/test_checkout.py -q
+```
+
 The module entrypoint is also available:
 
 ```bash
 python -m skeleton_replay run [options] path/to/script.py [args...]
+python -m skeleton_replay pytest [options] -- tests/test_checkout.py -q
 ```
 
 Options:
@@ -146,6 +154,10 @@ Options:
 --no-html             Skip report.html generation and opening.
 --no-open             Do not open report.html after generation.
 ```
+
+For `skeleton pytest`, put pytest's own flags after `--` when they begin with a
+dash. Skeleton preserves pytest's exit code and still writes partial artifacts
+when tests fail.
 
 Output location precedence:
 
@@ -232,24 +244,25 @@ For more detail, see
 
 ## Current scope and next integrations
 
-Skeleton currently runs a script path:
+Skeleton currently runs a script path or a pytest invocation:
 
 ```bash
 python -m skeleton_replay run scripts/replay_checkout.py
+python -m skeleton_replay pytest -- tests/test_checkout.py -q
 ```
 
-That script can drive any kind of Python code: CLI workflows, service objects,
-batch jobs, web-app internals, or library calls. The application being traced
-does not need to be a CLI application, but v0 does need a script entrypoint that
-exercises the behavior.
+The script path can drive any kind of Python code: CLI workflows, service
+objects, batch jobs, web-app internals, or library calls. The application being
+traced does not need to be a CLI application. Pytest tracing covers projects
+whose existing tests already exercise useful behavior.
 
 Planned integrations:
 
 - `run-module`: support module execution such as
   `python -m my_app.cli run-demo`, exposed as something like
   `skeleton run-module my_app.cli -- run-demo`.
-- pytest plugin: trace selected tests or test sessions, because tests often
-  encode real business workflows.
+- pytest plugin hooks: richer per-test reports and mark-based scenario
+  selection on top of the current `skeleton pytest` command.
 - live web request tracing: trace one request or handler inside a running
   FastAPI, Flask, Django, or Starlette app through middleware or a capture
   context.
