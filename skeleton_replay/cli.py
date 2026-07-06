@@ -296,6 +296,7 @@ class PytestCommand:
             target_error = exc
             self.console.error(f"Pytest tracing raised {type(exc).__name__}: {exc}")
 
+        trace_path = result.trace_path if result else config.trace_path
         self.console.step("Building architecture snapshot")
         self.console.step("Analyzing design-quality signals")
         self.console.step("Writing LLM-readable workflow narrative")
@@ -309,7 +310,7 @@ class PytestCommand:
         ).generate(
             project_root=config.project_root,
             paths=ArtifactPaths(
-                trace_path=result.trace_path if result else config.trace_path,
+                trace_path=trace_path,
                 snapshot_path=config.snapshot_path,
                 workflow_path=config.workflow_path,
                 quality_path=config.quality_path,
@@ -331,7 +332,7 @@ class PytestCommand:
             event_count=event_count,
             node_count=artifact_result.metrics.node_count,
             edge_count=artifact_result.metrics.edge_count,
-            trace_path=config.trace_path,
+            trace_path=trace_path,
             snapshot_path=config.snapshot_path,
             workflow_path=config.workflow_path,
             quality_path=config.quality_path,

@@ -7,6 +7,7 @@ import pytest
 
 from skeleton_replay.cli import CliApplication, PytestCommand, RunCommand
 from skeleton_replay.interface import OutputPathResolver, SkeletonConsole
+from skeleton_replay.runtime import TargetPytestRunner, TraceOptions, TraceResult
 
 
 class RecordingReportOpener:
@@ -20,6 +21,15 @@ class RecordingReportOpener:
         """Record the report path instead of opening a browser."""
         self.opened.append(report_path)
         return True
+
+
+class FailingBeforeTracePytestRunner(TargetPytestRunner):
+    """Test double that fails before creating a trace file."""
+
+    def run(self, pytest_args: list[str], options: TraceOptions) -> TraceResult:
+        """Raise before delegating to ``RuntimeTracer``."""
+        del pytest_args, options
+        raise RuntimeError("pytest is unavailable")
 
 
 class TestRunCommand:
@@ -178,6 +188,41 @@ class TestPytestCommand:
         assert (out_dir / "architecture_quality.md").exists()
         assert (out_dir / "report.html").exists()
         assert opener.opened == []
+
+    def test_writes_empty_trace_artifacts_when_pytest_fails_before_tracing(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "pytest-import-failure-artifacts"
+        command = PytestCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            runner=FailingBeforeTracePytestRunner(),
+        )
+        args = Namespace(
+            pytest_args=["-q"],
+            project_root=project_root,
+            out_dir=out_dir,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=True,
+            no_open=True,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 1
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "trace.jsonl").read_text(encoding="utf-8") == ""
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
+        assert not (out_dir / "report.html").exists()
+
+        snapshot = json.loads((out_dir / "snapshot.json").read_text(encoding="utf-8"))
+        assert snapshot["event_count"] == 0
 
 
 class TestOutputPathResolver:
