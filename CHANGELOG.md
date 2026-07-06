@@ -12,6 +12,10 @@ Semantic Versioning while the project is public-alpha software.
 - `skeleton pytest` for tracing existing pytest sessions and selected test nodes.
 - `TraceSession.run_pytest()` for generating replay artifacts from pytest scenarios through the Python API.
 
+### Changed
+
+- Private/internal project callables are now traced, marked with `visibility: "private"` in snapshots, rendered with dashed outlines, and hideable in the HTML report.
+
 ## [0.4.0] - 2026-07-02
 
 ### Added
