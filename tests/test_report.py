@@ -303,6 +303,13 @@ class TestHtmlReportWriter:
         assert 'cy.on("mouseover", "edge"' in html
         assert 'cy.on("mouseover", \'node[type = "instance"]\'' in html
         assert "tip-pill" in html
+        assert 'id="replay-dock-toggle"' in html
+        assert "function toggleReplayDock" in html
+        assert "Collapse the replay controls" in html
+        assert 'id="trace-window-start-input"' in html
+        assert 'id="trace-window-end-input"' in html
+        assert "function setTraceWindowFromInput" in html
+        assert "function syncTraceWindowInputs" in html
         assert "function keepCurrentNodesInView" in html
         assert "activeNodes.renderedBoundingBox" in html
         assert "cy.pan({ x: pan.x + dx, y: pan.y + dy })" in html

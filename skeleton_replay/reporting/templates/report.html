@@ -615,6 +615,49 @@
       cursor: grabbing;
       box-shadow: 0 24px 72px rgba(0, 0, 0, 0.52), 0 0 42px rgba(56, 220, 226, 0.16);
     }
+    .replay-dock.is-collapsed {
+      width: auto;
+      min-width: 0;
+      padding: 7px;
+      border-radius: 12px;
+    }
+    .replay-dock.is-collapsed .timeline-stack,
+    .replay-dock.is-collapsed .controls {
+      display: none;
+    }
+    .replay-dock-header {
+      position: absolute;
+      right: 8px;
+      top: -48px;
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+    .replay-dock.is-collapsed .replay-dock-header {
+      position: static;
+      pointer-events: auto;
+    }
+    .replay-dock-toggle {
+      position: relative;
+      width: 38px;
+      min-height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: var(--cyan);
+      border-color: rgba(94, 234, 212, 0.34);
+      background: rgba(15, 23, 42, 0.96);
+      pointer-events: auto;
+    }
+    .replay-dock-toggle svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     .timeline {
       width: 100%;
       accent-color: var(--cyan);
@@ -723,7 +766,44 @@
       background: rgba(51, 65, 85, 0.92);
       box-shadow: inset 0 0 18px rgba(148, 163, 184, 0.12);
     }
-    .export-button::after {
+    .trace-range-fields {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      gap: 7px;
+      min-width: 0;
+    }
+    .trace-range-fields label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .trace-range-fields input {
+      width: 58px;
+      min-height: 34px;
+      border: 1px solid rgba(94, 234, 212, 0.22);
+      border-radius: 8px;
+      padding: 5px 7px;
+      color: var(--ink);
+      background: rgba(2, 6, 23, 0.72);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .trace-range-fields input:focus {
+      outline: none;
+      border-color: rgba(94, 234, 212, 0.7);
+      box-shadow: 0 0 0 3px rgba(56, 220, 226, 0.12);
+    }
+    .export-button::after,
+    .replay-dock-toggle::after {
       content: attr(data-tooltip);
       position: absolute;
       left: 50%;
@@ -744,12 +824,19 @@
       pointer-events: none;
       transition: opacity 140ms ease, transform 140ms ease;
     }
+    .replay-dock-toggle::after {
+      width: 230px;
+    }
     .export-button:hover::after,
-    .export-button:focus-visible::after {
+    .export-button:focus-visible::after,
+    .replay-dock-toggle:hover::after,
+    .replay-dock-toggle:focus-visible::after {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
     .counter {
+      grid-column: 6;
+      grid-row: 1;
       justify-self: end;
       color: var(--muted);
       font-size: 12px;
@@ -1135,6 +1222,11 @@
           </div>
         </div>
         <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
+          <div class="replay-dock-header">
+            <button class="replay-dock-toggle" id="replay-dock-toggle" type="button" aria-label="Hide replay controls" aria-expanded="true" title="Hide replay controls" data-tooltip="Collapse the replay controls when you want more room for the architecture map.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M9 8l-4 4 4 4"></path><path d="M15 8l4 4-4 4"></path></svg>
+            </button>
+          </div>
           <div class="timeline-stack">
             <div class="trace-window" id="trace-window" role="slider" aria-label="Trace export window">
               <div class="trace-window-track"></div>
@@ -1159,6 +1251,10 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path><path d="M5 17v4"></path><path d="M19 17v4"></path></svg>
             </button>
             <button class="private-toggle" id="private-toggle" type="button" aria-pressed="false" title="Hide or show private/internal callable nodes and their direct runtime edges">Hide private</button>
+            <div class="trace-range-fields" aria-label="Selected trace event range">
+              <label for="trace-window-start-input">Start <input id="trace-window-start-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
+              <label for="trace-window-end-input">End <input id="trace-window-end-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
+            </div>
             <span class="counter" id="counter">0 / 0</span>
           </div>
         </section>
@@ -2216,6 +2312,7 @@
     document.getElementById("play").addEventListener("click", togglePlay);
     document.getElementById("export-trace").addEventListener("click", exportTraceWindow);
     document.getElementById("private-toggle").addEventListener("click", togglePrivateCalls);
+    document.getElementById("replay-dock-toggle").addEventListener("click", toggleReplayDock);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
     document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
@@ -2225,11 +2322,21 @@
       current = Number(event.target.value);
       renderEvent();
     });
+    document.getElementById("trace-window-start-input").addEventListener("change", (event) => setTraceWindowFromInput("start", event.target.value));
+    document.getElementById("trace-window-end-input").addEventListener("change", (event) => setTraceWindowFromInput("end", event.target.value));
+    document.getElementById("trace-window-start-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") setTraceWindowFromInput("start", event.target.value);
+    });
+    document.getElementById("trace-window-end-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") setTraceWindowFromInput("end", event.target.value);
+    });
     document.getElementById("resize-wider").addEventListener("click", () => resizeSelectedContainer("width", 28));
     document.getElementById("resize-taller").addEventListener("click", () => resizeSelectedContainer("height", 28));
     document.getElementById("resize-narrower").addEventListener("click", () => resizeSelectedContainer("width", -28));
     document.getElementById("resize-shorter").addEventListener("click", () => resizeSelectedContainer("height", -28));
     document.getElementById("timeline").max = String(Math.max(0, events.length - 1));
+    document.getElementById("trace-window-start-input").max = String(events.length || 1);
+    document.getElementById("trace-window-end-input").max = String(events.length || 1);
     initializeResizeHandles();
     cy.on("zoom pan", renderResizeHandles);
 
@@ -2510,6 +2617,36 @@
       renderEvent();
     }
 
+    function setTraceWindowFromInput(handleName, rawValue) {
+      if (!events.length) return;
+      const requestedEventNumber = Number(rawValue);
+      if (!Number.isFinite(requestedEventNumber)) {
+        syncTraceWindowInputs();
+        return;
+      }
+      const maxIndex = Math.max(0, events.length - 1);
+      const index = Math.max(0, Math.min(maxIndex, Math.round(requestedEventNumber) - 1));
+      if (handleName === "start") {
+        traceWindowStart = Math.min(index, traceWindowEnd);
+      } else {
+        traceWindowEnd = Math.max(index, traceWindowStart);
+      }
+      if (current < traceWindowStart) current = traceWindowStart;
+      if (current > traceWindowEnd) current = traceWindowEnd;
+      stopPlay();
+      renderEvent();
+    }
+
+    function syncTraceWindowInputs() {
+      const startInput = document.getElementById("trace-window-start-input");
+      const endInput = document.getElementById("trace-window-end-input");
+      const maxEvent = String(events.length || 1);
+      startInput.max = maxEvent;
+      endInput.max = maxEvent;
+      startInput.value = String(events.length ? traceWindowStart + 1 : 1);
+      endInput.value = String(events.length ? traceWindowEnd + 1 : 1);
+    }
+
     function eventIndexFromPointer(event) {
       const windowElement = document.getElementById("trace-window");
       const rect = windowElement.getBoundingClientRect();
@@ -2533,6 +2670,7 @@
       windowElement.setAttribute("aria-valuemin", "1");
       windowElement.setAttribute("aria-valuemax", String(events.length || 1));
       windowElement.setAttribute("aria-valuetext", `Selected trace window ${traceWindowStart + 1} to ${traceWindowEnd + 1} of ${events.length || 1}`);
+      syncTraceWindowInputs();
     }
 
     function canPlaceNodeAt(node, position) {
@@ -3968,6 +4106,25 @@
         keepCurrentNodesInView();
         renderResizeHandles();
       }, 190);
+    }
+
+    function toggleReplayDock() {
+      const dock = document.getElementById("replay-dock");
+      const toggle = document.getElementById("replay-dock-toggle");
+      const collapsed = dock.classList.toggle("is-collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.setAttribute("aria-label", collapsed ? "Show replay controls" : "Hide replay controls");
+      toggle.setAttribute("title", collapsed ? "Show replay controls" : "Hide replay controls");
+      toggle.setAttribute(
+        "data-tooltip",
+        collapsed
+          ? "Show replay controls to step through events, choose an export window, or play the run."
+          : "Collapse the replay controls when you want more room for the architecture map."
+      );
+      window.setTimeout(() => {
+        keepCurrentNodesInView();
+        renderResizeHandles();
+      }, 160);
     }
 
     function toggleHeatmap() {
