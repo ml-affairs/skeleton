@@ -267,6 +267,39 @@ names, timestamps, arguments, return summaries, and object ids for debugging.
 Structured return groups should be read as derived presentation evidence, not
 data loss and not necessarily workflow actions.
 
+## Trace Role Presentation
+
+Some traced calls belong to the scenario harness rather than the system under
+inspection. Script-style scenarios can also run import-time setup before the
+clear entrypoint function starts. Those calls are real evidence and remain in
+`trace.jsonl`, but the report should not make them visually compete with the
+application actors under inspection.
+
+Skeleton therefore adds derived trace-role data in `snapshot.json` without
+changing the raw event schema. The current roles are:
+
+- `entrypoint`: the inferred script/test scenario function, such as `main`,
+  `run_scenario`, or a `test_*` case.
+- `system_under_test`: application frames being inspected.
+- `test_harness`: scenario or test runner frames.
+- `test_utility`: shared test helpers such as `tests.helpers.*` or `conftest`.
+- `import_setup`: project-local calls observed before the inferred entrypoint.
+- `filtered_external`: a root event where the caller is outside the selected
+  trace boundary.
+
+The snapshot stores this as derived presentation data under `trace_roles` and
+annotates observed nodes with `trace_role` / `trace_roles`. The HTML report uses
+that data to start the replay at the inferred entrypoint when possible, collapse
+pre-entrypoint setup into a "Setup before entrypoint" section, and render
+harness/setup/test utility frames with lower visual weight and role pills.
+There is intentionally no separate "hide test utilities" control; the existing
+private-call hide control remains focused on private/internal callables only.
+
+When an event has `caller: null`, the report explains whether it is a root
+inside the selected trace boundary or a caller outside the selected trace
+boundary where that can be inferred. Exported trace windows include overlapping
+trace-role records so LLM/debug review gets the same context as the report.
+
 ## Important Limitations
 
 Skeleton should be honest about what this mechanism can and cannot know.

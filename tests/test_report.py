@@ -176,9 +176,15 @@ class TestHtmlReportWriter:
         assert "if (!source || !target || source === target) return;" in html
         assert 'addActorRole(target, "entrypoint")' in html
         assert "Entrypoint and service are roles on actors" in html
-        assert "let current = events.length ? 0 : -1" in html
+        assert "entrypointEventOrder !== null" in html
+        assert "let current = events.length ? (entrypointEventOrder" in html
         assert "renderEvent();" in html
         assert "let currentReplayMetrics = null" in html
+        assert "trace_roles: selectedTraceRoles" in html
+        assert "Setup before entrypoint" in html
+        assert "role-test-utility" in html
+        assert "role-import-setup" in html
+        assert "trace-role-pill" in html
         assert "const revealedElementIds = new Set()" in html
         assert "function parentForFunction" in html
         assert "function parentForActor" in html

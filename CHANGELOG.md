@@ -7,6 +7,15 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+### Added
+
+- Derived trace roles in `snapshot.json` for entrypoints, system-under-test frames, test harnesses, test utilities, import/setup calls, and roots whose caller is outside the selected trace boundary.
+
+### Changed
+
+- The HTML report now starts replay at the inferred scenario entrypoint when available, groups pre-entrypoint setup events in a collapsed section, and renders harness/setup/test utility frames with subdued role styling instead of adding another hide toggle.
+- `workflow.md` now includes setup-before-entrypoint summaries and trace-role context for actors and events.
+
 ## [0.5.0] - 2026-07-06
 
 ### Added

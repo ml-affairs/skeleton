@@ -452,6 +452,37 @@
       border-color: var(--line-strong);
       color: var(--cyan);
     }
+    .trace-role-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 999px;
+      padding: 2px 7px;
+      color: #cbd5e1;
+      background: rgba(51, 65, 85, 0.42);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .setup-event-group {
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .setup-event-group summary {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: 800;
+    }
+    .setup-event-group .group-meta {
+      margin-top: 7px;
+      line-height: 1.45;
+    }
     .quality-list {
       display: grid;
       gap: 8px;
@@ -774,6 +805,9 @@
       font-size: 13px;
       font-weight: 750;
       line-height: 1.25;
+    }
+    .entity-token .trace-role-pill {
+      margin-top: 7px;
     }
     .entity-token.module { border-color: rgba(20, 184, 166, 0.48); box-shadow: inset 3px 0 0 var(--teal); }
     .entity-token.class { border-color: rgba(139, 92, 246, 0.52); box-shadow: inset 3px 0 0 var(--violet); }
@@ -1170,6 +1204,11 @@
     const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
+    const traceRoles = snapshot.trace_roles || { events: [], setup_event_groups: [] };
+    const traceEventRoles = Array.isArray(traceRoles.events) ? traceRoles.events : [];
+    const traceEventRoleByOrder = new Map(traceEventRoles.map((record) => [Number(record.order), record]));
+    const setupEventGroups = Array.isArray(traceRoles.setup_event_groups) ? traceRoles.setup_event_groups : [];
+    const entrypointEventOrder = Number.isFinite(Number(traceRoles.entrypoint_event_order)) ? Number(traceRoles.entrypoint_event_order) : null;
     const structuredReturnGroups = snapshot.structured_return_groups || [];
     const structuredReturnEventOrders = new Set(structuredReturnGroups.filter((group) => group.collapse_by_default !== false).flatMap((group) => group.raw_event_orders || []));
     const structuredReturnInstanceIds = new Set(structuredReturnGroups.filter((group) => group.collapse_by_default !== false).flatMap((group) => (group.raw_events || []).map((event) => event.callee_object_id).filter(Boolean)));
@@ -1233,6 +1272,36 @@
 
     document.getElementById("project-root").textContent = snapshot.project_root || "project";
     document.getElementById("event-count").textContent = String(snapshot.event_count || events.length || 0);
+
+    function traceRoleForEvent(event) {
+      return traceEventRoleByOrder.get(Number(event?.order))?.trace_role || "system_under_test";
+    }
+
+    function traceRoleRecordForEvent(event) {
+      return traceEventRoleByOrder.get(Number(event?.order)) || {};
+    }
+
+    function traceRoleForEndpoint(endpoint) {
+      if (!endpoint) return "filtered_external";
+      return rawNodes.get(endpoint.node_id)?.trace_role || "system_under_test";
+    }
+
+    function traceRoleForNode(node) {
+      return node?.trace_role || rawNodes.get(node?.source_node_id || node?.id)?.trace_role || "system_under_test";
+    }
+
+    function traceRoleClass(role) {
+      const normalized = String(role || "system_under_test").replaceAll("_", "-");
+      return `role-${normalized}`;
+    }
+
+    function isSubduedTraceRole(role) {
+      return ["test_harness", "test_utility", "import_setup", "filtered_external"].includes(String(role || ""));
+    }
+
+    function roleLabel(role) {
+      return String(role || "system_under_test").replaceAll("_", " ");
+    }
 
     function addActorRole(ownerId, role) {
       if (!ownerId) return;
@@ -1490,6 +1559,7 @@
       const owner = ownerForEndpoint(endpoint);
       const ioCategory = ioCategoryFor(endpoint);
       const externalServiceCategory = externalServiceCategoryFor(endpoint);
+      const traceRole = traceRoleForEndpoint(endpoint);
       const node = observedCallables.get(id) || {
         id,
         source_node_id: endpoint.node_id,
@@ -1504,6 +1574,8 @@
         function: endpoint.function,
         is_private: isPrivateEndpoint(endpoint),
         visibility: sourceNode.visibility || (isPrivateEndpoint(endpoint) ? "private" : "public"),
+        trace_role: traceRole,
+        trace_roles: sourceNode.trace_roles || [traceRole],
         qualified_name: endpoint.qualified_name,
         file: endpoint.file || sourceNode.file,
         line: endpoint.line || sourceNode.line,
@@ -1526,7 +1598,9 @@
       if (event.event_type !== "call") continue;
       const target = ownerForEndpoint(event.callee);
       if (!event.caller) addActorRole(target, "entrypoint");
+      addActorRole(target, traceRoleForEvent(event));
       const source = ownerForEndpoint(event.caller);
+      if (source) addActorRole(source, traceRoleForEndpoint(event.caller));
       addArchEdge(source, target, event);
     }
 
@@ -1588,6 +1662,7 @@
         const callCount = ownerMetric(node.id, "call_count");
         const degree = adjacency.incoming.size + adjacency.outgoing.size;
         const roles = rolesForActor(node.id);
+        const traceRole = traceRoleForNode(node);
         const baseWidth = Math.max(
           containerDefaultMinWidth,
           140 + Math.min(60, callCount * 3 + degree * 4 + Math.min(18, loc / 6))
@@ -1608,6 +1683,8 @@
             fan_in: adjacency.incoming.size,
             fan_out: adjacency.outgoing.size,
             degree,
+            trace_role: traceRole,
+            trace_roles: node.trace_roles || [traceRole],
             size: 46,
             width: baseWidth,
             height: baseHeight,
@@ -1623,6 +1700,8 @@
             node.type === "module" ? "module-container" : "",
             node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
+            traceRoleClass(traceRole),
+            isSubduedTraceRole(traceRole) ? "role-subdued" : "",
             "unseen",
             "hidden"
           ].filter(Boolean).join(" ")
@@ -1647,6 +1726,7 @@
         const isExternalService = node.type === "external_service";
         const ioWidth = ioNodeWidth(label);
         const callableWidth = callableNodeWidth(label);
+        const traceRole = traceRoleForNode(node);
         return {
           data: {
             id: node.id,
@@ -1661,6 +1741,8 @@
             function: node.function,
             is_private: Boolean(node.is_private),
             visibility: node.visibility || (node.is_private ? "private" : "public"),
+            trace_role: traceRole,
+            trace_roles: node.trace_roles || [traceRole],
             io_category: node.io_category,
             qualified_name: node.qualified_name,
             file: node.file,
@@ -1685,7 +1767,9 @@
             "hidden",
             isIo ? "io-capsule" : "",
             isExternalService ? "external-service" : "",
-            node.is_private && !isIo && !isExternalService ? "private-callable" : ""
+            node.is_private && !isIo && !isExternalService ? "private-callable" : "",
+            traceRoleClass(traceRole),
+            isSubduedTraceRole(traceRole) ? "role-subdued" : ""
           ].filter(Boolean).join(" ")
         };
       });
@@ -1896,6 +1980,18 @@
           "border-color": "#cbd5e1",
           "background-color": "#475569",
           "color": "#f8fafc"
+        } },
+        { selector: ".role-test-harness, .role-test-utility, .role-import-setup, .role-filtered-external", style: {
+          "background-opacity": 0.08,
+          "border-color": "rgba(148, 163, 184, 0.54)",
+          "color": "#cbd5e1",
+          "opacity": 0.64
+        } },
+        { selector: ".role-test-utility", style: {
+          "border-style": "dotted"
+        } },
+        { selector: ".role-import-setup", style: {
+          "border-style": "dashed"
         } },
         { selector: 'node[type = "io"]', style: {
           "shape": "barrel",
@@ -2137,7 +2233,7 @@
     initializeResizeHandles();
     cy.on("zoom pan", renderResizeHandles);
 
-    let current = events.length ? 0 : -1;
+    let current = events.length ? (entrypointEventOrder !== null ? Math.max(0, Math.min(events.length - 1, entrypointEventOrder)) : 0) : -1;
     let playTimer = null;
     let currentReplayMetrics = null;
     let traceWindowStart = 0;
@@ -2147,7 +2243,7 @@
     const revealSequence = new Map();
     const manuallyPositionedNodeIds = new Set();
     let nextRevealSequence = 0;
-    document.getElementById("counter").textContent = `0 / ${events.length}`;
+    document.getElementById("counter").textContent = events.length ? `${current + 1} / ${events.length}` : `0 / ${events.length}`;
     renderStructuredReturnSummary();
     showOverview();
     renderEvent();
@@ -3478,6 +3574,7 @@
       document.getElementById("details").innerHTML = `
         <div class="section"><h3>Most Active Actors</h3><div class="chips">${topActors || '<span class="empty">No runtime actors observed.</span>'}</div></div>
         <div class="section"><h3>Quality Signals</h3>${qualitySignals()}</div>
+        ${setupEventGroupCards()}
         <div class="section"><h3>How To Read This</h3><div class="node-kind">
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
@@ -3486,6 +3583,21 @@
         </div></div>
       `;
       bindChipClicks();
+    }
+
+    function setupEventGroupCards() {
+      if (!setupEventGroups.length) return "";
+      const cards = setupEventGroups.map((group) => {
+        const eventOrders = Array.isArray(group.event_orders) ? group.event_orders.join(", ") : "";
+        return `
+          <details class="setup-event-group">
+            <summary>${escapeHtml(group.label || "Setup before entrypoint")} <span class="trace-role-pill">${escapeHtml(roleLabel(group.trace_role || "import_setup"))}</span></summary>
+            <div class="group-meta">Collapsed by default because these calls happened before the inferred scenario entrypoint. Raw events remain in the timeline and exports.</div>
+            <div class="group-meta">events ${escapeHtml(eventOrders)}${group.entrypoint_event_order !== undefined && group.entrypoint_event_order !== null ? ` · entrypoint event ${escapeHtml(group.entrypoint_event_order)}` : ""}</div>
+          </details>
+        `;
+      }).join("");
+      return `<div class="section"><h3>Setup Before Entrypoint</h3>${cards}</div>`;
     }
 
     function renderStructuredReturnSummary() {
@@ -3890,6 +4002,11 @@
       const selectedNodes = (snapshot.nodes || []).filter((node) => selectedIds.has(node.id));
       const selectedEdges = (snapshot.edges || []).filter((edge) => selectedIds.has(edge.source) || selectedIds.has(edge.target));
       const selectedStructuredReturnGroups = structuredReturnGroupsForWindow(selectedEventOrders);
+      const selectedTraceRoles = {
+        ...traceRoles,
+        events: traceEventRoles.filter((record) => selectedEventOrders.has(record.order)),
+        setup_event_groups: setupEventGroups.filter((group) => (group.event_orders || []).some((order) => selectedEventOrders.has(order)))
+      };
       const payload = {
         schema_version: 1,
         kind: "skeleton_trace_window",
@@ -3903,6 +4020,7 @@
         events: selectedEvents,
         nodes: selectedNodes,
         edges: selectedEdges,
+        trace_roles: selectedTraceRoles,
         structured_return_groups: selectedStructuredReturnGroups,
         quality: quality
       };
@@ -4105,7 +4223,7 @@
     }
 
     function narrativeForEvent(event) {
-      const caller = event.caller ? event.caller.qualified_name : "entrypoint";
+      const caller = event.caller ? event.caller.qualified_name : rootContextLabel(event);
       const callee = event.callee.qualified_name;
       if (event.event_type === "call") {
         return `<strong>${escapeHtml(caller)}</strong> called <strong>${escapeHtml(callee)}</strong>${argsSummary(event.args)}`;
@@ -4128,13 +4246,15 @@
       const caller = event.caller;
       const callee = event.callee;
       const callerToken = caller
-        ? entityToken(caller.qualified_name, endpointKind(caller), ownerLabel(sourceOwner))
-        : entityToken("entrypoint", "module", ownerLabel(targetOwner));
-      const calleeToken = entityToken(callee.qualified_name, endpointKind(callee), ownerLabel(targetOwner));
+        ? entityToken(caller.qualified_name, endpointKind(caller), ownerLabel(sourceOwner), traceRoleForEndpoint(caller))
+        : entityToken(rootContextLabel(event), "module", ownerLabel(targetOwner), traceRoleForEvent(event));
+      const calleeToken = entityToken(callee.qualified_name, endpointKind(callee), ownerLabel(targetOwner), traceRoleForEvent(event));
       const delta = event.event_type === "call"
         ? `Highlighted runtime call edge into <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong>.`
         : `Highlighted dashed return edge from <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong> back to its caller.`;
       const evidence = event.event_type === "call" ? argsTable(event.args) : returnEvidence(event.return_value);
+      const roleRecord = traceRoleRecordForEvent(event);
+      const rootContext = roleRecord.root_context ? `<div class="delta-line"><span class="delta-label">Root</span><span>${escapeHtml(rootContextLabel(event))}</span></div>` : "";
       return `
         <div class="event-card">
           <div class="event-card-header">
@@ -4145,19 +4265,30 @@
           <div class="event-delta">
             <div class="delta-line"><span class="delta-label">Change</span><span>${delta}</span></div>
             <div class="delta-line"><span class="delta-label">Scope</span><span>${escapeHtml(ownerLabel(targetOwner))} is in focus; its owning shells are emphasized.</span></div>
+            <div class="delta-line"><span class="delta-label">Role</span><span><span class="trace-role-pill">${escapeHtml(roleLabel(traceRoleForEvent(event)))}</span></span></div>
+            ${rootContext}
             ${evidence}
           </div>
         </div>
       `;
     }
 
-    function entityToken(name, kind, owner) {
+    function entityToken(name, kind, owner, traceRole = null) {
+      const role = traceRole ? `<span class="trace-role-pill">${escapeHtml(roleLabel(traceRole))}</span>` : "";
       return `
         <div class="entity-token ${escapeAttr(kind)}">
           <span class="kind">${escapeHtml(kind)} · ${escapeHtml(owner || "runtime")}</span>
           <span class="name">${escapeHtml(name)}</span>
+          ${role}
         </div>
       `;
+    }
+
+    function rootContextLabel(event) {
+      const rootContext = traceRoleRecordForEvent(event).root_context;
+      if (rootContext === "caller_outside_trace_boundary") return "caller outside trace boundary";
+      if (rootContext === "root_inside_selected_trace_boundary") return "root inside selected trace boundary";
+      return "entrypoint";
     }
 
     function endpointKind(endpoint) {
@@ -4208,7 +4339,7 @@
 
     function jsonKeyClass(quoted) {
       const key = quoted.replace(/^&quot;|&quot;$/g, "");
-      if (["event_type", "order", "timestamp", "depth", "schema_version"].includes(key)) return "json-key-event";
+      if (["event_type", "order", "timestamp", "depth", "schema_version", "trace_role", "trace_roles", "root_context"].includes(key)) return "json-key-event";
       if (["caller", "callee"].includes(key)) return "json-key-endpoint";
       if (["args", "return_value", "value", "summary", "len"].includes(key)) return "json-key-value";
       if (["module", "class_name", "function", "qualified_name", "node_id", "instance_id", "object_id", "file", "line"].includes(key)) return "json-key-identity";

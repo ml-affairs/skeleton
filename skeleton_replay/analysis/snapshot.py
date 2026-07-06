@@ -10,6 +10,7 @@ from typing import Any
 
 from skeleton_replay.analysis.static import StaticProjectScanner
 from skeleton_replay.analysis.structured_returns import StructuredReturnConfig, StructuredReturnGroupAnalyzer
+from skeleton_replay.analysis.trace_roles import TraceRoleAnalyzer
 from skeleton_replay.runtime.events import Endpoint, TraceEvent
 from skeleton_replay.runtime.filters import TraceFilter
 
@@ -113,6 +114,8 @@ class SnapshotBuilder:
         for event in events:
             self._add_event(nodes=nodes, edges=edges, event=event)
 
+        trace_role_analysis = TraceRoleAnalyzer(self.project_root).analyze(events)
+        self._apply_trace_roles(nodes=nodes, trace_node_roles=trace_role_analysis.node_roles)
         self._compute_fan_metrics(nodes, edges)
         snapshot = {
             "schema_version": 1,
@@ -122,6 +125,7 @@ class SnapshotBuilder:
             "nodes": list(nodes.values()),
             "edges": list(edges.values()),
             "events": [event.to_json() for event in events],
+            "trace_roles": trace_role_analysis.to_json(),
             "structured_return_groups": StructuredReturnGroupAnalyzer(config=structured_return_config).analyze(events),
         }
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -295,6 +299,15 @@ class SnapshotBuilder:
         for node_id, node in nodes.items():
             node["fan_in"] = len(incoming.get(node_id, set()))
             node["fan_out"] = len(outgoing.get(node_id, set()))
+
+    @staticmethod
+    def _apply_trace_roles(*, nodes: dict[str, JsonObject], trace_node_roles: dict[str, JsonObject]) -> None:
+        for node_id, role_payload in trace_node_roles.items():
+            node = nodes.get(node_id)
+            if node is None:
+                continue
+            node["trace_role"] = role_payload["trace_role"]
+            node["trace_roles"] = role_payload["trace_roles"]
 
     @staticmethod
     def _is_private_endpoint(endpoint: Endpoint) -> bool:
