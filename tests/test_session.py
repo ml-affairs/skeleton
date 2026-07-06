@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -91,6 +92,30 @@ class TestTraceSession:
         assert snapshot["event_count"] == result.event_count
         assert snapshot["quality"]["summary"]["events"] == result.event_count
 
+    def test_run_script_defaults_artifacts_to_target_local_latest_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_project"
+        shutil.copytree(Path("tests/fixtures/sample_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        out_dir = project_root / ".skeleton" / "app" / "latest"
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+        session = TraceSession(project_root=project_root)
+
+        # When
+        result = session.run_script(project_root / "app.py")
+
+        # Then
+        assert result.succeeded
+        assert result.trace_path == out_dir / "trace.jsonl"
+        assert result.snapshot_path == out_dir / "snapshot.json"
+        assert result.workflow_path == out_dir / "workflow.md"
+        assert result.quality_path == out_dir / "quality.json"
+        assert result.quality_markdown_path == out_dir / "architecture_quality.md"
+        assert result.report_path == out_dir / "report.html"
+        assert result.trace_path.exists()
+        assert result.report_path is not None
+        assert result.report_path.exists()
+
     def test_run_script_can_skip_html_report(self, tmp_path: Path) -> None:
         # Given
         project_root = Path("tests/fixtures/sample_project").resolve()
@@ -141,7 +166,7 @@ class TestTraceSession:
     def test_run_pytest_defaults_artifacts_to_selected_test_directory(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
         project_root = Path("tests/fixtures/sample_pytest_project").resolve()
-        out_dir = project_root / ".skeleton"
+        out_dir = project_root / ".skeleton" / "test_checkout" / "test_builds_receipt_total" / "latest"
         monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
         monkeypatch.delenv("SKELETON_HOME", raising=False)
         session = TraceSession(project_root=project_root)

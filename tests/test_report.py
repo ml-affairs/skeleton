@@ -176,9 +176,15 @@ class TestHtmlReportWriter:
         assert "if (!source || !target || source === target) return;" in html
         assert 'addActorRole(target, "entrypoint")' in html
         assert "Entrypoint and service are roles on actors" in html
-        assert "let current = events.length ? 0 : -1" in html
+        assert "entrypointEventOrder !== null" in html
+        assert "let current = events.length ? (entrypointEventOrder" in html
         assert "renderEvent();" in html
         assert "let currentReplayMetrics = null" in html
+        assert "trace_roles: selectedTraceRoles" in html
+        assert "Setup before entrypoint" in html
+        assert "role-test-utility" in html
+        assert "role-import-setup" in html
+        assert "trace-role-pill" in html
         assert "const revealedElementIds = new Set()" in html
         assert "function parentForFunction" in html
         assert "function parentForActor" in html
@@ -297,6 +303,18 @@ class TestHtmlReportWriter:
         assert 'cy.on("mouseover", "edge"' in html
         assert 'cy.on("mouseover", \'node[type = "instance"]\'' in html
         assert "tip-pill" in html
+        assert 'id="replay-dock-toggle"' in html
+        assert "function toggleReplayDock" in html
+        assert "Collapse the replay controls" in html
+        assert 'id="trace-window-start-input"' in html
+        assert 'id="trace-window-end-input"' in html
+        assert "function setTraceWindowFromInput" in html
+        assert "function syncTraceWindowInputs" in html
+        assert "function visibleFocusAnchorForEvent" in html
+        assert "function nearestVisibleCallChainAnchor" in html
+        assert "function hiddenSelectionNote" in html
+        assert "Selected private event" in html
+        assert "nearest visible runtime context" in html
         assert "function keepCurrentNodesInView" in html
         assert "activeNodes.renderedBoundingBox" in html
         assert "cy.pan({ x: pan.x + dx, y: pan.y + dy })" in html

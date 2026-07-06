@@ -160,7 +160,7 @@ class TestPytestCommand:
     def test_defaults_artifacts_to_selected_test_directory(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
         project_root = Path("tests/fixtures/sample_pytest_project").resolve()
-        out_dir = project_root / ".skeleton"
+        out_dir = project_root / ".skeleton" / "test_checkout" / "test_builds_receipt_total" / "latest"
         opener = RecordingReportOpener()
         monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
         monkeypatch.delenv("SKELETON_HOME", raising=False)
@@ -264,14 +264,29 @@ class TestPytestCommand:
 class TestOutputPathResolver:
     """Output directory resolution behavior."""
 
-    def test_defaults_to_skeleton_home_application_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_defaults_to_target_local_script_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_project").resolve()
+        script = project_root / "app.py"
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+
+        # When
+        out_dir = OutputPathResolver().resolve(project_root=project_root, requested_out_dir=None, target_path=script)
+
+        # Then
+        assert out_dir == project_root / ".skeleton" / "app" / "latest"
+
+    def test_skeleton_home_overrides_target_local_default(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
         skeleton_home = tmp_path / "home" / ".skeleton"
         project_root = Path("tests/fixtures/sample_project").resolve()
+        script = project_root / "app.py"
         monkeypatch.setenv("SKELETON_HOME", str(skeleton_home))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
 
         # When
-        out_dir = OutputPathResolver().resolve(project_root=project_root, requested_out_dir=None)
+        out_dir = OutputPathResolver().resolve(project_root=project_root, requested_out_dir=None, target_path=script)
 
         # Then
         assert out_dir == skeleton_home / "sample_project"
@@ -293,12 +308,12 @@ class TestOutputPathResolver:
 class TestPytestOutputPathResolver:
     """Pytest output directory resolution behavior."""
 
-    def test_defaults_to_selected_test_file_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_defaults_to_selected_test_node_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
         project_root = tmp_path / "sample_pytest_project"
         shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
         monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
-        monkeypatch.setenv("SKELETON_HOME", str(tmp_path / "home" / ".skeleton"))
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
 
         # When
         out_dir = PytestOutputPathResolver().resolve(
@@ -308,13 +323,80 @@ class TestPytestOutputPathResolver:
         )
 
         # Then
-        assert out_dir == project_root / ".skeleton"
+        assert out_dir == project_root / ".skeleton" / "test_checkout" / "test_builds_receipt_total" / "latest"
+
+    def test_defaults_parametrized_test_node_to_safe_deterministic_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+
+        # When
+        first_out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py::test_builds_receipt_total[guest/cart]"],
+        )
+        second_out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py::test_builds_receipt_total[guest/cart]"],
+        )
+
+        # Then
+        assert first_out_dir == second_out_dir
+        assert first_out_dir.parent.name.startswith("test_builds_receipt_total_guest_cart")
+        assert "[" not in first_out_dir.parent.name
+        assert "/" not in first_out_dir.parent.name
+        assert first_out_dir == project_root / ".skeleton" / "test_checkout" / first_out_dir.parent.name / "latest"
+
+    def test_defaults_whole_file_invocation_to_file_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py"],
+        )
+
+        # Then
+        assert out_dir == project_root / ".skeleton" / "test_checkout" / "file" / "latest"
+
+    def test_reserved_single_test_names_do_not_collide_with_whole_file_sentinel(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+
+        # When
+        file_out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py"],
+        )
+        node_out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py::file"],
+        )
+
+        # Then
+        assert file_out_dir == project_root / ".skeleton" / "test_checkout" / "file" / "latest"
+        assert node_out_dir == project_root / ".skeleton" / "test_checkout" / "node-file" / "latest"
 
     def test_defaults_to_selected_test_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
         project_root = tmp_path / "sample_pytest_project"
         shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
         monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
 
         # When
         out_dir = PytestOutputPathResolver().resolve(
@@ -324,7 +406,7 @@ class TestPytestOutputPathResolver:
         )
 
         # Then
-        assert out_dir == project_root / ".skeleton"
+        assert out_dir == project_root / ".skeleton" / "directory" / "latest"
 
     def test_uses_preconfigured_output_directory_before_selected_test(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
@@ -343,9 +425,53 @@ class TestPytestOutputPathResolver:
         # Then
         assert out_dir == configured_out_dir
 
+    def test_skeleton_home_overrides_target_local_pytest_default(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        skeleton_home = tmp_path / "home" / ".skeleton"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.setenv("SKELETON_HOME", str(skeleton_home))
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py::test_builds_receipt_total"],
+        )
+
+        # Then
+        assert out_dir == skeleton_home / "sample_pytest_project"
+
 
 class TestCliApplication:
     """Top-level CLI parser behavior."""
+
+    def test_parses_run_command_with_target_local_default_without_opening(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_project"
+        shutil.copytree(Path("tests/fixtures/sample_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        out_dir = project_root / ".skeleton" / "app" / "latest"
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+
+        # When
+        exit_code = CliApplication().run(
+            [
+                "run",
+                "--color",
+                "never",
+                "--no-open",
+                "--project-root",
+                str(project_root),
+                str(project_root / "app.py"),
+            ]
+        )
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "report.html").exists()
 
     def test_parses_run_command_without_opening(self, tmp_path: Path) -> None:
         # Given

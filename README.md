@@ -44,7 +44,7 @@ skeleton run path/to/script.py
 Skeleton writes:
 
 ```text
-~/.skeleton/<application-name>/
+path/to/.skeleton/script/latest/
   trace.jsonl
   snapshot.json
   workflow.md
@@ -163,13 +163,26 @@ Output location precedence:
 
 1. `--out-dir PATH`
 2. `SKELETON_OUT_DIR`
-3. For `skeleton pytest`, `<selected-test-directory>/.skeleton` when a selected test file or directory is present.
-4. `SKELETON_HOME/<application-name>`
-5. `~/.skeleton/<application-name>`
+3. `SKELETON_HOME/<application-name>`
+4. Target-local defaults:
+   - `skeleton run path/to/scenario.py`: `path/to/.skeleton/scenario/latest/`
+   - `skeleton pytest -- tests/foo/test_bar.py::test_x`: `tests/foo/.skeleton/test_bar/test_x/latest/`
+   - parametrized pytest nodes use deterministic filesystem-safe slugs.
+   - whole-file pytest runs use `<test-dir>/.skeleton/<file-stem>/file/latest/`.
+   - whole-directory pytest runs use `<directory>/.skeleton/directory/latest/`.
+5. `~/.skeleton/<application-name>` when no target-local path can be inferred.
 
 When HTML generation is enabled, Skeleton opens `report.html` in your default
 browser at the end of the run. Use `--no-open` for CI, scripts, or headless
 environments.
+
+The HTML report is a step-through architecture replay. The replay dock can be
+collapsed when you need more graph space, and the selected trace window can be
+set either with handles or by typing Start and End event numbers. Private calls
+remain available by default and can be hidden with the existing private-call
+control; when the selected event is hidden, the report keeps the nearest visible
+caller-chain context in focus and notes that the selected private event is
+hidden.
 
 ## Python API
 

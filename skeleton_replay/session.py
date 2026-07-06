@@ -60,7 +60,7 @@ class TraceSession:
         """Trace a Python script and return generated artifact paths and metrics."""
         project_root = self._resolved_project_root()
         script_path = self._resolved_script(script)
-        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=self._requested_out_dir())
+        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=self._requested_out_dir(), target_path=script_path)
         trace_options = TraceOptions(
             project_root=project_root,
             out_dir=out_dir,

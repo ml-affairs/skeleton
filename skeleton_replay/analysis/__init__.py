@@ -4,6 +4,7 @@ from skeleton_replay.analysis.quality import ArchitectureQualityAnalyzer, Archit
 from skeleton_replay.analysis.snapshot import SnapshotBuilder, SnapshotMetrics, TraceReader
 from skeleton_replay.analysis.static import StaticIndex, StaticModule, StaticProjectScanner, StaticSymbol
 from skeleton_replay.analysis.structured_returns import StructuredReturnConfig, StructuredReturnGroupAnalyzer
+from skeleton_replay.analysis.trace_roles import TraceRoleAnalysis, TraceRoleAnalyzer
 
 __all__ = [
     "ArchitectureQualityAnalyzer",
@@ -18,4 +19,6 @@ __all__ = [
     "StructuredReturnConfig",
     "StructuredReturnGroupAnalyzer",
     "TraceReader",
+    "TraceRoleAnalysis",
+    "TraceRoleAnalyzer",
 ]

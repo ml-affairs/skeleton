@@ -62,7 +62,7 @@ Constructor fields:
 | Field | Purpose |
 | --- | --- |
 | `project_root` | Root used to decide which frames are project-local. |
-| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. For pytest runs with a selected test path, the default is `<selected-test-directory>/.skeleton`. |
+| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. `run_script()` defaults to `<script-parent>/.skeleton/<script-stem>/latest/`. `run_pytest()` preserves selected pytest node ids, for example `<test-dir>/.skeleton/<file-stem>/<test-node>/latest/`; whole-file and whole-directory runs use `file/latest/` and `directory/latest/` sentinels. |
 | `include` | Optional path or module patterns to include. |
 | `exclude` | Optional path or module patterns to exclude. |
 | `max_events` | Optional cap on written trace events. |

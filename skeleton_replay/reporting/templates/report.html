@@ -452,6 +452,37 @@
       border-color: var(--line-strong);
       color: var(--cyan);
     }
+    .trace-role-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 999px;
+      padding: 2px 7px;
+      color: #cbd5e1;
+      background: rgba(51, 65, 85, 0.42);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .setup-event-group {
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .setup-event-group summary {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: 800;
+    }
+    .setup-event-group .group-meta {
+      margin-top: 7px;
+      line-height: 1.45;
+    }
     .quality-list {
       display: grid;
       gap: 8px;
@@ -584,6 +615,49 @@
       cursor: grabbing;
       box-shadow: 0 24px 72px rgba(0, 0, 0, 0.52), 0 0 42px rgba(56, 220, 226, 0.16);
     }
+    .replay-dock.is-collapsed {
+      width: auto;
+      min-width: 0;
+      padding: 7px;
+      border-radius: 12px;
+    }
+    .replay-dock.is-collapsed .timeline-stack,
+    .replay-dock.is-collapsed .controls {
+      display: none;
+    }
+    .replay-dock-header {
+      position: absolute;
+      right: 8px;
+      top: -48px;
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+    .replay-dock.is-collapsed .replay-dock-header {
+      position: static;
+      pointer-events: auto;
+    }
+    .replay-dock-toggle {
+      position: relative;
+      width: 38px;
+      min-height: 38px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: var(--cyan);
+      border-color: rgba(94, 234, 212, 0.34);
+      background: rgba(15, 23, 42, 0.96);
+      pointer-events: auto;
+    }
+    .replay-dock-toggle svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     .timeline {
       width: 100%;
       accent-color: var(--cyan);
@@ -692,7 +766,44 @@
       background: rgba(51, 65, 85, 0.92);
       box-shadow: inset 0 0 18px rgba(148, 163, 184, 0.12);
     }
-    .export-button::after {
+    .trace-range-fields {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      gap: 7px;
+      min-width: 0;
+    }
+    .trace-range-fields label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .trace-range-fields input {
+      width: 58px;
+      min-height: 34px;
+      border: 1px solid rgba(94, 234, 212, 0.22);
+      border-radius: 8px;
+      padding: 5px 7px;
+      color: var(--ink);
+      background: rgba(2, 6, 23, 0.72);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .trace-range-fields input:focus {
+      outline: none;
+      border-color: rgba(94, 234, 212, 0.7);
+      box-shadow: 0 0 0 3px rgba(56, 220, 226, 0.12);
+    }
+    .export-button::after,
+    .replay-dock-toggle::after {
       content: attr(data-tooltip);
       position: absolute;
       left: 50%;
@@ -713,12 +824,19 @@
       pointer-events: none;
       transition: opacity 140ms ease, transform 140ms ease;
     }
+    .replay-dock-toggle::after {
+      width: 230px;
+    }
     .export-button:hover::after,
-    .export-button:focus-visible::after {
+    .export-button:focus-visible::after,
+    .replay-dock-toggle:hover::after,
+    .replay-dock-toggle:focus-visible::after {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
     .counter {
+      grid-column: 6;
+      grid-row: 1;
       justify-self: end;
       color: var(--muted);
       font-size: 12px;
@@ -774,6 +892,9 @@
       font-size: 13px;
       font-weight: 750;
       line-height: 1.25;
+    }
+    .entity-token .trace-role-pill {
+      margin-top: 7px;
     }
     .entity-token.module { border-color: rgba(20, 184, 166, 0.48); box-shadow: inset 3px 0 0 var(--teal); }
     .entity-token.class { border-color: rgba(139, 92, 246, 0.52); box-shadow: inset 3px 0 0 var(--violet); }
@@ -1101,6 +1222,11 @@
           </div>
         </div>
         <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
+          <div class="replay-dock-header">
+            <button class="replay-dock-toggle" id="replay-dock-toggle" type="button" aria-label="Hide replay controls" aria-expanded="true" title="Hide replay controls" data-tooltip="Collapse the replay controls when you want more room for the architecture map.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M9 8l-4 4 4 4"></path><path d="M15 8l4 4-4 4"></path></svg>
+            </button>
+          </div>
           <div class="timeline-stack">
             <div class="trace-window" id="trace-window" role="slider" aria-label="Trace export window">
               <div class="trace-window-track"></div>
@@ -1125,6 +1251,10 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path><path d="M5 17v4"></path><path d="M19 17v4"></path></svg>
             </button>
             <button class="private-toggle" id="private-toggle" type="button" aria-pressed="false" title="Hide or show private/internal callable nodes and their direct runtime edges">Hide private</button>
+            <div class="trace-range-fields" aria-label="Selected trace event range">
+              <label for="trace-window-start-input">Start <input id="trace-window-start-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
+              <label for="trace-window-end-input">End <input id="trace-window-end-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
+            </div>
             <span class="counter" id="counter">0 / 0</span>
           </div>
         </section>
@@ -1170,6 +1300,11 @@
     const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
+    const traceRoles = snapshot.trace_roles || { events: [], setup_event_groups: [] };
+    const traceEventRoles = Array.isArray(traceRoles.events) ? traceRoles.events : [];
+    const traceEventRoleByOrder = new Map(traceEventRoles.map((record) => [Number(record.order), record]));
+    const setupEventGroups = Array.isArray(traceRoles.setup_event_groups) ? traceRoles.setup_event_groups : [];
+    const entrypointEventOrder = Number.isFinite(Number(traceRoles.entrypoint_event_order)) ? Number(traceRoles.entrypoint_event_order) : null;
     const structuredReturnGroups = snapshot.structured_return_groups || [];
     const structuredReturnEventOrders = new Set(structuredReturnGroups.filter((group) => group.collapse_by_default !== false).flatMap((group) => group.raw_event_orders || []));
     const structuredReturnInstanceIds = new Set(structuredReturnGroups.filter((group) => group.collapse_by_default !== false).flatMap((group) => (group.raw_events || []).map((event) => event.callee_object_id).filter(Boolean)));
@@ -1233,6 +1368,36 @@
 
     document.getElementById("project-root").textContent = snapshot.project_root || "project";
     document.getElementById("event-count").textContent = String(snapshot.event_count || events.length || 0);
+
+    function traceRoleForEvent(event) {
+      return traceEventRoleByOrder.get(Number(event?.order))?.trace_role || "system_under_test";
+    }
+
+    function traceRoleRecordForEvent(event) {
+      return traceEventRoleByOrder.get(Number(event?.order)) || {};
+    }
+
+    function traceRoleForEndpoint(endpoint) {
+      if (!endpoint) return "filtered_external";
+      return rawNodes.get(endpoint.node_id)?.trace_role || "system_under_test";
+    }
+
+    function traceRoleForNode(node) {
+      return node?.trace_role || rawNodes.get(node?.source_node_id || node?.id)?.trace_role || "system_under_test";
+    }
+
+    function traceRoleClass(role) {
+      const normalized = String(role || "system_under_test").replaceAll("_", "-");
+      return `role-${normalized}`;
+    }
+
+    function isSubduedTraceRole(role) {
+      return ["test_harness", "test_utility", "import_setup", "filtered_external"].includes(String(role || ""));
+    }
+
+    function roleLabel(role) {
+      return String(role || "system_under_test").replaceAll("_", " ");
+    }
 
     function addActorRole(ownerId, role) {
       if (!ownerId) return;
@@ -1490,6 +1655,7 @@
       const owner = ownerForEndpoint(endpoint);
       const ioCategory = ioCategoryFor(endpoint);
       const externalServiceCategory = externalServiceCategoryFor(endpoint);
+      const traceRole = traceRoleForEndpoint(endpoint);
       const node = observedCallables.get(id) || {
         id,
         source_node_id: endpoint.node_id,
@@ -1504,6 +1670,8 @@
         function: endpoint.function,
         is_private: isPrivateEndpoint(endpoint),
         visibility: sourceNode.visibility || (isPrivateEndpoint(endpoint) ? "private" : "public"),
+        trace_role: traceRole,
+        trace_roles: sourceNode.trace_roles || [traceRole],
         qualified_name: endpoint.qualified_name,
         file: endpoint.file || sourceNode.file,
         line: endpoint.line || sourceNode.line,
@@ -1526,7 +1694,9 @@
       if (event.event_type !== "call") continue;
       const target = ownerForEndpoint(event.callee);
       if (!event.caller) addActorRole(target, "entrypoint");
+      addActorRole(target, traceRoleForEvent(event));
       const source = ownerForEndpoint(event.caller);
+      if (source) addActorRole(source, traceRoleForEndpoint(event.caller));
       addArchEdge(source, target, event);
     }
 
@@ -1588,6 +1758,7 @@
         const callCount = ownerMetric(node.id, "call_count");
         const degree = adjacency.incoming.size + adjacency.outgoing.size;
         const roles = rolesForActor(node.id);
+        const traceRole = traceRoleForNode(node);
         const baseWidth = Math.max(
           containerDefaultMinWidth,
           140 + Math.min(60, callCount * 3 + degree * 4 + Math.min(18, loc / 6))
@@ -1608,6 +1779,8 @@
             fan_in: adjacency.incoming.size,
             fan_out: adjacency.outgoing.size,
             degree,
+            trace_role: traceRole,
+            trace_roles: node.trace_roles || [traceRole],
             size: 46,
             width: baseWidth,
             height: baseHeight,
@@ -1623,6 +1796,8 @@
             node.type === "module" ? "module-container" : "",
             node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
+            traceRoleClass(traceRole),
+            isSubduedTraceRole(traceRole) ? "role-subdued" : "",
             "unseen",
             "hidden"
           ].filter(Boolean).join(" ")
@@ -1647,6 +1822,7 @@
         const isExternalService = node.type === "external_service";
         const ioWidth = ioNodeWidth(label);
         const callableWidth = callableNodeWidth(label);
+        const traceRole = traceRoleForNode(node);
         return {
           data: {
             id: node.id,
@@ -1661,6 +1837,8 @@
             function: node.function,
             is_private: Boolean(node.is_private),
             visibility: node.visibility || (node.is_private ? "private" : "public"),
+            trace_role: traceRole,
+            trace_roles: node.trace_roles || [traceRole],
             io_category: node.io_category,
             qualified_name: node.qualified_name,
             file: node.file,
@@ -1685,7 +1863,9 @@
             "hidden",
             isIo ? "io-capsule" : "",
             isExternalService ? "external-service" : "",
-            node.is_private && !isIo && !isExternalService ? "private-callable" : ""
+            node.is_private && !isIo && !isExternalService ? "private-callable" : "",
+            traceRoleClass(traceRole),
+            isSubduedTraceRole(traceRole) ? "role-subdued" : ""
           ].filter(Boolean).join(" ")
         };
       });
@@ -1896,6 +2076,18 @@
           "border-color": "#cbd5e1",
           "background-color": "#475569",
           "color": "#f8fafc"
+        } },
+        { selector: ".role-test-harness, .role-test-utility, .role-import-setup, .role-filtered-external", style: {
+          "background-opacity": 0.08,
+          "border-color": "rgba(148, 163, 184, 0.54)",
+          "color": "#cbd5e1",
+          "opacity": 0.64
+        } },
+        { selector: ".role-test-utility", style: {
+          "border-style": "dotted"
+        } },
+        { selector: ".role-import-setup", style: {
+          "border-style": "dashed"
         } },
         { selector: 'node[type = "io"]', style: {
           "shape": "barrel",
@@ -2120,6 +2312,7 @@
     document.getElementById("play").addEventListener("click", togglePlay);
     document.getElementById("export-trace").addEventListener("click", exportTraceWindow);
     document.getElementById("private-toggle").addEventListener("click", togglePrivateCalls);
+    document.getElementById("replay-dock-toggle").addEventListener("click", toggleReplayDock);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
     document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
@@ -2129,15 +2322,25 @@
       current = Number(event.target.value);
       renderEvent();
     });
+    document.getElementById("trace-window-start-input").addEventListener("change", (event) => setTraceWindowFromInput("start", event.target.value));
+    document.getElementById("trace-window-end-input").addEventListener("change", (event) => setTraceWindowFromInput("end", event.target.value));
+    document.getElementById("trace-window-start-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") setTraceWindowFromInput("start", event.target.value);
+    });
+    document.getElementById("trace-window-end-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") setTraceWindowFromInput("end", event.target.value);
+    });
     document.getElementById("resize-wider").addEventListener("click", () => resizeSelectedContainer("width", 28));
     document.getElementById("resize-taller").addEventListener("click", () => resizeSelectedContainer("height", 28));
     document.getElementById("resize-narrower").addEventListener("click", () => resizeSelectedContainer("width", -28));
     document.getElementById("resize-shorter").addEventListener("click", () => resizeSelectedContainer("height", -28));
     document.getElementById("timeline").max = String(Math.max(0, events.length - 1));
+    document.getElementById("trace-window-start-input").max = String(events.length || 1);
+    document.getElementById("trace-window-end-input").max = String(events.length || 1);
     initializeResizeHandles();
     cy.on("zoom pan", renderResizeHandles);
 
-    let current = events.length ? 0 : -1;
+    let current = events.length ? (entrypointEventOrder !== null ? Math.max(0, Math.min(events.length - 1, entrypointEventOrder)) : 0) : -1;
     let playTimer = null;
     let currentReplayMetrics = null;
     let traceWindowStart = 0;
@@ -2147,7 +2350,7 @@
     const revealSequence = new Map();
     const manuallyPositionedNodeIds = new Set();
     let nextRevealSequence = 0;
-    document.getElementById("counter").textContent = `0 / ${events.length}`;
+    document.getElementById("counter").textContent = events.length ? `${current + 1} / ${events.length}` : `0 / ${events.length}`;
     renderStructuredReturnSummary();
     showOverview();
     renderEvent();
@@ -2414,6 +2617,36 @@
       renderEvent();
     }
 
+    function setTraceWindowFromInput(handleName, rawValue) {
+      if (!events.length) return;
+      const requestedEventNumber = Number(rawValue);
+      if (!Number.isFinite(requestedEventNumber)) {
+        syncTraceWindowInputs();
+        return;
+      }
+      const maxIndex = Math.max(0, events.length - 1);
+      const index = Math.max(0, Math.min(maxIndex, Math.round(requestedEventNumber) - 1));
+      if (handleName === "start") {
+        traceWindowStart = Math.min(index, traceWindowEnd);
+      } else {
+        traceWindowEnd = Math.max(index, traceWindowStart);
+      }
+      if (current < traceWindowStart) current = traceWindowStart;
+      if (current > traceWindowEnd) current = traceWindowEnd;
+      stopPlay();
+      renderEvent();
+    }
+
+    function syncTraceWindowInputs() {
+      const startInput = document.getElementById("trace-window-start-input");
+      const endInput = document.getElementById("trace-window-end-input");
+      const maxEvent = String(events.length || 1);
+      startInput.max = maxEvent;
+      endInput.max = maxEvent;
+      startInput.value = String(events.length ? traceWindowStart + 1 : 1);
+      endInput.value = String(events.length ? traceWindowEnd + 1 : 1);
+    }
+
     function eventIndexFromPointer(event) {
       const windowElement = document.getElementById("trace-window");
       const rect = windowElement.getBoundingClientRect();
@@ -2437,6 +2670,7 @@
       windowElement.setAttribute("aria-valuemin", "1");
       windowElement.setAttribute("aria-valuemax", String(events.length || 1));
       windowElement.setAttribute("aria-valuetext", `Selected trace window ${traceWindowStart + 1} to ${traceWindowEnd + 1} of ${events.length || 1}`);
+      syncTraceWindowInputs();
     }
 
     function canPlaceNodeAt(node, position) {
@@ -3478,6 +3712,7 @@
       document.getElementById("details").innerHTML = `
         <div class="section"><h3>Most Active Actors</h3><div class="chips">${topActors || '<span class="empty">No runtime actors observed.</span>'}</div></div>
         <div class="section"><h3>Quality Signals</h3>${qualitySignals()}</div>
+        ${setupEventGroupCards()}
         <div class="section"><h3>How To Read This</h3><div class="node-kind">
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
@@ -3486,6 +3721,21 @@
         </div></div>
       `;
       bindChipClicks();
+    }
+
+    function setupEventGroupCards() {
+      if (!setupEventGroups.length) return "";
+      const cards = setupEventGroups.map((group) => {
+        const eventOrders = Array.isArray(group.event_orders) ? group.event_orders.join(", ") : "";
+        return `
+          <details class="setup-event-group">
+            <summary>${escapeHtml(group.label || "Setup before entrypoint")} <span class="trace-role-pill">${escapeHtml(roleLabel(group.trace_role || "import_setup"))}</span></summary>
+            <div class="group-meta">Collapsed by default because these calls happened before the inferred scenario entrypoint. Raw events remain in the timeline and exports.</div>
+            <div class="group-meta">events ${escapeHtml(eventOrders)}${group.entrypoint_event_order !== undefined && group.entrypoint_event_order !== null ? ` · entrypoint event ${escapeHtml(group.entrypoint_event_order)}` : ""}</div>
+          </details>
+        `;
+      }).join("");
+      return `<div class="section"><h3>Setup Before Entrypoint</h3>${cards}</div>`;
     }
 
     function renderStructuredReturnSummary() {
@@ -3858,6 +4108,25 @@
       }, 190);
     }
 
+    function toggleReplayDock() {
+      const dock = document.getElementById("replay-dock");
+      const toggle = document.getElementById("replay-dock-toggle");
+      const collapsed = dock.classList.toggle("is-collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.setAttribute("aria-label", collapsed ? "Show replay controls" : "Hide replay controls");
+      toggle.setAttribute("title", collapsed ? "Show replay controls" : "Hide replay controls");
+      toggle.setAttribute(
+        "data-tooltip",
+        collapsed
+          ? "Show replay controls to step through events, choose an export window, or play the run."
+          : "Collapse the replay controls when you want more room for the architecture map."
+      );
+      window.setTimeout(() => {
+        keepCurrentNodesInView();
+        renderResizeHandles();
+      }, 160);
+    }
+
     function toggleHeatmap() {
       const heatmap = document.getElementById("module-heatmap");
       const show = document.getElementById("heatmap-show");
@@ -3890,6 +4159,11 @@
       const selectedNodes = (snapshot.nodes || []).filter((node) => selectedIds.has(node.id));
       const selectedEdges = (snapshot.edges || []).filter((edge) => selectedIds.has(edge.source) || selectedIds.has(edge.target));
       const selectedStructuredReturnGroups = structuredReturnGroupsForWindow(selectedEventOrders);
+      const selectedTraceRoles = {
+        ...traceRoles,
+        events: traceEventRoles.filter((record) => selectedEventOrders.has(record.order)),
+        setup_event_groups: setupEventGroups.filter((group) => (group.event_orders || []).some((order) => selectedEventOrders.has(order)))
+      };
       const payload = {
         schema_version: 1,
         kind: "skeleton_trace_window",
@@ -3903,6 +4177,7 @@
         events: selectedEvents,
         nodes: selectedNodes,
         edges: selectedEdges,
+        trace_roles: selectedTraceRoles,
         structured_return_groups: selectedStructuredReturnGroups,
         quality: quality
       };
@@ -4044,23 +4319,81 @@
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
       const sourceInstance = instanceForEndpoint(event.caller);
       const targetInstance = instanceForEndpoint(event.callee);
+      const focusAnchor = visibleFocusAnchorForEvent(event, current, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner);
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       if (targetOwner) cy.getElementById(targetOwner).addClass("current");
-      markCurrentElement(sourceNode);
-      markCurrentElement(targetNode);
+      for (const focusId of focusAnchor.ids) markCurrentElement(focusId);
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
       if (targetInstance) cy.getElementById(targetInstance).addClass("current");
-      markCurrentElement(runtimeEdge?.id());
+      if (focusAnchor.includeEdge) markCurrentElement(runtimeEdge?.id());
       renderTraceWindow();
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length} · ${traceWindowStart + 1}-${traceWindowEnd + 1}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
-      document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
+      document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner, focusAnchor);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
-      if (targetNode) showNode(targetNode);
+      showNode(focusAnchor.detailNodeId || targetNode);
       maybeRenderResizeControls();
       keepCurrentNodesInView();
       pulseCurrentElements();
+    }
+
+    function visibleFocusAnchorForEvent(event, index, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner) {
+      const ids = [];
+      const addVisibleNode = (id) => {
+        if (!id || ids.includes(id)) return false;
+        const element = cy.getElementById(id);
+        if (!element || element.empty() || !element.isNode || !element.isNode() || shouldSuppressPrivateElement(element)) return false;
+        ids.push(id);
+        return true;
+      };
+      const addVisibleEdge = (edge) => edge && !edge.empty() && !shouldSuppressPrivateElement(edge);
+      const orderedCurrentNodes = event.event_type === "return" ? [sourceNode, targetNode] : [targetNode, sourceNode];
+      for (const nodeId of orderedCurrentNodes) addVisibleNode(nodeId);
+      const includeEdge = addVisibleEdge(runtimeEdge);
+      let fallbackReason = null;
+      let fallbackLabel = "";
+      if (!ids.length || !includeEdge) {
+        const nearest = nearestVisibleCallChainAnchor(index);
+        if (nearest) {
+          addVisibleNode(nearest.id);
+          fallbackReason = "hidden_private";
+          fallbackLabel = nearest.label;
+        }
+      }
+      if (!ids.length) {
+        if (targetOwner && addVisibleNode(targetOwner)) {
+          fallbackReason = fallbackReason || "owner";
+          fallbackLabel = ownerLabel(targetOwner);
+        }
+        if (sourceOwner && addVisibleNode(sourceOwner)) {
+          fallbackReason = fallbackReason || "owner";
+          fallbackLabel = fallbackLabel || ownerLabel(sourceOwner);
+        }
+      }
+      return {
+        ids,
+        includeEdge,
+        detailNodeId: ids.find((id) => rawNodes.has(id) || methodData(id)) || targetOwner || sourceOwner || null,
+        fallbackReason,
+        fallbackLabel
+      };
+    }
+
+    function nearestVisibleCallChainAnchor(index) {
+      for (let eventIndex = index; eventIndex >= traceWindowStart; eventIndex -= 1) {
+        const event = events[eventIndex];
+        if (!event) continue;
+        const endpoints = event.event_type === "return" ? [event.caller, event.callee] : [event.callee, event.caller];
+        for (const endpoint of endpoints) {
+          const callableId = visualCallableId(endpoint);
+          if (!callableId) continue;
+          const element = cy.getElementById(callableId);
+          if (!element || element.empty() || shouldSuppressPrivateElement(element)) continue;
+          return { id: callableId, label: endpoint.function || endpoint.qualified_name || ownerLabel(shellForNode(rawNodes.get(callableId))) };
+        }
+      }
+      return null;
     }
 
     function markCurrentElement(id) {
@@ -4105,7 +4438,7 @@
     }
 
     function narrativeForEvent(event) {
-      const caller = event.caller ? event.caller.qualified_name : "entrypoint";
+      const caller = event.caller ? event.caller.qualified_name : rootContextLabel(event);
       const callee = event.callee.qualified_name;
       if (event.event_type === "call") {
         return `<strong>${escapeHtml(caller)}</strong> called <strong>${escapeHtml(callee)}</strong>${argsSummary(event.args)}`;
@@ -4124,17 +4457,20 @@
       return ` ${escapeHtml(value.type || "value")}.`;
     }
 
-    function eventFocusCard(event, sourceOwner, targetOwner) {
+    function eventFocusCard(event, sourceOwner, targetOwner, focusAnchor = null) {
       const caller = event.caller;
       const callee = event.callee;
       const callerToken = caller
-        ? entityToken(caller.qualified_name, endpointKind(caller), ownerLabel(sourceOwner))
-        : entityToken("entrypoint", "module", ownerLabel(targetOwner));
-      const calleeToken = entityToken(callee.qualified_name, endpointKind(callee), ownerLabel(targetOwner));
+        ? entityToken(caller.qualified_name, endpointKind(caller), ownerLabel(sourceOwner), traceRoleForEndpoint(caller))
+        : entityToken(rootContextLabel(event), "module", ownerLabel(targetOwner), traceRoleForEvent(event));
+      const calleeToken = entityToken(callee.qualified_name, endpointKind(callee), ownerLabel(targetOwner), traceRoleForEvent(event));
       const delta = event.event_type === "call"
         ? `Highlighted runtime call edge into <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong>.`
         : `Highlighted dashed return edge from <strong>${escapeHtml(callee.function || callee.qualified_name)}</strong> back to its caller.`;
       const evidence = event.event_type === "call" ? argsTable(event.args) : returnEvidence(event.return_value);
+      const roleRecord = traceRoleRecordForEvent(event);
+      const rootContext = roleRecord.root_context ? `<div class="delta-line"><span class="delta-label">Root</span><span>${escapeHtml(rootContextLabel(event))}</span></div>` : "";
+      const hiddenNote = hiddenSelectionNote(event, focusAnchor);
       return `
         <div class="event-card">
           <div class="event-card-header">
@@ -4145,19 +4481,38 @@
           <div class="event-delta">
             <div class="delta-line"><span class="delta-label">Change</span><span>${delta}</span></div>
             <div class="delta-line"><span class="delta-label">Scope</span><span>${escapeHtml(ownerLabel(targetOwner))} is in focus; its owning shells are emphasized.</span></div>
+            <div class="delta-line"><span class="delta-label">Role</span><span><span class="trace-role-pill">${escapeHtml(roleLabel(traceRoleForEvent(event)))}</span></span></div>
+            ${rootContext}
+            ${hiddenNote}
             ${evidence}
           </div>
         </div>
       `;
     }
 
-    function entityToken(name, kind, owner) {
+    function hiddenSelectionNote(event, focusAnchor) {
+      if (!privateCallsHidden || !focusAnchor?.fallbackReason) return "";
+      const selectedName = event.callee?.function || event.callee?.qualified_name || "selected event";
+      const fallbackLabel = focusAnchor.fallbackLabel || "nearest visible runtime context";
+      return `<div class="delta-line"><span class="delta-label">Hidden</span><span>Selected private event <strong>${escapeHtml(selectedName)}</strong> is hidden; keeping <strong>${escapeHtml(fallbackLabel)}</strong> as the visible anchor.</span></div>`;
+    }
+
+    function entityToken(name, kind, owner, traceRole = null) {
+      const role = traceRole ? `<span class="trace-role-pill">${escapeHtml(roleLabel(traceRole))}</span>` : "";
       return `
         <div class="entity-token ${escapeAttr(kind)}">
           <span class="kind">${escapeHtml(kind)} · ${escapeHtml(owner || "runtime")}</span>
           <span class="name">${escapeHtml(name)}</span>
+          ${role}
         </div>
       `;
+    }
+
+    function rootContextLabel(event) {
+      const rootContext = traceRoleRecordForEvent(event).root_context;
+      if (rootContext === "caller_outside_trace_boundary") return "caller outside trace boundary";
+      if (rootContext === "root_inside_selected_trace_boundary") return "root inside selected trace boundary";
+      return "entrypoint";
     }
 
     function endpointKind(endpoint) {
@@ -4208,7 +4563,7 @@
 
     function jsonKeyClass(quoted) {
       const key = quoted.replace(/^&quot;|&quot;$/g, "");
-      if (["event_type", "order", "timestamp", "depth", "schema_version"].includes(key)) return "json-key-event";
+      if (["event_type", "order", "timestamp", "depth", "schema_version", "trace_role", "trace_roles", "root_context"].includes(key)) return "json-key-event";
       if (["caller", "callee"].includes(key)) return "json-key-endpoint";
       if (["args", "return_value", "value", "summary", "len"].includes(key)) return "json-key-value";
       if (["module", "class_name", "function", "qualified_name", "node_id", "instance_id", "object_id", "file", "line"].includes(key)) return "json-key-identity";
