@@ -17,6 +17,6 @@ class Worker:
         return step_outcomes[0]
 
     def _run_step(self, plan: list[str]) -> str:
-        """Private method intentionally ignored by tracer for v0 noise control."""
+        """Private method intentionally captured and marked as internal."""
         ordered = [stage_one(plan), stage_two(plan), stage_three(plan)]
         return "+".join(ordered)

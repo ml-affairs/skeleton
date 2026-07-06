@@ -45,6 +45,7 @@ class ArtifactGenerationPipeline:
 
     def generate(self, *, project_root: Path, paths: ArtifactPaths) -> ArtifactGenerationResult:
         """Generate all requested artifacts from an existing trace file."""
+        self._ensure_trace_file(paths.trace_path)
         snapshot = SnapshotBuilder(project_root).build(paths.trace_path, paths.snapshot_path)
         metrics = SnapshotMetrics.from_snapshot(snapshot)
         quality = self.quality_analyzer.analyze(snapshot)
@@ -56,3 +57,9 @@ class ArtifactGenerationPipeline:
         if paths.report_path is not None:
             self.report_writer.write(snapshot, paths.report_path)
         return ArtifactGenerationResult(snapshot=snapshot, metrics=metrics, report_path=paths.report_path)
+
+    @staticmethod
+    def _ensure_trace_file(trace_path: Path) -> None:
+        """Create an empty trace file when the target failed before tracing started."""
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        trace_path.touch(exist_ok=True)

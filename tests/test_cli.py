@@ -1,12 +1,14 @@
 import json
+import shutil
 from argparse import Namespace
 from io import StringIO
 from pathlib import Path
 
 import pytest
 
-from skeleton_replay.cli import CliApplication, RunCommand
-from skeleton_replay.interface import OutputPathResolver, SkeletonConsole
+from skeleton_replay.cli import CliApplication, PytestCommand, RunCommand
+from skeleton_replay.interface import OutputPathResolver, PytestOutputPathResolver, SkeletonConsole
+from skeleton_replay.runtime import TargetPytestRunner, TraceOptions, TraceResult
 
 
 class RecordingReportOpener:
@@ -20,6 +22,15 @@ class RecordingReportOpener:
         """Record the report path instead of opening a browser."""
         self.opened.append(report_path)
         return True
+
+
+class FailingBeforeTracePytestRunner(TargetPytestRunner):
+    """Test double that fails before creating a trace file."""
+
+    def run(self, pytest_args: list[str], options: TraceOptions) -> TraceResult:
+        """Raise before delegating to ``RuntimeTracer``."""
+        del pytest_args, options
+        raise RuntimeError("pytest is unavailable")
 
 
 class TestRunCommand:
@@ -109,7 +120,9 @@ class TestRunCommand:
         assert any(node["id"] == "function:app.main" for node in snapshot["nodes"])
         assert any(node["id"] == "function:service.Greeter.greet" for node in snapshot["nodes"])
         assert not any(node["id"] == "function:service.Greeter" for node in snapshot["nodes"])
-        assert not any(node["id"] == "function:service.Greeter._format" for node in snapshot["nodes"])
+        private_node = next(node for node in snapshot["nodes"] if node["id"] == "function:service.Greeter._format")
+        assert private_node["is_private"] is True
+        assert private_node["visibility"] == "private"
         assert opener.opened == [out_dir / "report.html"]
 
     def test_opens_html_report_by_default(self, tmp_path: Path) -> None:
@@ -141,6 +154,113 @@ class TestRunCommand:
         assert opener.opened == [out_dir / "report.html"]
 
 
+class TestPytestCommand:
+    """CLI pytest command behavior."""
+
+    def test_defaults_artifacts_to_selected_test_directory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = project_root / ".skeleton"
+        opener = RecordingReportOpener()
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+        command = PytestCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            report_opener=opener,
+        )
+        args = Namespace(
+            pytest_args=["-q", "-p", "no:cov", "test_checkout.py::test_builds_receipt_total"],
+            project_root=project_root,
+            out_dir=None,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=False,
+            no_open=True,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "report.html").exists()
+        assert opener.opened == []
+
+    def test_writes_artifacts_and_preserves_pytest_exit_code(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "pytest-command-artifacts"
+        opener = RecordingReportOpener()
+        command = PytestCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            report_opener=opener,
+        )
+        args = Namespace(
+            pytest_args=["-q", "-p", "no:cov", str(project_root / "test_checkout.py::test_builds_receipt_total")],
+            project_root=project_root,
+            out_dir=out_dir,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=False,
+            no_open=True,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "report.html").exists()
+        assert opener.opened == []
+
+    def test_writes_empty_trace_artifacts_when_pytest_fails_before_tracing(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "pytest-import-failure-artifacts"
+        command = PytestCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            runner=FailingBeforeTracePytestRunner(),
+        )
+        args = Namespace(
+            pytest_args=["-q"],
+            project_root=project_root,
+            out_dir=out_dir,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=True,
+            no_open=True,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 1
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "trace.jsonl").read_text(encoding="utf-8") == ""
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
+        assert not (out_dir / "report.html").exists()
+
+        snapshot = json.loads((out_dir / "snapshot.json").read_text(encoding="utf-8"))
+        assert snapshot["event_count"] == 0
+
+
 class TestOutputPathResolver:
     """Output directory resolution behavior."""
 
@@ -170,6 +290,60 @@ class TestOutputPathResolver:
         assert out_dir == configured_out_dir
 
 
+class TestPytestOutputPathResolver:
+    """Pytest output directory resolution behavior."""
+
+    def test_defaults_to_selected_test_file_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.setenv("SKELETON_HOME", str(tmp_path / "home" / ".skeleton"))
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["-q", "test_checkout.py::test_builds_receipt_total"],
+        )
+
+        # Then
+        assert out_dir == project_root / ".skeleton"
+
+    def test_defaults_to_selected_test_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=[str(project_root)],
+        )
+
+        # Then
+        assert out_dir == project_root / ".skeleton"
+
+    def test_uses_preconfigured_output_directory_before_selected_test(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        configured_out_dir = tmp_path / "configured-pytest-reports"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.setenv("SKELETON_OUT_DIR", str(configured_out_dir))
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py::test_builds_receipt_total"],
+        )
+
+        # Then
+        assert out_dir == configured_out_dir
+
+
 class TestCliApplication:
     """Top-level CLI parser behavior."""
 
@@ -190,6 +364,34 @@ class TestCliApplication:
                 "--out-dir",
                 str(out_dir),
                 str(project_root / "app.py"),
+            ]
+        )
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "report.html").exists()
+
+    def test_parses_pytest_command_without_opening(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = tmp_path / "cli-pytest-reports"
+
+        # When
+        exit_code = CliApplication().run(
+            [
+                "pytest",
+                "--color",
+                "never",
+                "--no-open",
+                "--project-root",
+                str(project_root),
+                "--out-dir",
+                str(out_dir),
+                "--",
+                "-q",
+                "-p",
+                "no:cov",
+                str(project_root / "test_checkout.py::test_builds_receipt_total"),
             ]
         )
 

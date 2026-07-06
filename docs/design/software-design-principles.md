@@ -181,7 +181,8 @@ The report should distinguish:
 - Treating every file, class, function, and instance as equal graph nodes.
 - Showing class boxes as runtime actors when the trace actually observed object
   instances.
-- Making private helper calls look like architecture.
+- Making private helper calls look like public architecture instead of marking
+  them as internal implementation detail.
 - Normalizing direct database, filesystem, network, or environment access from
   domain logic.
 - Confusing framework entrypoints with application actors.

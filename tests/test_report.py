@@ -131,6 +131,7 @@ class TestHtmlReportWriter:
         assert "instance shell" in html
         assert '<span class="pill"><span class="schema method"></span>method</span>' in html
         assert '<span class="pill"><span class="schema function"></span>function</span>' in html
+        assert '<span class="pill"><span class="schema private"></span>private/internal</span>' in html
         assert '<span class="pill"><span class="schema instance"></span>instance shell</span>' in html
         assert "runtime call" in html
         assert "return value" in html
@@ -143,6 +144,10 @@ class TestHtmlReportWriter:
         assert 'id="trace-window-start"' in html
         assert 'id="trace-window-end"' in html
         assert 'id="export-trace"' in html
+        assert 'id="private-toggle"' in html
+        assert "function togglePrivateCalls" in html
+        assert "private-callable" in html
+        assert "shouldSuppressPrivateElement" in html
         assert "Export the exact trace events visible in the selected execution window as JSON for LLM review" in html
         assert "function exportTraceWindow" in html
         assert 'kind: "skeleton_trace_window"' in html

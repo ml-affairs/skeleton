@@ -52,7 +52,7 @@ class Endpoint:
 
 @dataclass(frozen=True)
 class TraceEvent:
-    """A single public project-local call or return event."""
+    """A single project-local call or return event."""
 
     event_type: EventType
     order: int

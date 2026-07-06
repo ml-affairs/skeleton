@@ -58,23 +58,29 @@ Implementation direction:
 - preserve module arguments in `sys.argv`
 - write the same trace, snapshot, workflow, and report artifacts
 
-## Pytest Plugin
+## Pytest Tracing
 
 ### What It Means
 
-A pytest plugin would let users trace tests or selected test scenarios without
-creating separate runner scripts.
+The current first slice lets users trace tests or selected test scenarios
+without creating separate runner scripts:
 
-Possible usage:
+Current usage:
+
+```bash
+skeleton pytest --out-dir .skeleton/checkout -- tests/test_checkout.py -q
+```
+
+This is deliberately a Skeleton-owned CLI command rather than a pytest plugin
+hook. It keeps the non-invasive runner seam intact, preserves pytest's exit
+code, and emits the same `trace.jsonl`, `snapshot.json`, `workflow.md`,
+`quality.json`, `architecture_quality.md`, and optional `report.html` artifacts
+as script tracing.
+
+Later plugin-style usage may add:
 
 ```bash
 pytest tests/test_checkout.py --skeleton --skeleton-out-dir .skeleton/checkout
-```
-
-or:
-
-```bash
-pytest -m skeleton_replay
 ```
 
 ### Why It Matters
@@ -85,17 +91,20 @@ architecture replays.
 
 ### Likely Shape
 
-First slice:
+Landed first slice:
 
-- pytest options: `--skeleton`, `--skeleton-out-dir`, `--skeleton-project-root`
-- trace one full pytest session or one selected test file
+- `skeleton pytest [Skeleton options] -- [pytest args...]`
+- trace one full pytest session, selected test file, or selected test node
 - emit artifacts after pytest finishes
 - preserve pytest's exit code
+- write useful partial artifacts for failing tests
 
 Later slices:
 
 - one report per test
 - mark-based scenario selection
+- pytest-native options such as `--skeleton`, `--skeleton-out-dir`, and
+  `--skeleton-project-root`
 - compare snapshots between commits
 - attach generated reports to CI artifacts
 
@@ -192,7 +201,7 @@ be a separate repository or package that:
 
 1. Stabilize public Python API (`TraceSession.run_script`).
 2. Add `run-module` support.
-3. Add pytest plugin MVP.
+3. Add pytest tracing MVP.
 4. Add PyCharm plugin prototype using CLI/API.
 5. Add live request tracing as middleware/context-manager, not process attach.
 
