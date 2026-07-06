@@ -7,6 +7,14 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+### Changed
+
+- Replay controls now keep the collapse button on the main control row, place typed Start/End trace-window fields beside the replay buttons, and use a wider dock for the denser control set.
+
+### Fixed
+
+- The HTML report now pans to compact selected callables or instances instead of large module/package owner shells, preventing the graph from appearing blank when replaying module-level helper call chains.
+
 ## [0.6.0] - 2026-07-06
 
 ### Added

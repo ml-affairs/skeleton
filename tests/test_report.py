@@ -167,6 +167,8 @@ class TestHtmlReportWriter:
         assert 'aria-label="Play replay"' in html
         assert 'aria-label="Next event"' in html
         assert '<section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">' in html
+        assert '<button class="replay-dock-toggle icon-button" id="replay-dock-toggle"' in html
+        assert '<span class="counter" id="counter">0 / 0</span>' in html
         assert '<div class="section" id="current-event-section">' in html
         assert "const revealSequence = new Map()" in html
         assert "const manuallyPositionedNodeIds = new Set()" in html
@@ -279,7 +281,7 @@ class TestHtmlReportWriter:
         assert "renderedNodeIds.has(source)" in html
         assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
         assert "return:${targetNode}->${sourceNode}" in html
-        assert 'element.addClass("unseen hidden").removeClass("current focus pulse")' in html
+        assert 'element.addClass("unseen hidden").removeClass("current focus pulse viewport-anchor")' in html
         assert 'cy.elements().addClass("unseen")' not in html
         assert "firstOpenPosition(anchor, visibleNodes, element" in html
         assert '"events": "no"' in html
@@ -316,6 +318,10 @@ class TestHtmlReportWriter:
         assert "Selected private event" in html
         assert "nearest visible runtime context" in html
         assert "function keepCurrentNodesInView" in html
+        assert "function viewportAnchorNodes" in html
+        assert "function markViewportAnchor" in html
+        assert "function isCompactViewportAnchor" in html
+        assert 'type !== "module" && type !== "package"' in html
         assert "activeNodes.renderedBoundingBox" in html
         assert "cy.pan({ x: pan.x + dx, y: pan.y + dy })" in html
         assert "function syntaxHighlightJson" in html
