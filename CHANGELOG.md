@@ -7,6 +7,8 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.6.1] - 2026-07-06
+
 ### Changed
 
 - Replay controls now keep the collapse button on the main control row, place typed Start/End trace-window fields beside the replay buttons, and use a wider dock for the denser control set.
