@@ -298,8 +298,13 @@
     .schema.function {
       color: var(--green);
       border-radius: 5px;
-      border-style: dashed;
       background: rgba(34, 197, 94, 0.34);
+    }
+    .schema.private {
+      color: #cbd5e1;
+      border-radius: 5px;
+      border-style: dashed;
+      background: rgba(148, 163, 184, 0.18);
     }
     .schema.call {
       width: 25px;
@@ -629,7 +634,7 @@
     }
     .controls {
       display: grid;
-      grid-template-columns: auto auto auto auto minmax(0, 1fr);
+      grid-template-columns: auto auto auto auto auto minmax(0, 1fr);
       align-items: center;
       gap: 8px;
       margin-top: 8px;
@@ -677,6 +682,15 @@
     .export-button {
       position: relative;
       color: var(--cyan);
+    }
+    .private-toggle {
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .private-toggle.is-active {
+      border-color: rgba(203, 213, 225, 0.62);
+      background: rgba(51, 65, 85, 0.92);
+      box-shadow: inset 0 0 18px rgba(148, 163, 184, 0.12);
     }
     .export-button::after {
       content: attr(data-tooltip);
@@ -1079,6 +1093,7 @@
             <span class="pill"><span class="schema instance"></span>instance shell</span>
             <span class="pill"><span class="schema method"></span>method</span>
             <span class="pill"><span class="schema function"></span>function</span>
+            <span class="pill"><span class="schema private"></span>private/internal</span>
             <span class="pill"><span class="schema io"></span>I/O / resource</span>
             <span class="pill"><span class="schema external"></span>external service</span>
             <span class="pill"><span class="schema call"></span>runtime call</span>
@@ -1109,6 +1124,7 @@
             <button class="icon-button export-button" id="export-trace" type="button" aria-label="Export selected trace window" title="Export selected trace window" data-tooltip="Export the exact trace events visible in the selected execution window as JSON for LLM review, debugging notes, or architecture discussion.">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path><path d="M5 17v4"></path><path d="M19 17v4"></path></svg>
             </button>
+            <button class="private-toggle" id="private-toggle" type="button" aria-pressed="false" title="Hide or show private/internal callable nodes and their direct runtime edges">Hide private</button>
             <span class="counter" id="counter">0 / 0</span>
           </div>
         </section>
@@ -1165,6 +1181,7 @@
     const archEdgeCounts = new Map();
     const archAdjacency = new Map();
     const actorRoles = new Map();
+    let privateCallsHidden = false;
     let selectedContainerId = null;
     let hoveredContainerId = null;
     let activeResizeDrag = null;
@@ -1292,6 +1309,17 @@
 
     function isStructuredReturnEvent(event) {
       return Boolean(event && structuredReturnEventOrders.has(event.order));
+    }
+
+    function isPrivateFunctionName(name) {
+      const text = String(name || "");
+      return text.startsWith("_") && !(text.startsWith("__") && text.endsWith("__"));
+    }
+
+    function isPrivateEndpoint(endpoint) {
+      if (!endpoint) return false;
+      const sourceNode = rawNodes.get(endpoint.node_id) || {};
+      return Boolean(sourceNode.is_private) || isPrivateFunctionName(endpoint.function);
     }
 
     function packagePrefixesForModule(moduleName) {
@@ -1474,6 +1502,8 @@
         class_name: endpoint.class_name,
         instance_id: endpoint.instance_id,
         function: endpoint.function,
+        is_private: isPrivateEndpoint(endpoint),
+        visibility: sourceNode.visibility || (isPrivateEndpoint(endpoint) ? "private" : "public"),
         qualified_name: endpoint.qualified_name,
         file: endpoint.file || sourceNode.file,
         line: endpoint.line || sourceNode.line,
@@ -1629,6 +1659,8 @@
             class_name: node.class_name,
             instance_id: node.instance_id,
             function: node.function,
+            is_private: Boolean(node.is_private),
+            visibility: node.visibility || (node.is_private ? "private" : "public"),
             io_category: node.io_category,
             qualified_name: node.qualified_name,
             file: node.file,
@@ -1648,7 +1680,13 @@
             io_height: 86,
             io_label_width: ioWidth - 34
           },
-          classes: isIo ? "unseen hidden io-capsule" : isExternalService ? "unseen hidden external-service" : "unseen hidden"
+          classes: [
+            "unseen",
+            "hidden",
+            isIo ? "io-capsule" : "",
+            isExternalService ? "external-service" : "",
+            node.is_private && !isIo && !isExternalService ? "private-callable" : ""
+          ].filter(Boolean).join(" ")
         };
       });
 
@@ -1661,6 +1699,25 @@
     function visualNodeData(id) {
       if (!id) return null;
       return observedCallables.get(id) || rawNodes.get(id) || packageNodeData.get(id) || null;
+    }
+
+    function isPrivateCallableId(id) {
+      return Boolean(visualNodeData(id)?.is_private);
+    }
+
+    function edgeTouchesPrivateCallable(source, target) {
+      return isPrivateCallableId(source) || isPrivateCallableId(target);
+    }
+
+    function shouldSuppressPrivateElement(element) {
+      if (!privateCallsHidden || !element || element.empty()) return false;
+      if (element.isNode && element.isNode()) {
+        return Boolean(element.data("is_private"));
+      }
+      if (element.isEdge && element.isEdge()) {
+        return edgeTouchesPrivateCallable(element.data("source"), element.data("target"));
+      }
+      return false;
     }
 
     const archEdges = Array.from(archEdgeCounts.values())
@@ -1709,7 +1766,7 @@
         first_seen: edge.first_seen,
         last_seen: edge.last_seen
       },
-      classes: "unseen hidden"
+      classes: ["unseen", "hidden", edgeTouchesPrivateCallable(edge.source, edge.target) ? "private-edge" : ""].filter(Boolean).join(" ")
     }));
 
     const returnEdgeCounts = new Map();
@@ -1744,7 +1801,7 @@
         first_seen: edge.first_seen,
         last_seen: edge.last_seen
       },
-      classes: "unseen hidden"
+      classes: ["unseen", "hidden", edgeTouchesPrivateCallable(edge.source, edge.target) ? "private-edge" : ""].filter(Boolean).join(" ")
     }));
 
     document.getElementById("actor-count").textContent = String(actorNodes.length);
@@ -1831,8 +1888,14 @@
           "text-max-width": "data(callable_label_width)",
           "background-color": "#15803d",
           "border-color": "#86efac",
-          "border-style": "dashed",
           "font-size": 9
+        } },
+        { selector: ".private-callable", style: {
+          "border-style": "dashed",
+          "border-width": 3,
+          "border-color": "#cbd5e1",
+          "background-color": "#475569",
+          "color": "#f8fafc"
         } },
         { selector: 'node[type = "io"]', style: {
           "shape": "barrel",
@@ -2056,6 +2119,7 @@
     document.getElementById("forward").addEventListener("click", () => step(1));
     document.getElementById("play").addEventListener("click", togglePlay);
     document.getElementById("export-trace").addEventListener("click", exportTraceWindow);
+    document.getElementById("private-toggle").addEventListener("click", togglePrivateCalls);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
     document.getElementById("heatmap-show").addEventListener("click", toggleHeatmap);
@@ -2837,7 +2901,9 @@
       for (const owner of owners) {
         revealShell(owner);
         cy.getElementById(owner).removeClass("unseen hidden").addClass("focus");
-        for (const methodId of ownerMethods.get(owner) || []) revealElement(methodId);
+        for (const methodId of ownerMethods.get(owner) || []) {
+          if (!privateCallsHidden || !isPrivateCallableId(methodId)) revealElement(methodId);
+        }
       }
     }
 
@@ -2872,7 +2938,7 @@
         const sourceNode = visualCallableId(event.caller);
         const targetNode = visualCallableId(event.callee);
         const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
-        if (runtimeEdge && !runtimeEdge.empty()) visibleIds.add(runtimeEdge.id());
+        if (runtimeEdge && !runtimeEdge.empty() && !shouldSuppressPrivateElement(runtimeEdge)) visibleIds.add(runtimeEdge.id());
       }
       return visibleIds;
     }
@@ -2880,7 +2946,7 @@
     function collectEndpointElementIds(endpoint, visibleIds) {
       if (!endpoint) return;
       const callableId = visualCallableId(endpoint);
-      if (callableId) visibleIds.add(callableId);
+      if (callableId && (!privateCallsHidden || !isPrivateCallableId(callableId))) visibleIds.add(callableId);
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) visibleIds.add(instanceId);
       const ownerId = ownerForEndpoint(endpoint);
@@ -2938,6 +3004,10 @@
       if (!id) return null;
       const element = cy.getElementById(id);
       if (!element || element.empty()) return null;
+      if (shouldSuppressPrivateElement(element)) {
+        element.addClass("hidden").removeClass("current focus pulse");
+        return null;
+      }
       if (!revealedElementIds.has(id)) {
         placeNewElement(element);
         revealedElementIds.add(id);
@@ -3398,7 +3468,7 @@
     function showOverview() {
       document.getElementById("detail-kind").textContent = "Architecture";
       document.getElementById("detail-title").textContent = "Runtime actors";
-      document.getElementById("detail-summary").textContent = "Modules are outer shells. Runtime instances and public callables appear inside the actor that owns them.";
+      document.getElementById("detail-summary").textContent = "Modules are outer shells. Runtime instances and callables appear inside the actor that owns them. Private/internal callables use dashed outlines.";
       const topActors = actorNodes
         .map((node) => node.data)
         .sort((left, right) => (right.call_count + right.degree) - (left.call_count + left.degree))
@@ -3412,7 +3482,7 @@
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
           Entrypoint and service are roles on actors, not standalone actors.
-          Call edges connect public functions and instance-owned methods inside their owning shells.
+          Call edges connect functions and instance-owned methods inside their owning shells. Private/internal callables use dashed outlines and can be hidden from the graph.
         </div></div>
       `;
       bindChipClicks();
@@ -3714,7 +3784,7 @@
     }
 
     function methodChips(methods) {
-      if (!methods.length) return '<div class="empty">No public method calls observed.</div>';
+      if (!methods.length) return '<div class="empty">No method calls observed.</div>';
       return `<div class="chips">${methods.map((method) => `<button class="chip" data-node="${escapeAttr(method.id)}">${escapeHtml(method.label || method.function || method.id)}</button>`).join("")}</div>`;
     }
 
@@ -3800,6 +3870,15 @@
       const show = document.getElementById("legend-show");
       const collapsed = legend.classList.toggle("hidden");
       show.classList.toggle("hidden", !collapsed);
+    }
+
+    function togglePrivateCalls() {
+      privateCallsHidden = !privateCallsHidden;
+      const toggle = document.getElementById("private-toggle");
+      toggle.classList.toggle("is-active", privateCallsHidden);
+      toggle.setAttribute("aria-pressed", String(privateCallsHidden));
+      toggle.textContent = privateCallsHidden ? "Show private" : "Hide private";
+      renderEvent();
     }
 
     function exportTraceWindow() {
@@ -3967,11 +4046,11 @@
       const targetInstance = instanceForEndpoint(event.callee);
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       if (targetOwner) cy.getElementById(targetOwner).addClass("current");
-      if (sourceNode) cy.getElementById(sourceNode).removeClass("hidden").addClass("current");
-      cy.getElementById(targetNode).removeClass("hidden").addClass("current");
+      markCurrentElement(sourceNode);
+      markCurrentElement(targetNode);
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
       if (targetInstance) cy.getElementById(targetInstance).addClass("current");
-      if (runtimeEdge) runtimeEdge.addClass("current");
+      markCurrentElement(runtimeEdge?.id());
       renderTraceWindow();
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length} · ${traceWindowStart + 1}-${traceWindowEnd + 1}`;
@@ -3982,6 +4061,14 @@
       maybeRenderResizeControls();
       keepCurrentNodesInView();
       pulseCurrentElements();
+    }
+
+    function markCurrentElement(id) {
+      if (!id) return null;
+      const element = cy.getElementById(id);
+      if (!element || element.empty() || shouldSuppressPrivateElement(element)) return null;
+      element.removeClass("hidden").addClass("current");
+      return element;
     }
 
     function keepCurrentNodesInView() {

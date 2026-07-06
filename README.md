@@ -19,7 +19,7 @@ Skeleton produces runtime evidence in four complementary forms:
 
 | Surface | Purpose |
 | --- | --- |
-| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/trace.svg) `trace.jsonl` | Ordered public call and return events. |
+| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/trace.svg) `trace.jsonl` | Ordered project-local call and return events. |
 | ![Snapshot icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/snapshot.svg) `snapshot.json` | Graph-shaped modules, classes, functions, instances, and edges. |
 | ![Workflow icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
 | ![Replay icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
@@ -129,17 +129,25 @@ make demo-no-open
 skeleton run [options] path/to/script.py [args...]
 ```
 
+Existing pytest scenarios can also be traced without adding decorators or
+test-suite hooks:
+
+```bash
+skeleton pytest [options] -- tests/test_checkout.py -q
+```
+
 The module entrypoint is also available:
 
 ```bash
 python -m skeleton_replay run [options] path/to/script.py [args...]
+python -m skeleton_replay pytest [options] -- tests/test_checkout.py -q
 ```
 
 Options:
 
 ```text
 --project-root PATH   Root used to decide which files are project-local.
---out-dir PATH        Output directory. Defaults to ~/.skeleton/<application-name>.
+--out-dir PATH        Output directory. Defaults vary by command; see precedence below.
 --include PATTERN     Only trace matching relative paths or module names.
 --exclude PATTERN     Exclude matching relative paths or module names.
 --max-events N        Stop writing trace events after N events.
@@ -147,12 +155,17 @@ Options:
 --no-open             Do not open report.html after generation.
 ```
 
+For `skeleton pytest`, put pytest's own flags after `--` when they begin with a
+dash. Skeleton preserves pytest's exit code and still writes partial artifacts
+when tests fail.
+
 Output location precedence:
 
 1. `--out-dir PATH`
 2. `SKELETON_OUT_DIR`
-3. `SKELETON_HOME/<application-name>`
-4. `~/.skeleton/<application-name>`
+3. For `skeleton pytest`, `<selected-test-directory>/.skeleton` when a selected test file or directory is present.
+4. `SKELETON_HOME/<application-name>`
+5. `~/.skeleton/<application-name>`
 
 When HTML generation is enabled, Skeleton opens `report.html` in your default
 browser at the end of the run. Use `--no-open` for CI, scripts, or headless
@@ -190,7 +203,9 @@ when all of these are true:
 - The frame's file is under the project root.
 - The file is not in ignored local infrastructure such as `.venv`, `.git`, or
   `.skeleton`.
-- The callable name is public. Names beginning with `_` are ignored.
+- The callable name is traceable. Single-underscore private/internal names are
+  recorded and marked as private; Python-generated names and dunder methods are
+  ignored.
 
 The trace identifies the module, class where practical, function or method,
 caller, callee, instance identity where practical, call depth, event order,
@@ -232,24 +247,25 @@ For more detail, see
 
 ## Current scope and next integrations
 
-Skeleton currently runs a script path:
+Skeleton currently runs a script path or a pytest invocation:
 
 ```bash
 python -m skeleton_replay run scripts/replay_checkout.py
+python -m skeleton_replay pytest -- tests/test_checkout.py -q
 ```
 
-That script can drive any kind of Python code: CLI workflows, service objects,
-batch jobs, web-app internals, or library calls. The application being traced
-does not need to be a CLI application, but v0 does need a script entrypoint that
-exercises the behavior.
+The script path can drive any kind of Python code: CLI workflows, service
+objects, batch jobs, web-app internals, or library calls. The application being
+traced does not need to be a CLI application. Pytest tracing covers projects
+whose existing tests already exercise useful behavior.
 
 Planned integrations:
 
 - `run-module`: support module execution such as
   `python -m my_app.cli run-demo`, exposed as something like
   `skeleton run-module my_app.cli -- run-demo`.
-- pytest plugin: trace selected tests or test sessions, because tests often
-  encode real business workflows.
+- pytest plugin hooks: richer per-test reports and mark-based scenario
+  selection on top of the current `skeleton pytest` command.
 - live web request tracing: trace one request or handler inside a running
   FastAPI, Flask, Django, or Starlette app through middleware or a capture
   context.

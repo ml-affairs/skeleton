@@ -22,6 +22,12 @@ class SampleFrames:
         assert frame is not None
         return frame
 
+    def __dunder_frame__(self) -> FrameType:
+        """Return a live frame from a dunder-named method."""
+        frame = inspect.currentframe()
+        assert frame is not None
+        return frame
+
     @classmethod
     def class_method(cls) -> FrameType:
         """Return a live frame from a class method."""
@@ -80,13 +86,18 @@ class TestTargetScriptRunner:
         # Then
         assert "app.main" in qualified
         assert "service.Greeter.greet" in qualified
+        assert "service.Greeter._format" in qualified
         assert "service.Greeter" not in qualified
-        assert all("._format" not in name for name in qualified)
+        assert all(".__init__" not in name for name in qualified)
 
         greet_call = next(event for event in calls if event["callee"]["qualified_name"] == "service.Greeter.greet")
         assert greet_call["callee"]["class_name"] == "Greeter"
         assert greet_call["callee"]["instance_id"].startswith("service.Greeter@0x")
         assert greet_call["args"]["token"]["type"] == "redacted"
+
+        private_call = next(event for event in calls if event["callee"]["qualified_name"] == "service.Greeter._format")
+        assert private_call["callee"]["class_name"] == "Greeter"
+        assert private_call["args"]["token"]["type"] == "redacted"
 
     def test_respects_max_events(self, tmp_path: Path) -> None:
         # Given
@@ -147,12 +158,24 @@ class TestRuntimeTracer:
         assert class_endpoint.class_name == "SampleFrames"
         assert class_endpoint.instance_id is None
 
-    def test_ignores_private_frames(self, tmp_path: Path) -> None:
+    def test_records_private_frames(self, tmp_path: Path) -> None:
         # Given
         tracer = RuntimeTracer(TraceOptions(project_root=Path.cwd(), out_dir=tmp_path))
 
         # When
         endpoint = tracer._endpoint_from_frame(_private_frame())
+
+        # Then
+        assert endpoint is not None
+        assert endpoint.function == "_private_frame"
+
+    def test_ignores_dunder_frames(self, tmp_path: Path) -> None:
+        # Given
+        tracer = RuntimeTracer(TraceOptions(project_root=Path.cwd(), out_dir=tmp_path))
+        sample = SampleFrames()
+
+        # When
+        endpoint = tracer._endpoint_from_frame(sample.__dunder_frame__())
 
         # Then
         assert endpoint is None
@@ -294,10 +317,17 @@ class TestFixtureProjects:
         assert "resource.database" in resource_names
         assert all(call["node_id"].startswith("resource:") for call in resource_calls)
 
-    def test_private_methods_are_not_traced_in_fixtures(self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize(
+        ("project_name", "private_call"),
+        [
+            ("sample_supply_chain", "supply_service.ShipmentService._resolve_tracking"),
+            ("sample_orchestrated", "workers.Worker._run_step"),
+        ],
+    )
+    def test_private_methods_are_traced_in_fixtures(self, tmp_path: Path, project_name: str, private_call: str) -> None:
         # Given
-        project_root = Path("tests/fixtures/sample_supply_chain").resolve()
-        out_dir = tmp_path / ".skeleton" / "sample_supply_chain"
+        project_root = Path(f"tests/fixtures/{project_name}").resolve()
+        out_dir = tmp_path / ".skeleton" / project_name
 
         # When
         result = TargetScriptRunner().run(
@@ -309,5 +339,5 @@ class TestFixtureProjects:
 
         # Then
         qualified = [event["callee"]["qualified_name"] for event in events if event["event_type"] == "call"]
-        assert "sample_supply_chain.supply_service.ShipmentService._resolve_tracking" not in qualified
-        assert "sample_supply_chain.workers.Worker._run_step" not in qualified
+        assert private_call in qualified
+        assert all(".__init__" not in name for name in qualified)

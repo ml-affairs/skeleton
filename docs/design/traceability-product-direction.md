@@ -69,11 +69,12 @@ should map back to a stable node id, edge id, file path, and event id.
 Skeleton should generate a compact workflow explanation alongside raw JSON:
 
 - actors observed in this run
-- ordered public calls
+- ordered project-local calls, including private/internal calls marked as such
 - caller/callee relationships
 - safe input and output examples
 - notable fan-in and fan-out points
-- unresolved gaps, such as untraced private methods or excluded dependencies
+- unresolved gaps, such as hidden private-method display state or excluded
+  dependencies
 
 This should be written as structured text or JSON that an LLM can quote and
 reason over. The model should not need to scrape HTML or reverse-engineer graph
@@ -130,7 +131,8 @@ architecture replay story.
 - Which event fields are stable contracts, and which are implementation details?
 - How do we prevent the graph from becoming visually impressive but semantically
   vague?
-- Should private calls be completely absent, or summarized as hidden/internal
+- Should private calls stay visible by default, or should the report default to
+  the public-interface view
   spans so users understand gaps in the replay?
 - What is the first query we want to make delightful: path replay, actor fan-out,
   instance lifecycle, or module collaboration?
