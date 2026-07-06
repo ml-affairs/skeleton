@@ -310,6 +310,11 @@ class TestHtmlReportWriter:
         assert 'id="trace-window-end-input"' in html
         assert "function setTraceWindowFromInput" in html
         assert "function syncTraceWindowInputs" in html
+        assert "function visibleFocusAnchorForEvent" in html
+        assert "function nearestVisibleCallChainAnchor" in html
+        assert "function hiddenSelectionNote" in html
+        assert "Selected private event" in html
+        assert "nearest visible runtime context" in html
         assert "function keepCurrentNodesInView" in html
         assert "activeNodes.renderedBoundingBox" in html
         assert "cy.pan({ x: pan.x + dx, y: pan.y + dy })" in html

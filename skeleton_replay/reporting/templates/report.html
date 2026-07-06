@@ -4319,23 +4319,81 @@
       const runtimeEdge = runtimeEdgeForEvent(event, sourceNode, targetNode);
       const sourceInstance = instanceForEndpoint(event.caller);
       const targetInstance = instanceForEndpoint(event.callee);
+      const focusAnchor = visibleFocusAnchorForEvent(event, current, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner);
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       if (targetOwner) cy.getElementById(targetOwner).addClass("current");
-      markCurrentElement(sourceNode);
-      markCurrentElement(targetNode);
+      for (const focusId of focusAnchor.ids) markCurrentElement(focusId);
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
       if (targetInstance) cy.getElementById(targetInstance).addClass("current");
-      markCurrentElement(runtimeEdge?.id());
+      if (focusAnchor.includeEdge) markCurrentElement(runtimeEdge?.id());
       renderTraceWindow();
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length} · ${traceWindowStart + 1}-${traceWindowEnd + 1}`;
       document.getElementById("event-narrative").innerHTML = narrativeForEvent(event);
-      document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner);
+      document.getElementById("event-focus").innerHTML = eventFocusCard(event, sourceOwner, targetOwner, focusAnchor);
       document.getElementById("event-details").innerHTML = syntaxHighlightJson(event);
-      if (targetNode) showNode(targetNode);
+      showNode(focusAnchor.detailNodeId || targetNode);
       maybeRenderResizeControls();
       keepCurrentNodesInView();
       pulseCurrentElements();
+    }
+
+    function visibleFocusAnchorForEvent(event, index, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner) {
+      const ids = [];
+      const addVisibleNode = (id) => {
+        if (!id || ids.includes(id)) return false;
+        const element = cy.getElementById(id);
+        if (!element || element.empty() || !element.isNode || !element.isNode() || shouldSuppressPrivateElement(element)) return false;
+        ids.push(id);
+        return true;
+      };
+      const addVisibleEdge = (edge) => edge && !edge.empty() && !shouldSuppressPrivateElement(edge);
+      const orderedCurrentNodes = event.event_type === "return" ? [sourceNode, targetNode] : [targetNode, sourceNode];
+      for (const nodeId of orderedCurrentNodes) addVisibleNode(nodeId);
+      const includeEdge = addVisibleEdge(runtimeEdge);
+      let fallbackReason = null;
+      let fallbackLabel = "";
+      if (!ids.length || !includeEdge) {
+        const nearest = nearestVisibleCallChainAnchor(index);
+        if (nearest) {
+          addVisibleNode(nearest.id);
+          fallbackReason = "hidden_private";
+          fallbackLabel = nearest.label;
+        }
+      }
+      if (!ids.length) {
+        if (targetOwner && addVisibleNode(targetOwner)) {
+          fallbackReason = fallbackReason || "owner";
+          fallbackLabel = ownerLabel(targetOwner);
+        }
+        if (sourceOwner && addVisibleNode(sourceOwner)) {
+          fallbackReason = fallbackReason || "owner";
+          fallbackLabel = fallbackLabel || ownerLabel(sourceOwner);
+        }
+      }
+      return {
+        ids,
+        includeEdge,
+        detailNodeId: ids.find((id) => rawNodes.has(id) || methodData(id)) || targetOwner || sourceOwner || null,
+        fallbackReason,
+        fallbackLabel
+      };
+    }
+
+    function nearestVisibleCallChainAnchor(index) {
+      for (let eventIndex = index; eventIndex >= traceWindowStart; eventIndex -= 1) {
+        const event = events[eventIndex];
+        if (!event) continue;
+        const endpoints = event.event_type === "return" ? [event.caller, event.callee] : [event.callee, event.caller];
+        for (const endpoint of endpoints) {
+          const callableId = visualCallableId(endpoint);
+          if (!callableId) continue;
+          const element = cy.getElementById(callableId);
+          if (!element || element.empty() || shouldSuppressPrivateElement(element)) continue;
+          return { id: callableId, label: endpoint.function || endpoint.qualified_name || ownerLabel(shellForNode(rawNodes.get(callableId))) };
+        }
+      }
+      return null;
     }
 
     function markCurrentElement(id) {
@@ -4399,7 +4457,7 @@
       return ` ${escapeHtml(value.type || "value")}.`;
     }
 
-    function eventFocusCard(event, sourceOwner, targetOwner) {
+    function eventFocusCard(event, sourceOwner, targetOwner, focusAnchor = null) {
       const caller = event.caller;
       const callee = event.callee;
       const callerToken = caller
@@ -4412,6 +4470,7 @@
       const evidence = event.event_type === "call" ? argsTable(event.args) : returnEvidence(event.return_value);
       const roleRecord = traceRoleRecordForEvent(event);
       const rootContext = roleRecord.root_context ? `<div class="delta-line"><span class="delta-label">Root</span><span>${escapeHtml(rootContextLabel(event))}</span></div>` : "";
+      const hiddenNote = hiddenSelectionNote(event, focusAnchor);
       return `
         <div class="event-card">
           <div class="event-card-header">
@@ -4424,10 +4483,18 @@
             <div class="delta-line"><span class="delta-label">Scope</span><span>${escapeHtml(ownerLabel(targetOwner))} is in focus; its owning shells are emphasized.</span></div>
             <div class="delta-line"><span class="delta-label">Role</span><span><span class="trace-role-pill">${escapeHtml(roleLabel(traceRoleForEvent(event)))}</span></span></div>
             ${rootContext}
+            ${hiddenNote}
             ${evidence}
           </div>
         </div>
       `;
+    }
+
+    function hiddenSelectionNote(event, focusAnchor) {
+      if (!privateCallsHidden || !focusAnchor?.fallbackReason) return "";
+      const selectedName = event.callee?.function || event.callee?.qualified_name || "selected event";
+      const fallbackLabel = focusAnchor.fallbackLabel || "nearest visible runtime context";
+      return `<div class="delta-line"><span class="delta-label">Hidden</span><span>Selected private event <strong>${escapeHtml(selectedName)}</strong> is hidden; keeping <strong>${escapeHtml(fallbackLabel)}</strong> as the visible anchor.</span></div>`;
     }
 
     function entityToken(name, kind, owner, traceRole = null) {
