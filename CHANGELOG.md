@@ -7,6 +7,8 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.6.0] - 2026-07-06
+
 ### Added
 
 - Derived trace roles in `snapshot.json` for entrypoints, system-under-test frames, test harnesses, test utilities, import/setup calls, and roots whose caller is outside the selected trace boundary.

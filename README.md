@@ -176,6 +176,14 @@ When HTML generation is enabled, Skeleton opens `report.html` in your default
 browser at the end of the run. Use `--no-open` for CI, scripts, or headless
 environments.
 
+The HTML report is a step-through architecture replay. The replay dock can be
+collapsed when you need more graph space, and the selected trace window can be
+set either with handles or by typing Start and End event numbers. Private calls
+remain available by default and can be hidden with the existing private-call
+control; when the selected event is hidden, the report keeps the nearest visible
+caller-chain context in focus and notes that the selected private event is
+hidden.
+
 ## Python API
 
 Use `TraceSession` when you want to generate Skeleton artifacts from Python

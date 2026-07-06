@@ -294,6 +294,9 @@ pre-entrypoint setup into a "Setup before entrypoint" section, and render
 harness/setup/test utility frames with lower visual weight and role pills.
 There is intentionally no separate "hide test utilities" control; the existing
 private-call hide control remains focused on private/internal callables only.
+When private calls are hidden and the selected event is itself hidden, the
+report keeps the nearest visible caller-chain context as the replay anchor and
+explains that the selected private event is hidden.
 
 When an event has `caller: null`, the report explains whether it is a root
 inside the selected trace boundary or a caller outside the selected trace

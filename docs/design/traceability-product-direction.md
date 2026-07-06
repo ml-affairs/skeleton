@@ -73,8 +73,8 @@ Skeleton should generate a compact workflow explanation alongside raw JSON:
 - caller/callee relationships
 - safe input and output examples
 - notable fan-in and fan-out points
-- unresolved gaps, such as hidden private-method display state or excluded
-  dependencies
+- unresolved gaps, such as excluded dependencies or selected frames whose caller
+  is outside the trace boundary
 
 This should be written as structured text or JSON that an LLM can quote and
 reason over. The model should not need to scrape HTML or reverse-engineer graph
