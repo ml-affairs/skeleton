@@ -7,6 +7,8 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.5.0] - 2026-07-06
+
 ### Added
 
 - `skeleton pytest` for tracing existing pytest sessions and selected test nodes.
