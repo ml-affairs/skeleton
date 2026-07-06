@@ -138,6 +138,29 @@ class TestTraceSession:
         assert "function:calculator.build_receipt" in observed_nodes
         assert "function:calculator.PriceCalculator.total" in observed_nodes
 
+    def test_run_pytest_defaults_artifacts_to_selected_test_directory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = project_root / ".skeleton"
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+        session = TraceSession(project_root=project_root)
+
+        # When
+        result = session.run_pytest(["-q", "-p", "no:cov", "test_checkout.py::test_builds_receipt_total"])
+
+        # Then
+        assert result.succeeded
+        assert result.trace_path == out_dir / "trace.jsonl"
+        assert result.snapshot_path == out_dir / "snapshot.json"
+        assert result.workflow_path == out_dir / "workflow.md"
+        assert result.quality_path == out_dir / "quality.json"
+        assert result.quality_markdown_path == out_dir / "architecture_quality.md"
+        assert result.report_path == out_dir / "report.html"
+        assert result.trace_path.exists()
+        assert result.report_path is not None
+        assert result.report_path.exists()
+
     def test_run_pytest_preserves_failure_exit_code_and_partial_artifacts(self, tmp_path: Path) -> None:
         # Given
         project_root = Path("tests/fixtures/sample_pytest_project").resolve()

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
-from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver
+from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver, PytestOutputPathResolver
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
 
@@ -53,6 +53,7 @@ class TraceSession:
     quality_analyzer: ArchitectureQualityAnalyzer = field(default_factory=ArchitectureQualityAnalyzer)
     quality_writer: ArchitectureQualityWriter = field(default_factory=ArchitectureQualityWriter)
     output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
+    pytest_output_paths: PytestOutputPathResolver = field(default_factory=PytestOutputPathResolver)
     report_opener: HtmlReportOpener = field(default_factory=HtmlReportOpener)
 
     def run_script(self, script: Path | str, script_args: Sequence[str] = ()) -> TraceSessionResult:
@@ -84,7 +85,8 @@ class TraceSession:
     def run_pytest(self, pytest_args: Sequence[str] = ()) -> TraceSessionResult:
         """Trace a pytest invocation and return generated artifact paths and metrics."""
         project_root = self._resolved_project_root()
-        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=self._requested_out_dir())
+        pytest_arguments = list(pytest_args)
+        out_dir = self.pytest_output_paths.resolve(project_root=project_root, requested_out_dir=self._requested_out_dir(), pytest_args=pytest_arguments)
         trace_options = TraceOptions(
             project_root=project_root,
             out_dir=out_dir,
@@ -97,7 +99,7 @@ class TraceSession:
         target_exit_code = 0
         target_error: str | None = None
         try:
-            trace_result = self.pytest_runner.run(list(pytest_args), trace_options)
+            trace_result = self.pytest_runner.run(pytest_arguments, trace_options)
             target_exit_code = trace_result.target_exit_code
         except SystemExit as exc:
             target_exit_code = self._system_exit_code(exc)

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Protocol, cast
 
 from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
-from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, ColorMode, HtmlReportOpener, OutputPathResolver, SkeletonConsole
+from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, ColorMode, HtmlReportOpener, OutputPathResolver, PytestOutputPathResolver, SkeletonConsole
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
 
@@ -270,7 +270,7 @@ class PytestCommand:
     workflow_writer: WorkflowNarrativeWriter = field(default_factory=WorkflowNarrativeWriter)
     quality_analyzer: ArchitectureQualityAnalyzer = field(default_factory=ArchitectureQualityAnalyzer)
     quality_writer: ArchitectureQualityWriter = field(default_factory=ArchitectureQualityWriter)
-    output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
+    output_paths: PytestOutputPathResolver = field(default_factory=PytestOutputPathResolver)
     report_opener: ReportOpener = field(default_factory=HtmlReportOpener)
 
     def execute(self, args: argparse.Namespace) -> int:
@@ -353,9 +353,10 @@ class PytestCommand:
         if not project_root.is_dir():
             raise SystemExit(f"Project root is not a directory: {project_root}")
 
-        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=args.out_dir)
+        pytest_args = self._pytest_args(args.pytest_args)
+        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=args.out_dir, pytest_args=pytest_args)
         return PytestConfiguration(
-            pytest_args=self._pytest_args(args.pytest_args),
+            pytest_args=pytest_args,
             project_root=project_root,
             out_dir=out_dir,
             include=tuple(args.include or ()),

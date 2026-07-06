@@ -14,6 +14,7 @@ Semantic Versioning while the project is public-alpha software.
 
 ### Changed
 
+- `skeleton pytest` and `TraceSession.run_pytest()` now default artifacts to `<selected-test-directory>/.skeleton` when a test path is provided, while `--out-dir` and `SKELETON_OUT_DIR` still take precedence.
 - Private/internal project callables are now traced, marked with `visibility: "private"` in snapshots, rendered with dashed outlines, and hideable in the HTML report.
 
 ## [0.4.0] - 2026-07-02

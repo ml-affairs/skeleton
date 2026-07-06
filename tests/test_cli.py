@@ -1,4 +1,5 @@
 import json
+import shutil
 from argparse import Namespace
 from io import StringIO
 from pathlib import Path
@@ -6,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from skeleton_replay.cli import CliApplication, PytestCommand, RunCommand
-from skeleton_replay.interface import OutputPathResolver, SkeletonConsole
+from skeleton_replay.interface import OutputPathResolver, PytestOutputPathResolver, SkeletonConsole
 from skeleton_replay.runtime import TargetPytestRunner, TraceOptions, TraceResult
 
 
@@ -156,6 +157,41 @@ class TestRunCommand:
 class TestPytestCommand:
     """CLI pytest command behavior."""
 
+    def test_defaults_artifacts_to_selected_test_directory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_pytest_project").resolve()
+        out_dir = project_root / ".skeleton"
+        opener = RecordingReportOpener()
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.delenv("SKELETON_HOME", raising=False)
+        command = PytestCommand(
+            console=SkeletonConsole(stream=StringIO(), color_mode="never"),
+            report_opener=opener,
+        )
+        args = Namespace(
+            pytest_args=["-q", "-p", "no:cov", "test_checkout.py::test_builds_receipt_total"],
+            project_root=project_root,
+            out_dir=None,
+            include=[],
+            exclude=[],
+            max_events=None,
+            no_html=False,
+            no_open=True,
+        )
+
+        # When
+        exit_code = command.execute(args)
+
+        # Then
+        assert exit_code == 0
+        assert (out_dir / "trace.jsonl").exists()
+        assert (out_dir / "snapshot.json").exists()
+        assert (out_dir / "workflow.md").exists()
+        assert (out_dir / "quality.json").exists()
+        assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "report.html").exists()
+        assert opener.opened == []
+
     def test_writes_artifacts_and_preserves_pytest_exit_code(self, tmp_path: Path) -> None:
         # Given
         project_root = Path("tests/fixtures/sample_pytest_project").resolve()
@@ -249,6 +285,60 @@ class TestOutputPathResolver:
 
         # When
         out_dir = OutputPathResolver().resolve(project_root=project_root, requested_out_dir=None)
+
+        # Then
+        assert out_dir == configured_out_dir
+
+
+class TestPytestOutputPathResolver:
+    """Pytest output directory resolution behavior."""
+
+    def test_defaults_to_selected_test_file_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+        monkeypatch.setenv("SKELETON_HOME", str(tmp_path / "home" / ".skeleton"))
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["-q", "test_checkout.py::test_builds_receipt_total"],
+        )
+
+        # Then
+        assert out_dir == project_root / ".skeleton"
+
+    def test_defaults_to_selected_test_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.delenv("SKELETON_OUT_DIR", raising=False)
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=[str(project_root)],
+        )
+
+        # Then
+        assert out_dir == project_root / ".skeleton"
+
+    def test_uses_preconfigured_output_directory_before_selected_test(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given
+        project_root = tmp_path / "sample_pytest_project"
+        configured_out_dir = tmp_path / "configured-pytest-reports"
+        shutil.copytree(Path("tests/fixtures/sample_pytest_project"), project_root, ignore=shutil.ignore_patterns("__pycache__", ".skeleton"))
+        monkeypatch.setenv("SKELETON_OUT_DIR", str(configured_out_dir))
+
+        # When
+        out_dir = PytestOutputPathResolver().resolve(
+            project_root=project_root,
+            requested_out_dir=None,
+            pytest_args=["test_checkout.py::test_builds_receipt_total"],
+        )
 
         # Then
         assert out_dir == configured_out_dir

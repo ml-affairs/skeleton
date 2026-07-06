@@ -51,7 +51,6 @@ from skeleton_replay import TraceSession
 
 result = TraceSession(
     project_root=Path("."),
-    out_dir=Path(".skeleton/pytest-checkout"),
 ).run_pytest(["tests/test_checkout.py", "-q"])
 
 print(result.target_exit_code)
@@ -63,7 +62,7 @@ Constructor fields:
 | Field | Purpose |
 | --- | --- |
 | `project_root` | Root used to decide which frames are project-local. |
-| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. |
+| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. For pytest runs with a selected test path, the default is `<selected-test-directory>/.skeleton`. |
 | `include` | Optional path or module patterns to include. |
 | `exclude` | Optional path or module patterns to exclude. |
 | `max_events` | Optional cap on written trace events. |

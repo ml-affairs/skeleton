@@ -147,7 +147,7 @@ Options:
 
 ```text
 --project-root PATH   Root used to decide which files are project-local.
---out-dir PATH        Output directory. Defaults to ~/.skeleton/<application-name>.
+--out-dir PATH        Output directory. Defaults vary by command; see precedence below.
 --include PATTERN     Only trace matching relative paths or module names.
 --exclude PATTERN     Exclude matching relative paths or module names.
 --max-events N        Stop writing trace events after N events.
@@ -163,8 +163,9 @@ Output location precedence:
 
 1. `--out-dir PATH`
 2. `SKELETON_OUT_DIR`
-3. `SKELETON_HOME/<application-name>`
-4. `~/.skeleton/<application-name>`
+3. For `skeleton pytest`, `<selected-test-directory>/.skeleton` when a selected test file or directory is present.
+4. `SKELETON_HOME/<application-name>`
+5. `~/.skeleton/<application-name>`
 
 When HTML generation is enabled, Skeleton opens `report.html` in your default
 browser at the end of the run. Use `--no-open` for CI, scripts, or headless
