@@ -596,10 +596,10 @@
     }
     .replay-dock {
       position: absolute;
-      left: calc(50% + 130px);
+      left: 50%;
       bottom: 18px;
       z-index: 9;
-      width: min(560px, calc(100% - 44px));
+      width: min(760px, calc(100% - 44px));
       transform: translateX(-50%);
       border: 1px solid rgba(94, 234, 212, 0.24);
       border-radius: 14px;
@@ -622,32 +622,22 @@
       border-radius: 12px;
     }
     .replay-dock.is-collapsed .timeline-stack,
-    .replay-dock.is-collapsed .controls {
+    .replay-dock.is-collapsed .controls > :not(.replay-dock-toggle) {
       display: none;
-    }
-    .replay-dock-header {
-      position: absolute;
-      right: 8px;
-      top: -48px;
-      display: flex;
-      justify-content: flex-end;
-      pointer-events: none;
-    }
-    .replay-dock.is-collapsed .replay-dock-header {
-      position: static;
-      pointer-events: auto;
     }
     .replay-dock-toggle {
       position: relative;
       width: 38px;
+      min-width: 38px;
+      flex: 0 0 38px;
       min-height: 38px;
+      margin-left: auto;
       display: grid;
       place-items: center;
       padding: 0;
       color: var(--cyan);
       border-color: rgba(94, 234, 212, 0.34);
       background: rgba(15, 23, 42, 0.96);
-      pointer-events: auto;
     }
     .replay-dock-toggle svg {
       width: 18px;
@@ -707,8 +697,8 @@
       box-shadow: 0 0 18px rgba(34, 197, 94, 0.48);
     }
     .controls {
-      display: grid;
-      grid-template-columns: auto auto auto auto auto minmax(0, 1fr);
+      display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
       margin-top: 8px;
@@ -729,6 +719,8 @@
     }
     .icon-button {
       width: 38px;
+      min-width: 38px;
+      flex: 0 0 38px;
       min-height: 38px;
       display: grid;
       place-items: center;
@@ -760,6 +752,7 @@
     .private-toggle {
       color: #cbd5e1;
       white-space: nowrap;
+      flex: 0 0 auto;
     }
     .private-toggle.is-active {
       border-color: rgba(203, 213, 225, 0.62);
@@ -770,10 +763,10 @@
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      grid-column: 1 / -1;
-      grid-row: 2;
       gap: 7px;
       min-width: 0;
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
     .trace-range-fields label {
       display: inline-flex;
@@ -786,7 +779,7 @@
       text-transform: uppercase;
     }
     .trace-range-fields input {
-      width: 58px;
+      width: 62px;
       min-height: 34px;
       border: 1px solid rgba(94, 234, 212, 0.22);
       border-radius: 8px;
@@ -796,6 +789,7 @@
       font: inherit;
       font-size: 13px;
       font-weight: 850;
+      flex: 0 0 auto;
     }
     .trace-range-fields input:focus {
       outline: none;
@@ -835,11 +829,10 @@
       transform: translateX(-50%) translateY(0);
     }
     .counter {
-      grid-column: 6;
-      grid-row: 1;
-      justify-self: end;
+      flex: 0 0 auto;
       color: var(--muted);
       font-size: 12px;
+      white-space: nowrap;
     }
     .narrative {
       margin-top: 8px;
@@ -1222,11 +1215,6 @@
           </div>
         </div>
         <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
-          <div class="replay-dock-header">
-            <button class="replay-dock-toggle" id="replay-dock-toggle" type="button" aria-label="Hide replay controls" aria-expanded="true" title="Hide replay controls" data-tooltip="Collapse the replay controls when you want more room for the architecture map.">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M9 8l-4 4 4 4"></path><path d="M15 8l4 4-4 4"></path></svg>
-            </button>
-          </div>
           <div class="timeline-stack">
             <div class="trace-window" id="trace-window" role="slider" aria-label="Trace export window">
               <div class="trace-window-track"></div>
@@ -1256,6 +1244,9 @@
               <label for="trace-window-end-input">End <input id="trace-window-end-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
             </div>
             <span class="counter" id="counter">0 / 0</span>
+            <button class="replay-dock-toggle icon-button" id="replay-dock-toggle" type="button" aria-label="Hide replay controls" aria-expanded="true" title="Hide replay controls" data-tooltip="Collapse the replay controls when you want more room for the architecture map.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path><path d="M9 8l-4 4 4 4"></path><path d="M15 8l4 4-4 4"></path></svg>
+            </button>
           </div>
         </section>
       </section>
@@ -3154,7 +3145,7 @@
       const visibleIds = visibleElementIdsAt(traceWindowStart, index);
       cy.elements().forEach((element) => {
         if (!visibleIds.has(element.id())) {
-          element.addClass("unseen hidden").removeClass("current focus pulse");
+          element.addClass("unseen hidden").removeClass("current focus pulse viewport-anchor");
         }
       });
       for (let eventIndex = traceWindowStart; eventIndex <= index; eventIndex += 1) {
@@ -3239,7 +3230,7 @@
       const element = cy.getElementById(id);
       if (!element || element.empty()) return null;
       if (shouldSuppressPrivateElement(element)) {
-        element.addClass("hidden").removeClass("current focus pulse");
+        element.addClass("hidden").removeClass("current focus pulse viewport-anchor");
         return null;
       }
       if (!revealedElementIds.has(id)) {
@@ -4301,7 +4292,7 @@
     }
 
     function renderEvent() {
-      cy.elements().removeClass("current dimmed focus pulse");
+      cy.elements().removeClass("current dimmed focus pulse viewport-anchor");
       if (events.length) {
         current = Math.max(traceWindowStart, Math.min(traceWindowEnd, current));
       }
@@ -4322,7 +4313,7 @@
       const focusAnchor = visibleFocusAnchorForEvent(event, current, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner);
       if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
       if (targetOwner) cy.getElementById(targetOwner).addClass("current");
-      for (const focusId of focusAnchor.ids) markCurrentElement(focusId);
+      for (const focusId of focusAnchor.ids) markViewportAnchor(focusId);
       if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
       if (targetInstance) cy.getElementById(targetInstance).addClass("current");
       if (focusAnchor.includeEdge) markCurrentElement(runtimeEdge?.id());
@@ -4404,8 +4395,32 @@
       return element;
     }
 
+    function markViewportAnchor(id) {
+      const element = markCurrentElement(id);
+      if (!element || !element.isNode || !element.isNode() || !isCompactViewportAnchor(element)) return element;
+      element.addClass("viewport-anchor");
+      return element;
+    }
+
+    function isCompactViewportAnchor(element) {
+      const type = element?.data?.("type");
+      return type !== "module" && type !== "package";
+    }
+
+    function visibleNodeSet(selector) {
+      return cy.nodes(selector).filter((node) => !node.hasClass("hidden") && !node.hasClass("unseen"));
+    }
+
+    function viewportAnchorNodes() {
+      const explicitAnchors = visibleNodeSet(".viewport-anchor");
+      if (explicitAnchors.length) return explicitAnchors;
+      const compactCurrent = visibleNodeSet(".current").filter((node) => isCompactViewportAnchor(node));
+      if (compactCurrent.length) return compactCurrent;
+      return visibleNodeSet(".current");
+    }
+
     function keepCurrentNodesInView() {
-      const activeNodes = cy.nodes(".current").filter((node) => !node.hasClass("hidden") && !node.hasClass("unseen"));
+      const activeNodes = viewportAnchorNodes();
       if (!activeNodes.length) return;
       const box = activeNodes.renderedBoundingBox({ includeLabels: true, includeOverlays: true });
       const margin = 86;
