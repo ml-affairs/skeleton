@@ -225,7 +225,7 @@ class RunCommand:
         if not project_root.is_dir():
             raise SystemExit(f"Project root is not a directory: {project_root}")
 
-        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=args.out_dir)
+        out_dir = self.output_paths.resolve(project_root=project_root, requested_out_dir=args.out_dir, target_path=script)
         return RunConfiguration(
             script=script,
             script_args=list(args.script_args),
