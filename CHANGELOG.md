@@ -15,7 +15,12 @@ Semantic Versioning while the project is public-alpha software.
 
 - Default artifact placement is now target-local and collision-aware: `skeleton run` writes under `<script-parent>/.skeleton/<script-stem>/latest/`, while `skeleton pytest` preserves file, node id, and parametrized-node identity under `<test-dir>/.skeleton/.../latest/`; explicit `--out-dir`, `SKELETON_OUT_DIR`, and `SKELETON_HOME` still take precedence.
 - The HTML report now starts replay at the inferred scenario entrypoint when available, groups pre-entrypoint setup events in a collapsed section, and renders harness/setup/test utility frames with subdued role styling instead of adding another hide toggle.
+- The HTML replay dock can now be collapsed, and trace-window Start/End event numbers can be typed directly instead of only adjusted with draggable handles.
 - `workflow.md` now includes setup-before-entrypoint summaries and trace-role context for actors and events.
+
+### Fixed
+
+- Hidden private return/helper events now retain the nearest visible caller-chain anchor in the report and show a concise note instead of leaving the graph without an obvious current focus.
 
 ## [0.5.0] - 2026-07-06
 
