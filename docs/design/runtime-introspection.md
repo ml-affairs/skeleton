@@ -279,8 +279,8 @@ Skeleton should be honest about what this mechanism can and cannot know.
   methods, but the report should show the methods this run actually used.
 - Static imports and runtime calls are different facts. A module can import
   something without calling it.
-- Private methods are intentionally ignored in v0, so the replay is an
-  architectural path, not a complete execution log.
+- Private/internal methods are captured, marked as internal, and can be hidden
+  in the report to focus on public interfaces.
 - Async functions, generators, descriptors, monkey patching, and metaprogramming
   can produce surprising frame shapes. Skeleton should improve these cases with
   tests as they become product requirements.

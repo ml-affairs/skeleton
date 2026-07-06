@@ -20,6 +20,7 @@ class StaticSymbol:
     file: str
     line: int
     loc: int
+    is_private: bool = False
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,7 @@ class StaticProjectScanner:
             file=str(path.resolve()),
             line=int(getattr(node, "lineno", 0)),
             loc=self._node_loc(node),
+            is_private=TraceFilter.is_private_function(name),
         )
 
     @staticmethod

@@ -41,8 +41,13 @@ class TraceFilter:
 
     @staticmethod
     def allows_function(name: str) -> bool:
-        """Return whether a callable name is public architecture surface."""
-        return not name.startswith("_") and not name.startswith("<")
+        """Return whether a callable name belongs in the architecture trace."""
+        return not name.startswith("<") and not (name.startswith("__") and name.endswith("__"))
+
+    @staticmethod
+    def is_private_function(name: str) -> bool:
+        """Return whether a callable name is private/internal application surface."""
+        return name.startswith("_") and TraceFilter.allows_function(name)
 
     def module_from_path(self, filename: Path) -> str:
         """Return a dotted module name for a project-local file path."""

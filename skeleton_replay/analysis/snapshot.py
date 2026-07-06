@@ -11,6 +11,7 @@ from typing import Any
 from skeleton_replay.analysis.static import StaticProjectScanner
 from skeleton_replay.analysis.structured_returns import StructuredReturnConfig, StructuredReturnGroupAnalyzer
 from skeleton_replay.runtime.events import Endpoint, TraceEvent
+from skeleton_replay.runtime.filters import TraceFilter
 
 JsonObject = dict[str, Any]
 
@@ -96,6 +97,8 @@ class SnapshotBuilder:
                 "call_count": 0,
                 "arg_examples": [],
                 "return_examples": [],
+                "is_private": symbol.is_private,
+                "visibility": "private" if symbol.is_private else "public",
             }
 
         nodes["entrypoint"] = {
@@ -270,6 +273,8 @@ class SnapshotBuilder:
                 "call_count": 0,
                 "arg_examples": [],
                 "return_examples": [],
+                "is_private": self._is_private_endpoint(endpoint),
+                "visibility": "private" if self._is_private_endpoint(endpoint) else "public",
             },
         )
 
@@ -290,3 +295,7 @@ class SnapshotBuilder:
         for node_id, node in nodes.items():
             node["fan_in"] = len(incoming.get(node_id, set()))
             node["fan_out"] = len(outgoing.get(node_id, set()))
+
+    @staticmethod
+    def _is_private_endpoint(endpoint: Endpoint) -> bool:
+        return endpoint.endpoint_type == "function" and TraceFilter.is_private_function(endpoint.function)

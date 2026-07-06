@@ -39,7 +39,7 @@ class TraceResult:
 
 
 class RuntimeTracer:
-    """Collect public project-local call and return events."""
+    """Collect project-local call and return events."""
 
     def __init__(self, options: TraceOptions, summariser: ValueSummariser | None = None) -> None:
         """Initialize a runtime tracer for one target execution."""

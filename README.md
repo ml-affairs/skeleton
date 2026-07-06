@@ -19,7 +19,7 @@ Skeleton produces runtime evidence in four complementary forms:
 
 | Surface | Purpose |
 | --- | --- |
-| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/trace.svg) `trace.jsonl` | Ordered public call and return events. |
+| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/trace.svg) `trace.jsonl` | Ordered project-local call and return events. |
 | ![Snapshot icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/snapshot.svg) `snapshot.json` | Graph-shaped modules, classes, functions, instances, and edges. |
 | ![Workflow icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
 | ![Replay icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
@@ -202,7 +202,9 @@ when all of these are true:
 - The frame's file is under the project root.
 - The file is not in ignored local infrastructure such as `.venv`, `.git`, or
   `.skeleton`.
-- The callable name is public. Names beginning with `_` are ignored.
+- The callable name is traceable. Single-underscore private/internal names are
+  recorded and marked as private; Python-generated names and dunder methods are
+  ignored.
 
 The trace identifies the module, class where practical, function or method,
 caller, callee, instance identity where practical, call depth, event order,

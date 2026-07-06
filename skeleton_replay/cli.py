@@ -152,7 +152,7 @@ class RunCommand:
         target_exit_code = 0
         target_error: Exception | None = None
 
-        self.console.step("Tracing project-local public calls")
+        self.console.step("Tracing project-local calls")
         try:
             result = self.runner.run(config.script, config.script_args, config.trace_options())
         except SystemExit as exc:

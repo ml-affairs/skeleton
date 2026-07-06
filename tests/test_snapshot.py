@@ -71,19 +71,23 @@ class TestSnapshotBuilder:
 
         # When
         snapshot = SnapshotBuilder(project_root).build(result.trace_path, out_dir / "snapshot.json")
-        nodes = {node["id"] for node in snapshot["nodes"]}
+        nodes = {node["id"]: node for node in snapshot["nodes"]}
         edges = {(edge["source"], edge["target"]) for edge in snapshot["edges"]}
 
         # Then
         assert "function:app.main" in nodes
         assert "function:orchestrator.WorkflowOrchestrator.run" in nodes
         assert "function:workers.Worker.execute" in nodes
+        assert "function:workers.Worker._run_step" in nodes
         assert "function:pipeline.build_plan" in nodes
         assert "function:queueing.stage_one" in nodes
         assert "function:orchestrated_telemetry.get" in nodes
         assert "function:orchestrated_telemetry.write_text" in nodes
+        assert nodes["function:workers.Worker._run_step"]["is_private"] is True
+        assert nodes["function:workers.Worker._run_step"]["visibility"] == "private"
         assert ("function:orchestrator.WorkflowOrchestrator.run", "function:pipeline.build_plan") in edges
-        assert ("function:workers.Worker.execute", "function:queueing.stage_one") in edges
+        assert ("function:workers.Worker.execute", "function:workers.Worker._run_step") in edges
+        assert ("function:workers.Worker._run_step", "function:queueing.stage_one") in edges
         assert ("function:orchestrator.WorkflowOrchestrator.run", "function:orchestrated_telemetry.write_text") in edges
 
     def test_builds_resource_nodes_for_io_boundary_fixture(self, tmp_path: Path) -> None:

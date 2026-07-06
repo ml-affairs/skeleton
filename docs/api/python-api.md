@@ -143,8 +143,8 @@ dependency for script-only users.
 
 ### `RuntimeTracer`
 
-Installs `sys.setprofile()` and records project-local public call and return
-events.
+Installs `sys.setprofile()` and records project-local call and return events.
+Private/internal callables are captured and marked for report filtering.
 
 This is a low-level tracing boundary. It should remain importable for advanced
 users eventually, but its direct API should not be the first thing most users

@@ -109,7 +109,9 @@ class TestRunCommand:
         assert any(node["id"] == "function:app.main" for node in snapshot["nodes"])
         assert any(node["id"] == "function:service.Greeter.greet" for node in snapshot["nodes"])
         assert not any(node["id"] == "function:service.Greeter" for node in snapshot["nodes"])
-        assert not any(node["id"] == "function:service.Greeter._format" for node in snapshot["nodes"])
+        private_node = next(node for node in snapshot["nodes"] if node["id"] == "function:service.Greeter._format")
+        assert private_node["is_private"] is True
+        assert private_node["visibility"] == "private"
         assert opener.opened == [out_dir / "report.html"]
 
     def test_opens_html_report_by_default(self, tmp_path: Path) -> None:
