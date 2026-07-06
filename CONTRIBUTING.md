@@ -41,7 +41,7 @@ Local artifacts are intentionally repo-local during development:
 
 - Stable report UI work: `tests/dev/.temp/skeleton-demo/report.html`
 - Pytest `tmp_path` output: `tests/dev/.temp/pytest/`
-- End-user CLI default: `~/.skeleton/<application-name>/`
+- End-user CLI default: target-local `.skeleton/<target>/latest/` directories unless `--out-dir`, `SKELETON_OUT_DIR`, or `SKELETON_HOME` is set.
 
 ## Code Style
 
