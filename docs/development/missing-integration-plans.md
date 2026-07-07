@@ -168,12 +168,18 @@ The plugin should not reimplement tracing. It should call the installed
 `skeleton` package, pass the selected run configuration, and open or embed the
 generated report.
 
+The Python package writes `session.json` beside each artifact set. The plugin
+should use that manifest as its primary discovery contract, then render the
+linked `report.html`, `workflow.md`, `architecture_quality.md`, `snapshot.json`,
+and `trace.jsonl` artifacts in the workbench.
+
 ### Useful First Features
 
 - right-click a Python file and choose "Run with Skeleton"
 - right-click a pytest test and choose "Replay with Skeleton"
 - choose project root and output directory
-- show links to `trace.jsonl`, `snapshot.json`, `workflow.md`, and `report.html`
+- show links to `session.json`, `trace.jsonl`, `snapshot.json`, `workflow.md`,
+  `architecture_quality.md`, and `report.html`
 - open `report.html` in PyCharm's browser panel when available
 - show CLI command used for reproducibility
 
@@ -186,7 +192,7 @@ be a separate repository or package that:
 - reads the current module/content root
 - invokes `skeleton run ...`, `python -m skeleton_replay run ...`, or future Python API through the
   configured interpreter
-- watches the generated artifact directory
+- watches the generated artifact directory and reads `session.json`
 - opens the HTML report
 
 ### Risks

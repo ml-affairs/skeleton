@@ -7,6 +7,12 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+### Added
+
+- `session.json` artifact for IDEs and automation tools, recording the command,
+  invocation, target, generated artifact paths, metrics, exit status, and target
+  error for each CLI or Python API run.
+
 ## [0.6.1] - 2026-07-06
 
 ### Changed

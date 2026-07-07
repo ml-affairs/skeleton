@@ -23,6 +23,7 @@ Skeleton produces runtime evidence in four complementary forms:
 | ![Snapshot icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/snapshot.svg) `snapshot.json` | Graph-shaped modules, classes, functions, instances, and edges. |
 | ![Workflow icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
 | ![Replay icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
+| `session.json` | Stable run manifest for IDEs and automation tools. |
 
 Package naming:
 
@@ -48,6 +49,7 @@ path/to/.skeleton/script/latest/
   trace.jsonl
   snapshot.json
   workflow.md
+  session.json
   report.html
 ```
 
@@ -159,6 +161,10 @@ For `skeleton pytest`, put pytest's own flags after `--` when they begin with a
 dash. Skeleton preserves pytest's exit code and still writes partial artifacts
 when tests fail.
 
+Every run also writes `session.json`. IDE integrations should read this manifest
+first: it records the Skeleton version, command, invocation, target, artifact
+paths, metrics, target exit code, and any target error.
+
 Output location precedence:
 
 1. `--out-dir PATH`
@@ -204,8 +210,9 @@ print(result.workflow_path)
 ```
 
 The Python API writes the same `trace.jsonl`, `snapshot.json`, `workflow.md`,
-and optional `report.html` artifacts as the CLI. Unlike the CLI, it does not
-open the HTML report by default; pass `open_report=True` when that is wanted.
+`session.json`, and optional `report.html` artifacts as the CLI. Unlike the CLI,
+it does not open the HTML report by default; pass `open_report=True` when that
+is wanted.
 See [`docs/api/python-api.md`](docs/api/python-api.md).
 
 ## What gets traced

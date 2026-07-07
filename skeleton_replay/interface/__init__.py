@@ -4,6 +4,7 @@ from skeleton_replay.interface.artifacts import ArtifactGenerationPipeline, Arti
 from skeleton_replay.interface.console import ColorMode, SkeletonConsole
 from skeleton_replay.interface.output_paths import OutputPathResolver, PytestOutputPathResolver
 from skeleton_replay.interface.report_opener import HtmlReportOpener
+from skeleton_replay.interface.session_manifest import SessionArtifactSet, SessionManifestWriter, SessionTarget
 
 __all__ = [
     "ArtifactGenerationPipeline",
@@ -13,5 +14,8 @@ __all__ = [
     "HtmlReportOpener",
     "OutputPathResolver",
     "PytestOutputPathResolver",
+    "SessionArtifactSet",
+    "SessionManifestWriter",
+    "SessionTarget",
     "SkeletonConsole",
 ]
