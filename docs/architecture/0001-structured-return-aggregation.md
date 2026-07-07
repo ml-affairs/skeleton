@@ -4,6 +4,36 @@
 
 Accepted
 
+## Diagram
+
+```mermaid
+flowchart LR
+    trace[trace.jsonl<br/>raw call and return events]
+    decision[Group repeated<br/>structured returns]
+    snapshot[snapshot.json<br/>structured_return_groups]
+    workflow[workflow.md<br/>record tables]
+    report[report.html<br/>collapsed semantic cards]
+    risk[False positives<br/>limited by behavior evidence]
+
+    trace --> decision --> snapshot
+    snapshot --> workflow
+    snapshot --> report
+    decision --> risk
+
+    classDef decision fill:#EDE9FE,stroke:#7C3AED,color:#0F172A
+    classDef evidence fill:#DCFCE7,stroke:#16A34A,color:#0F172A
+    classDef artifact fill:#DBEAFE,stroke:#2563EB,color:#0F172A
+    classDef report fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    classDef integration fill:#FEF3C7,stroke:#D97706,color:#0F172A
+    classDef risk fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+
+    class decision decision
+    class trace evidence
+    class snapshot,workflow artifact
+    class report report
+    class risk risk
+```
+
 ## Context
 
 Skeleton preserves raw runtime call and return events in `trace.jsonl`. That is

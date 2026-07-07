@@ -67,7 +67,7 @@ that handled the call. Class definitions remain metadata, not runtime graph
 boxes. Entrypoints, services, repositories, adapters, and ports are roles or
 boundaries unless the codebase has a concrete object that owns that
 responsibility. See
-[`docs/design/software-design-principles.md`](docs/design/software-design-principles.md)
+[`docs/design/README.md`](docs/design/README.md)
 for the design principles that guide the visual model.
 
 `workflow.md` is a compact text explanation of the observed run. It is designed
@@ -262,8 +262,7 @@ not reading class source to guess behavior; it is watching Python call real
 functions on real objects. The object ids are only meaningful within one run,
 not across processes or commits.
 
-For more detail, see
-[`docs/design/runtime-introspection.md`](docs/design/runtime-introspection.md).
+For more detail, see [`docs/design/README.md`](docs/design/README.md).
 
 ## Current scope and next integrations
 
@@ -292,9 +291,8 @@ Planned integrations:
 - PyCharm plugin: a thin IDE frontend that invokes Skeleton with the configured
   interpreter and opens the generated report.
 
-See [`docs/api/python-api.md`](docs/api/python-api.md),
-[`docs/development/missing-integration-plans.md`](docs/development/missing-integration-plans.md),
-and [`docs/development/pypi-release-plan.md`](docs/development/pypi-release-plan.md).
+See [`docs/api/python-api.md`](docs/api/python-api.md) and
+[`docs/development/README.md`](docs/development/README.md).
 
 Release history is tracked in [`CHANGELOG.md`](CHANGELOG.md). Keep the
 changelog updated in the same pull request or commit that changes user-visible
