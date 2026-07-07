@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
-from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver, PytestOutputPathResolver
+from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver, PytestOutputPathResolver, SessionArtifactSet, SessionManifestWriter, SessionTarget
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
 
@@ -21,6 +21,7 @@ class TraceSessionResult:
     workflow_path: Path
     quality_path: Path
     quality_markdown_path: Path
+    session_path: Path
     report_path: Path | None
     report_opened: bool
     event_count: int
@@ -55,6 +56,7 @@ class TraceSession:
     output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
     pytest_output_paths: PytestOutputPathResolver = field(default_factory=PytestOutputPathResolver)
     report_opener: HtmlReportOpener = field(default_factory=HtmlReportOpener)
+    session_manifest_writer: SessionManifestWriter = field(default_factory=SessionManifestWriter)
 
     def run_script(self, script: Path | str, script_args: Sequence[str] = ()) -> TraceSessionResult:
         """Trace a Python script and return generated artifact paths and metrics."""
@@ -80,7 +82,16 @@ class TraceSession:
             target_exit_code = 1
             target_error = f"{type(exc).__name__}: {exc}"
 
-        return self._result_from_trace(project_root=project_root, out_dir=out_dir, trace_result=trace_result, target_exit_code=target_exit_code, target_error=target_error)
+        return self._result_from_trace(
+            command="run_script",
+            invocation=("TraceSession.run_script", str(script_path), *script_args),
+            project_root=project_root,
+            out_dir=out_dir,
+            target=SessionTarget(kind="script", path=script_path, args=tuple(script_args)),
+            trace_result=trace_result,
+            target_exit_code=target_exit_code,
+            target_error=target_error,
+        )
 
     def run_pytest(self, pytest_args: Sequence[str] = ()) -> TraceSessionResult:
         """Trace a pytest invocation and return generated artifact paths and metrics."""
@@ -99,7 +110,7 @@ class TraceSession:
         target_exit_code = 0
         target_error: str | None = None
         try:
-            trace_result = self.pytest_runner.run(pytest_arguments, trace_options)
+            trace_result = self.pytest_runner.run(list(pytest_arguments), trace_options)
             target_exit_code = trace_result.target_exit_code
         except SystemExit as exc:
             target_exit_code = self._system_exit_code(exc)
@@ -107,15 +118,36 @@ class TraceSession:
             target_exit_code = 1
             target_error = f"{type(exc).__name__}: {exc}"
 
-        return self._result_from_trace(project_root=project_root, out_dir=out_dir, trace_result=trace_result, target_exit_code=target_exit_code, target_error=target_error)
+        return self._result_from_trace(
+            command="run_pytest",
+            invocation=("TraceSession.run_pytest", *pytest_arguments),
+            project_root=project_root,
+            out_dir=out_dir,
+            target=SessionTarget(kind="pytest", args=tuple(pytest_arguments)),
+            trace_result=trace_result,
+            target_exit_code=target_exit_code,
+            target_error=target_error,
+        )
 
-    def _result_from_trace(self, *, project_root: Path, out_dir: Path, trace_result: TraceResult | None, target_exit_code: int, target_error: str | None) -> TraceSessionResult:
+    def _result_from_trace(
+        self,
+        *,
+        command: str,
+        invocation: tuple[str, ...],
+        project_root: Path,
+        out_dir: Path,
+        target: SessionTarget,
+        trace_result: TraceResult | None,
+        target_exit_code: int,
+        target_error: str | None,
+    ) -> TraceSessionResult:
         """Generate artifacts from a trace result and return public session metadata."""
         trace_path = trace_result.trace_path if trace_result else out_dir / "trace.jsonl"
         snapshot_path = out_dir / "snapshot.json"
         workflow_path = out_dir / "workflow.md"
         quality_path = out_dir / "quality.json"
         quality_markdown_path = out_dir / "architecture_quality.md"
+        session_path = out_dir / "session.json"
         report_path = out_dir / "report.html" if self.html_enabled else None
         artifact_result = ArtifactGenerationPipeline(
             report_writer=self.report_writer,
@@ -138,12 +170,35 @@ class TraceSession:
             report_opened = self.report_opener.open(report_path)
 
         event_count = trace_result.event_count if trace_result else artifact_result.metrics.event_count
+        self.session_manifest_writer.write(
+            session_path=session_path,
+            command=command,
+            invocation=invocation,
+            project_root=project_root,
+            target=target,
+            artifacts=SessionArtifactSet(
+                trace_path=trace_path,
+                snapshot_path=snapshot_path,
+                workflow_path=workflow_path,
+                quality_path=quality_path,
+                quality_markdown_path=quality_markdown_path,
+                report_path=report_path,
+                session_path=session_path,
+            ),
+            event_count=event_count,
+            node_count=artifact_result.metrics.node_count,
+            edge_count=artifact_result.metrics.edge_count,
+            target_exit_code=target_exit_code,
+            target_error=target_error,
+            report_opened=report_opened,
+        )
         return TraceSessionResult(
             trace_path=trace_path,
             snapshot_path=snapshot_path,
             workflow_path=workflow_path,
             quality_path=quality_path,
             quality_markdown_path=quality_markdown_path,
+            session_path=session_path,
             report_path=report_path,
             report_opened=report_opened,
             event_count=event_count,

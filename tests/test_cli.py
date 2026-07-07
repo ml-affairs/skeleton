@@ -76,6 +76,7 @@ class TestRunCommand:
         assert (out_dir / "workflow.md").exists()
         assert (out_dir / "quality.json").exists()
         assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "session.json").exists()
         assert (out_dir / "report.html").exists()
         assert (out_dir / "trace.jsonl").stat().st_size > 0
         assert (out_dir / "report.html").stat().st_size > 0
@@ -112,6 +113,7 @@ class TestRunCommand:
         assert (out_dir / "workflow.md").exists()
         assert (out_dir / "quality.json").exists()
         assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "session.json").exists()
         assert (out_dir / "report.html").exists()
 
         snapshot = json.loads((out_dir / "snapshot.json").read_text(encoding="utf-8"))
@@ -124,6 +126,25 @@ class TestRunCommand:
         assert private_node["is_private"] is True
         assert private_node["visibility"] == "private"
         assert opener.opened == [out_dir / "report.html"]
+
+        session_manifest = json.loads((out_dir / "session.json").read_text(encoding="utf-8"))
+        assert session_manifest["schema_version"] == 1
+        assert session_manifest["command"] == "run"
+        assert session_manifest["invocation"] == [
+            "skeleton",
+            "run",
+            "--project-root",
+            str(project_root),
+            "--out-dir",
+            str(out_dir),
+            str(project_root / "app.py"),
+        ]
+        assert session_manifest["target"] == {"args": [], "kind": "script", "path": str(project_root / "app.py")}
+        assert session_manifest["artifacts"]["session"] == str(out_dir / "session.json")
+        assert session_manifest["metrics"]["events"] == snapshot["event_count"]
+        assert session_manifest["target_exit_code"] == 0
+        assert session_manifest["target_error"] is None
+        assert session_manifest["report_opened"] is True
 
     def test_opens_html_report_by_default(self, tmp_path: Path) -> None:
         # Given
@@ -189,6 +210,7 @@ class TestPytestCommand:
         assert (out_dir / "workflow.md").exists()
         assert (out_dir / "quality.json").exists()
         assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "session.json").exists()
         assert (out_dir / "report.html").exists()
         assert opener.opened == []
 
@@ -222,8 +244,28 @@ class TestPytestCommand:
         assert (out_dir / "workflow.md").exists()
         assert (out_dir / "quality.json").exists()
         assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "session.json").exists()
         assert (out_dir / "report.html").exists()
         assert opener.opened == []
+
+        session_manifest = json.loads((out_dir / "session.json").read_text(encoding="utf-8"))
+        assert session_manifest["command"] == "pytest"
+        assert session_manifest["invocation"] == [
+            "skeleton",
+            "pytest",
+            "--project-root",
+            str(project_root),
+            "--out-dir",
+            str(out_dir),
+            "--no-open",
+            "--",
+            "-q",
+            "-p",
+            "no:cov",
+            str(project_root / "test_checkout.py::test_builds_receipt_total"),
+        ]
+        assert session_manifest["target"]["kind"] == "pytest"
+        assert session_manifest["target_exit_code"] == 0
 
     def test_writes_empty_trace_artifacts_when_pytest_fails_before_tracing(self, tmp_path: Path) -> None:
         # Given
@@ -255,10 +297,16 @@ class TestPytestCommand:
         assert (out_dir / "workflow.md").exists()
         assert (out_dir / "quality.json").exists()
         assert (out_dir / "architecture_quality.md").exists()
+        assert (out_dir / "session.json").exists()
         assert not (out_dir / "report.html").exists()
 
         snapshot = json.loads((out_dir / "snapshot.json").read_text(encoding="utf-8"))
         assert snapshot["event_count"] == 0
+
+        session_manifest = json.loads((out_dir / "session.json").read_text(encoding="utf-8"))
+        assert "report" not in session_manifest["artifacts"]
+        assert session_manifest["target_exit_code"] == 1
+        assert session_manifest["target_error"] == "RuntimeError: pytest is unavailable"
 
 
 class TestOutputPathResolver:

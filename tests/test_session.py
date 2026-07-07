@@ -41,6 +41,7 @@ class TestTraceSession:
         assert result.workflow_path.exists()
         assert result.quality_path.exists()
         assert result.quality_markdown_path.exists()
+        assert result.session_path.exists()
         assert result.report_path is not None
         assert result.report_path.exists()
         assert result.trace_path.stat().st_size > 0
@@ -76,6 +77,7 @@ class TestTraceSession:
         assert result.workflow_path == out_dir / "workflow.md"
         assert result.quality_path == out_dir / "quality.json"
         assert result.quality_markdown_path == out_dir / "architecture_quality.md"
+        assert result.session_path == out_dir / "session.json"
         assert result.report_path == out_dir / "report.html"
         assert not result.report_opened
         assert result.event_count > 0
@@ -86,11 +88,30 @@ class TestTraceSession:
         assert result.workflow_path.exists()
         assert result.quality_path.exists()
         assert result.quality_markdown_path.exists()
+        assert result.session_path.exists()
         assert result.report_path.exists()
 
         snapshot = json.loads(result.snapshot_path.read_text(encoding="utf-8"))
         assert snapshot["event_count"] == result.event_count
         assert snapshot["quality"]["summary"]["events"] == result.event_count
+
+        session_manifest = json.loads(result.session_path.read_text(encoding="utf-8"))
+        assert session_manifest["schema_version"] == 1
+        assert session_manifest["command"] == "run_script"
+        assert session_manifest["invocation"] == ["TraceSession.run_script", str(project_root / "app.py")]
+        assert session_manifest["project_root"] == str(project_root)
+        assert session_manifest["target"] == {"args": [], "kind": "script", "path": str(project_root / "app.py")}
+        assert session_manifest["artifacts"]["trace"] == str(result.trace_path)
+        assert session_manifest["artifacts"]["snapshot"] == str(result.snapshot_path)
+        assert session_manifest["artifacts"]["workflow"] == str(result.workflow_path)
+        assert session_manifest["artifacts"]["quality"] == str(result.quality_path)
+        assert session_manifest["artifacts"]["quality_markdown"] == str(result.quality_markdown_path)
+        assert session_manifest["artifacts"]["report"] == str(result.report_path)
+        assert session_manifest["artifacts"]["session"] == str(result.session_path)
+        assert session_manifest["metrics"] == {"edges": result.edge_count, "events": result.event_count, "nodes": result.node_count}
+        assert session_manifest["target_exit_code"] == 0
+        assert session_manifest["target_error"] is None
+        assert session_manifest["report_opened"] is False
 
     def test_run_script_defaults_artifacts_to_target_local_latest_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
@@ -111,6 +132,7 @@ class TestTraceSession:
         assert result.workflow_path == out_dir / "workflow.md"
         assert result.quality_path == out_dir / "quality.json"
         assert result.quality_markdown_path == out_dir / "architecture_quality.md"
+        assert result.session_path == out_dir / "session.json"
         assert result.report_path == out_dir / "report.html"
         assert result.trace_path.exists()
         assert result.report_path is not None
@@ -134,7 +156,11 @@ class TestTraceSession:
         assert result.workflow_path.exists()
         assert result.quality_path.exists()
         assert result.quality_markdown_path.exists()
+        assert result.session_path.exists()
         assert not (out_dir / "report.html").exists()
+
+        session_manifest = json.loads(result.session_path.read_text(encoding="utf-8"))
+        assert "report" not in session_manifest["artifacts"]
 
     def test_run_pytest_writes_artifacts_for_selected_test(self, tmp_path: Path) -> None:
         # Given
@@ -154,6 +180,7 @@ class TestTraceSession:
         assert result.workflow_path.exists()
         assert result.quality_path.exists()
         assert result.quality_markdown_path.exists()
+        assert result.session_path.exists()
         assert result.report_path is not None
         assert result.report_path.exists()
 
@@ -162,6 +189,11 @@ class TestTraceSession:
         assert "function:test_checkout.test_builds_receipt_total" in observed_nodes
         assert "function:calculator.build_receipt" in observed_nodes
         assert "function:calculator.PriceCalculator.total" in observed_nodes
+
+        session_manifest = json.loads(result.session_path.read_text(encoding="utf-8"))
+        assert session_manifest["command"] == "run_pytest"
+        assert session_manifest["target"]["kind"] == "pytest"
+        assert session_manifest["target"]["args"] == ["-q", "-p", "no:cov", str(project_root / "test_checkout.py::test_builds_receipt_total")]
 
     def test_run_pytest_defaults_artifacts_to_selected_test_directory(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Given
@@ -181,6 +213,7 @@ class TestTraceSession:
         assert result.workflow_path == out_dir / "workflow.md"
         assert result.quality_path == out_dir / "quality.json"
         assert result.quality_markdown_path == out_dir / "architecture_quality.md"
+        assert result.session_path == out_dir / "session.json"
         assert result.report_path == out_dir / "report.html"
         assert result.trace_path.exists()
         assert result.report_path is not None
@@ -204,6 +237,7 @@ class TestTraceSession:
         assert result.workflow_path.exists()
         assert result.quality_path.exists()
         assert result.quality_markdown_path.exists()
+        assert result.session_path.exists()
         assert result.report_path is None
 
         snapshot = json.loads(result.snapshot_path.read_text(encoding="utf-8"))

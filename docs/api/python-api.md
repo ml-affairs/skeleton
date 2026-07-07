@@ -39,6 +39,7 @@ result = TraceSession(
 print(result.trace_path)
 print(result.snapshot_path)
 print(result.workflow_path)
+print(result.session_path)
 print(result.report_path)
 ```
 
@@ -78,6 +79,7 @@ Returned by `TraceSession.run_script` and `TraceSession.run_pytest`.
 | `trace_path` | Path to `trace.jsonl`. |
 | `snapshot_path` | Path to `snapshot.json`. |
 | `workflow_path` | Path to `workflow.md`. |
+| `session_path` | Path to `session.json`, the stable session manifest for IDEs and automation. |
 | `report_path` | Path to `report.html`, or `None` when HTML is disabled. |
 | `report_opened` | Whether browser opening was attempted and accepted. |
 | `event_count` | Number of captured trace events. |
@@ -106,6 +108,28 @@ CliApplication
 
 These objects are useful for contributors and tests, but the application-facing
 API is intentionally smaller than the internal pipeline.
+
+## IDE Integration Manifest
+
+Every CLI and Python API run writes `session.json` next to the other artifacts.
+IDE integrations should discover a completed run through this manifest instead
+of reconstructing paths from CLI output.
+
+The manifest currently includes:
+
+- `schema_version`
+- `skeleton_version`
+- `command` and reproducible `invocation`
+- `project_root`
+- traced `target`
+- artifact paths for `trace`, `snapshot`, `workflow`, `quality`,
+  `quality_markdown`, optional `report`, and `session`
+- `metrics` for events, nodes, and runtime edges
+- `target_exit_code`, `target_error`, and `report_opened`
+
+The manifest is the preferred contract for PyCharm and other IDE surfaces. Raw
+trace and snapshot details can still evolve while the manifest gives tools a
+stable place to find generated artifacts and the run outcome.
 
 ### `CliApplication`
 

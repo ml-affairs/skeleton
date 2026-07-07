@@ -8,7 +8,18 @@ from pathlib import Path
 from typing import Protocol, cast
 
 from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
-from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, ColorMode, HtmlReportOpener, OutputPathResolver, PytestOutputPathResolver, SkeletonConsole
+from skeleton_replay.interface import (
+    ArtifactGenerationPipeline,
+    ArtifactPaths,
+    ColorMode,
+    HtmlReportOpener,
+    OutputPathResolver,
+    PytestOutputPathResolver,
+    SessionArtifactSet,
+    SessionManifestWriter,
+    SessionTarget,
+    SkeletonConsole,
+)
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
 from skeleton_replay.runtime import TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
 
@@ -64,6 +75,11 @@ class RunConfiguration:
         """Return the human-readable quality report path."""
         return self.out_dir / "architecture_quality.md"
 
+    @property
+    def session_path(self) -> Path:
+        """Return the session manifest path."""
+        return self.out_dir / "session.json"
+
     def trace_options(self) -> TraceOptions:
         """Return runtime tracing options for this command."""
         return TraceOptions(
@@ -118,6 +134,11 @@ class PytestConfiguration:
         """Return the human-readable quality report path."""
         return self.out_dir / "architecture_quality.md"
 
+    @property
+    def session_path(self) -> Path:
+        """Return the session manifest path."""
+        return self.out_dir / "session.json"
+
     def trace_options(self) -> TraceOptions:
         """Return runtime tracing options for this command."""
         return TraceOptions(
@@ -141,6 +162,7 @@ class RunCommand:
     quality_writer: ArchitectureQualityWriter = field(default_factory=ArchitectureQualityWriter)
     output_paths: OutputPathResolver = field(default_factory=OutputPathResolver)
     report_opener: ReportOpener = field(default_factory=HtmlReportOpener)
+    session_manifest_writer: SessionManifestWriter = field(default_factory=SessionManifestWriter)
 
     def execute(self, args: argparse.Namespace) -> int:
         """Run the target script and generate Skeleton artifacts."""
@@ -194,6 +216,28 @@ class RunCommand:
                 self.console.warning(f"Could not open report automatically: {report_path}")
 
         event_count = result.event_count if result else artifact_result.metrics.event_count
+        self.session_manifest_writer.write(
+            session_path=config.session_path,
+            command="run",
+            invocation=("skeleton", "run", *self._invocation_options(config), str(config.script), *config.script_args),
+            project_root=config.project_root,
+            target=SessionTarget(kind="script", path=config.script, args=tuple(config.script_args)),
+            artifacts=SessionArtifactSet(
+                trace_path=config.trace_path,
+                snapshot_path=config.snapshot_path,
+                workflow_path=config.workflow_path,
+                quality_path=config.quality_path,
+                quality_markdown_path=config.quality_markdown_path,
+                report_path=report_path,
+                session_path=config.session_path,
+            ),
+            event_count=event_count,
+            node_count=artifact_result.metrics.node_count,
+            edge_count=artifact_result.metrics.edge_count,
+            target_exit_code=target_exit_code,
+            target_error=f"{type(target_error).__name__}: {target_error}" if target_error else None,
+            report_opened=report_opened,
+        )
         self.console.summary(
             event_count=event_count,
             node_count=artifact_result.metrics.node_count,
@@ -203,6 +247,7 @@ class RunCommand:
             workflow_path=config.workflow_path,
             quality_path=config.quality_path,
             quality_markdown_path=config.quality_markdown_path,
+            session_path=config.session_path,
             report_path=report_path,
             report_opened=report_opened,
         )
@@ -259,6 +304,21 @@ class RunCommand:
     def _system_exit_code(exc: SystemExit) -> int:
         return exc.code if isinstance(exc.code, int) else 1
 
+    @staticmethod
+    def _invocation_options(config: RunConfiguration) -> tuple[str, ...]:
+        options = ["--project-root", str(config.project_root), "--out-dir", str(config.out_dir)]
+        for include in config.include:
+            options.extend(("--include", include))
+        for exclude in config.exclude:
+            options.extend(("--exclude", exclude))
+        if config.max_events is not None:
+            options.extend(("--max-events", str(config.max_events)))
+        if not config.html_enabled:
+            options.append("--no-html")
+        if not config.open_report:
+            options.append("--no-open")
+        return tuple(options)
+
 
 @dataclass(frozen=True)
 class PytestCommand:
@@ -272,6 +332,7 @@ class PytestCommand:
     quality_writer: ArchitectureQualityWriter = field(default_factory=ArchitectureQualityWriter)
     output_paths: PytestOutputPathResolver = field(default_factory=PytestOutputPathResolver)
     report_opener: ReportOpener = field(default_factory=HtmlReportOpener)
+    session_manifest_writer: SessionManifestWriter = field(default_factory=SessionManifestWriter)
 
     def execute(self, args: argparse.Namespace) -> int:
         """Run pytest and generate Skeleton artifacts."""
@@ -284,7 +345,7 @@ class PytestCommand:
 
         self.console.step("Tracing pytest session")
         try:
-            result = self.runner.run(config.pytest_args, config.trace_options())
+            result = self.runner.run(list(config.pytest_args), config.trace_options())
             target_exit_code = result.target_exit_code
             if target_exit_code != 0:
                 self.console.warning(f"Pytest exited with status {target_exit_code}; writing artifacts from captured events.")
@@ -328,6 +389,28 @@ class PytestCommand:
                 self.console.warning(f"Could not open report automatically: {report_path}")
 
         event_count = result.event_count if result else artifact_result.metrics.event_count
+        self.session_manifest_writer.write(
+            session_path=config.session_path,
+            command="pytest",
+            invocation=("skeleton", "pytest", *self._invocation_options(config), "--", *config.pytest_args),
+            project_root=config.project_root,
+            target=SessionTarget(kind="pytest", args=tuple(config.pytest_args)),
+            artifacts=SessionArtifactSet(
+                trace_path=trace_path,
+                snapshot_path=config.snapshot_path,
+                workflow_path=config.workflow_path,
+                quality_path=config.quality_path,
+                quality_markdown_path=config.quality_markdown_path,
+                report_path=report_path,
+                session_path=config.session_path,
+            ),
+            event_count=event_count,
+            node_count=artifact_result.metrics.node_count,
+            edge_count=artifact_result.metrics.edge_count,
+            target_exit_code=target_exit_code,
+            target_error=f"{type(target_error).__name__}: {target_error}" if target_error else None,
+            report_opened=report_opened,
+        )
         self.console.summary(
             event_count=event_count,
             node_count=artifact_result.metrics.node_count,
@@ -337,6 +420,7 @@ class PytestCommand:
             workflow_path=config.workflow_path,
             quality_path=config.quality_path,
             quality_markdown_path=config.quality_markdown_path,
+            session_path=config.session_path,
             report_path=report_path,
             report_opened=report_opened,
         )
@@ -381,6 +465,21 @@ class PytestCommand:
     @staticmethod
     def _system_exit_code(exc: SystemExit) -> int:
         return exc.code if isinstance(exc.code, int) else 1
+
+    @staticmethod
+    def _invocation_options(config: PytestConfiguration) -> tuple[str, ...]:
+        options = ["--project-root", str(config.project_root), "--out-dir", str(config.out_dir)]
+        for include in config.include:
+            options.extend(("--include", include))
+        for exclude in config.exclude:
+            options.extend(("--exclude", exclude))
+        if config.max_events is not None:
+            options.extend(("--max-events", str(config.max_events)))
+        if not config.html_enabled:
+            options.append("--no-html")
+        if not config.open_report:
+            options.append("--no-open")
+        return tuple(options)
 
 
 @dataclass(frozen=True)

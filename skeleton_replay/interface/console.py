@@ -70,6 +70,7 @@ class SkeletonConsole:
         report_path: Path | None,
         quality_path: Path | None = None,
         quality_markdown_path: Path | None = None,
+        session_path: Path | None = None,
         report_opened: bool = False,
     ) -> None:
         """Render the final run summary."""
@@ -84,6 +85,8 @@ class SkeletonConsole:
             self.write(f"  {self._muted('design  ')} {quality_markdown_path}")
         if report_path:
             self.write(f"  {self._muted('report  ')} {report_path}")
+        if session_path:
+            self.write(f"  {self._muted('session ')} {session_path}")
         self.write("")
         self.write(
             f"{self._style('✓', self.theme.green)} Captured {self._style(str(event_count), self.theme.bold)} events across "
