@@ -7,6 +7,8 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.7.0] - 2026-07-07
+
 ### Added
 
 - `session.json` artifact for IDEs and automation tools, recording the command,
