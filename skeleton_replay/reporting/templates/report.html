@@ -1291,6 +1291,11 @@
     const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
+    window.SkeletonReplay = window.SkeletonReplay || {};
+    window.SkeletonReplay.currentSelection = null;
+    window.SkeletonReplay.onSelectionChanged = typeof window.SkeletonReplay.onSelectionChanged === "function"
+      ? window.SkeletonReplay.onSelectionChanged
+      : () => {};
     const traceRoles = snapshot.trace_roles || { events: [], setup_event_groups: [] };
     const traceEventRoles = Array.isArray(traceRoles.events) ? traceRoles.events : [];
     const traceEventRoleByOrder = new Map(traceEventRoles.map((record) => [Number(record.order), record]));
@@ -4298,6 +4303,7 @@
       }
       const event = events[current];
       if (!event) return;
+      publishSkeletonReplaySelection(current, event);
       const sourceOwner = focusOwnerForEndpoint(event.caller);
       const targetOwner = focusOwnerForEndpoint(event.callee);
       syncVisibilityToReplay(current);
@@ -4327,6 +4333,33 @@
       maybeRenderResizeControls();
       keepCurrentNodesInView();
       pulseCurrentElements();
+    }
+
+    function publishSkeletonReplaySelection(eventIndex, event) {
+      const payload = {
+        schema_version: 1,
+        event_index: eventIndex,
+        event_order: event.order,
+        event_type: event.event_type,
+        endpoint: skeletonReplayEndpointPayload(event.callee),
+        caller: skeletonReplayEndpointPayload(event.caller)
+      };
+      window.SkeletonReplay.currentSelection = payload;
+      window.SkeletonReplay.onSelectionChanged(payload);
+    }
+
+    function skeletonReplayEndpointPayload(endpoint) {
+      if (!endpoint) return null;
+      return {
+        module: endpoint.module || null,
+        function: endpoint.function || null,
+        qualified_name: endpoint.qualified_name || null,
+        file: endpoint.file || null,
+        line: endpoint.line ?? null,
+        node_id: endpoint.node_id || null,
+        class_name: endpoint.class_name || null,
+        endpoint_type: endpoint.endpoint_type || "function"
+      };
     }
 
     function visibleFocusAnchorForEvent(event, index, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner) {

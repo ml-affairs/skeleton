@@ -7,6 +7,12 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+### Added
+
+- Added a stable `window.SkeletonReplay` report selection bridge so IDEs can
+  follow the current replay event with source file, line, module, function, and
+  caller/callee endpoint metadata.
+
 ## [0.7.0] - 2026-07-07
 
 ### Added
