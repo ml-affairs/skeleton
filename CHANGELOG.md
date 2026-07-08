@@ -7,6 +7,8 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.8.0] - 2026-07-08
+
 ### Added
 
 - Added a stable `window.SkeletonReplay` report selection bridge so IDEs can
