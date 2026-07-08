@@ -69,6 +69,8 @@ class TestHtmlReportWriter:
                         "class_name": None,
                         "function": "main",
                         "qualified_name": "orders.main",
+                        "file": "/example/shop/orders.py",
+                        "line": 12,
                         "node_id": "function:orders.main",
                     },
                 },
@@ -80,6 +82,8 @@ class TestHtmlReportWriter:
                         "class_name": None,
                         "function": "main",
                         "qualified_name": "orders.main",
+                        "file": "/example/shop/orders.py",
+                        "line": 12,
                         "node_id": "function:orders.main",
                     },
                     "callee": {
@@ -88,6 +92,8 @@ class TestHtmlReportWriter:
                         "instance_id": "checkout.CheckoutService@0xabc",
                         "function": "reserve",
                         "qualified_name": "checkout.CheckoutService.reserve",
+                        "file": "/example/shop/checkout.py",
+                        "line": 24,
                         "node_id": "function:checkout.CheckoutService.reserve",
                     },
                     "args": {"order_id": {"type": "str", "value": "A-1"}},
@@ -100,6 +106,8 @@ class TestHtmlReportWriter:
                         "class_name": None,
                         "function": "main",
                         "qualified_name": "orders.main",
+                        "file": "/example/shop/orders.py",
+                        "line": 12,
                         "node_id": "function:orders.main",
                     },
                     "callee": {
@@ -108,6 +116,8 @@ class TestHtmlReportWriter:
                         "instance_id": "checkout.CheckoutService@0xabc",
                         "function": "reserve",
                         "qualified_name": "checkout.CheckoutService.reserve",
+                        "file": "/example/shop/checkout.py",
+                        "line": 24,
                         "node_id": "function:checkout.CheckoutService.reserve",
                     },
                     "return_value": {"type": "bool", "value": True},
@@ -181,6 +191,18 @@ class TestHtmlReportWriter:
         assert "entrypointEventOrder !== null" in html
         assert "let current = events.length ? (entrypointEventOrder" in html
         assert "renderEvent();" in html
+        assert "window.SkeletonReplay.currentSelection" in html
+        assert "window.SkeletonReplay.onSelectionChanged(payload)" in html
+        assert "function publishSkeletonReplaySelection" in html
+        assert "function skeletonReplayEndpointPayload" in html
+        assert "schema_version: 1" in html
+        assert "event_index: eventIndex" in html
+        assert "event_order: event.order" in html
+        assert "event_type: event.event_type" in html
+        assert "file: endpoint.file || null" in html
+        assert "line: endpoint.line ?? null" in html
+        assert "qualified_name: endpoint.qualified_name || null" in html
+        assert 'endpoint_type: endpoint.endpoint_type || "function"' in html
         assert "let currentReplayMetrics = null" in html
         assert "trace_roles: selectedTraceRoles" in html
         assert "Setup before entrypoint" in html
