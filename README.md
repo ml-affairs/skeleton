@@ -5,25 +5,58 @@
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![Skeleton: replay and visualise the living architecture of your code.](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/readme.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/readme.png" alt="Skeleton replaying the living architecture of a Python application." width="960">
+</p>
 
 Skeleton is a developer-understanding tool, not a profiler. It runs a Python
 script under a lightweight runtime tracer and turns the observed execution into
 an interactive, replayable architecture map.
 
-Core promise:
-
 > Replay and visualise the living architecture of a Python application.
 
-Skeleton produces runtime evidence in four complementary forms:
+## What Skeleton gives you
 
-| Surface | Purpose |
-| --- | --- |
-| ![Trace icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/trace.svg) `trace.jsonl` | Ordered project-local call and return events. |
-| ![Snapshot icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/snapshot.svg) `snapshot.json` | Graph-shaped modules, classes, functions, instances, and edges. |
-| ![Workflow icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/workflow.svg) `workflow.md` | LLM-readable workflow evidence with stable event and node references. |
-| ![Replay icon](https://raw.githubusercontent.com/ml-affairs/skeleton/812eefb6e8105844e306df2a282ce5f876c31695/docs/images/product/replay.svg) `report.html` | Interactive visual replay for humans. |
-| `session.json` | Stable run manifest for IDEs and automation tools. |
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/trace.svg" alt="" width="40"><br>
+      <strong>Runtime trace</strong><br>
+      <code>trace.jsonl</code> records ordered project-local call, return, and resource-boundary events.
+    </td>
+    <td width="50%" valign="top">
+      <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/snapshot.svg" alt="" width="40"><br>
+      <strong>Architecture snapshot</strong><br>
+      <code>snapshot.json</code> turns the observed run into modules, functions, instances, resources, and edges.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/workflow.svg" alt="" width="40"><br>
+      <strong>Workflow narrative</strong><br>
+      <code>workflow.md</code> gives humans and LLMs stable event ids, node ids, caller/callee evidence, and safe examples.
+    </td>
+    <td width="50%" valign="top">
+      <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/replay.svg" alt="" width="40"><br>
+      <strong>Interactive replay</strong><br>
+      <code>report.html</code> lets you step through the architecture as runtime evidence appears.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/safe-summary.svg" alt="" width="40"><br>
+      <strong>Safe value summaries</strong><br>
+      Arguments and return values are summarized, truncated, and redacted instead of copied into the trace.
+    </td>
+    <td width="50%" valign="top">
+      <img src="https://raw.githubusercontent.com/ml-affairs/skeleton/main/docs/images/product/architecture-graph.svg" alt="" width="40"><br>
+      <strong>Ownership-focused graph</strong><br>
+      Runtime object instances, public methods, module functions, and external resources keep their architectural roles visible.
+    </td>
+  </tr>
+</table>
+
+Every run also writes <code>session.json</code>, a stable manifest for IDEs and automation tools.
 
 Package naming:
 
