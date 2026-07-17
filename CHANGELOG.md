@@ -7,6 +7,10 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+### Added
+
+- Added stable trace call identifiers and callable-kind metadata so IDE integrations can pair call/return events and distinguish module functions, instance methods, class methods, and static methods.
+
 ## [0.8.0] - 2026-07-08
 
 ### Added

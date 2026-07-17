@@ -35,6 +35,13 @@ class SampleFrames:
         assert frame is not None
         return frame
 
+    @staticmethod
+    def static_method() -> FrameType:
+        """Return a live frame from a static method."""
+        frame = inspect.currentframe()
+        assert frame is not None
+        return frame
+
 
 def public_frame(subject: str, *items: object, **metadata: object) -> FrameType:
     frame = inspect.currentframe()
@@ -135,10 +142,39 @@ class TestRuntimeTracer:
         events = [json.loads(line) for line in tracer.trace_path.read_text(encoding="utf-8").splitlines()]
         assert [event["event_type"] for event in events] == ["call", "return"]
         assert events[0]["callee"]["qualified_name"] == "test_tracer.public_frame"
+        assert events[0]["call_id"] == 0
+        assert events[0]["callee"]["callable_kind"] == "module_function"
         assert events[0]["args"]["subject"]["value"] == "Ada"
         assert events[0]["args"]["items"]["len"] == 1
         assert events[0]["args"]["metadata"]["preview"][0]["value"]["type"] == "redacted"
+        assert events[1]["call_id"] == 0
         assert events[1]["return_value"]["type"] == "dict"
+
+    def test_pairs_nested_and_repeated_calls_with_stable_call_ids(self, tmp_path: Path) -> None:
+        # Given
+        tracer = RuntimeTracer(TraceOptions(project_root=Path.cwd(), out_dir=tmp_path))
+        outer_frame = public_frame("outer", "workflow", token="secret-value")
+        inner_frame = _private_frame()
+        repeated_frame = public_frame("again", "workflow", token="secret-value")
+        tmp_path.mkdir(parents=True, exist_ok=True)
+
+        # When
+        with tracer.trace_path.open("w", encoding="utf-8") as writer:
+            tracer._writer = writer
+            tracer._handle_call(outer_frame)
+            tracer._handle_call(inner_frame)
+            tracer._handle_return(inner_frame, "inner")
+            tracer._handle_return(outer_frame, "outer")
+            tracer._handle_call(repeated_frame)
+            tracer._handle_return(repeated_frame, "again")
+
+        # Then
+        events = [json.loads(line) for line in tracer.trace_path.read_text(encoding="utf-8").splitlines()]
+        assert [event["event_type"] for event in events] == ["call", "call", "return", "return", "call", "return"]
+        assert [event["call_id"] for event in events] == [0, 1, 1, 0, 4, 4]
+        assert events[2]["callee"]["qualified_name"] == events[1]["callee"]["qualified_name"]
+        assert events[3]["callee"]["qualified_name"] == events[0]["callee"]["qualified_name"]
+        assert events[5]["callee"]["qualified_name"] == events[4]["callee"]["qualified_name"]
 
     def test_infers_instance_and_class_endpoints(self, tmp_path: Path) -> None:
         # Given
@@ -146,17 +182,27 @@ class TestRuntimeTracer:
         sample = SampleFrames()
 
         # When
+        module_endpoint = tracer._endpoint_from_frame(public_frame("Ada", "workflow", token="secret-value"))
         instance_endpoint = tracer._endpoint_from_frame(sample.instance_method("Ada"))
         class_endpoint = tracer._endpoint_from_frame(SampleFrames.class_method())
+        static_endpoint = tracer._endpoint_from_frame(SampleFrames.static_method())
 
         # Then
+        assert module_endpoint is not None
+        assert module_endpoint.callable_kind == "module_function"
         assert instance_endpoint is not None
         assert instance_endpoint.class_name == "SampleFrames"
         assert instance_endpoint.instance_id is not None
         assert instance_endpoint.instance_id.startswith("test_tracer.SampleFrames@0x")
+        assert instance_endpoint.callable_kind == "instance_method"
         assert class_endpoint is not None
         assert class_endpoint.class_name == "SampleFrames"
         assert class_endpoint.instance_id is None
+        assert class_endpoint.callable_kind == "class_method"
+        assert static_endpoint is not None
+        assert static_endpoint.class_name == "SampleFrames"
+        assert static_endpoint.instance_id is None
+        assert static_endpoint.callable_kind == "static_method"
 
     def test_records_private_frames(self, tmp_path: Path) -> None:
         # Given

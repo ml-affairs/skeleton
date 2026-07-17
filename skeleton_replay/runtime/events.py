@@ -10,6 +10,7 @@ JsonObject = dict[str, Any]
 EventType = Literal["call", "return"]
 EndpointType = Literal["function", "resource", "external_service"]
 ResourceCategory = Literal["file", "stdout", "db", "network"]
+CallableKind = Literal["module_function", "instance_method", "class_method", "static_method"]
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,7 @@ class Endpoint:
     instance_id: str | None = None
     endpoint_type: EndpointType = "function"
     resource_category: ResourceCategory | None = None
+    callable_kind: CallableKind | None = None
 
     @classmethod
     def from_json(cls, data: JsonObject) -> Endpoint:
@@ -36,6 +38,9 @@ class Endpoint:
         resource_category = data.get("resource_category")
         if resource_category is not None and resource_category not in {"file", "stdout", "db", "network"}:
             raise ValueError(f"Unknown resource category: {resource_category}")
+        callable_kind = data.get("callable_kind")
+        if callable_kind is not None and callable_kind not in {"module_function", "instance_method", "class_method", "static_method"}:
+            raise ValueError(f"Unknown callable kind: {callable_kind}")
         return cls(
             module=str(data["module"]),
             function=str(data["function"]),
@@ -47,6 +52,7 @@ class Endpoint:
             instance_id=str(data["instance_id"]) if data.get("instance_id") is not None else None,
             endpoint_type=cast(EndpointType, endpoint_type),
             resource_category=cast(ResourceCategory | None, resource_category),
+            callable_kind=cast(CallableKind | None, callable_kind),
         )
 
 
@@ -60,6 +66,7 @@ class TraceEvent:
     depth: int
     callee: Endpoint
     caller: Endpoint | None = None
+    call_id: int | None = None
     args: JsonObject | None = None
     return_value: JsonObject | None = None
     schema_version: int = SCHEMA_VERSION
@@ -82,6 +89,7 @@ class TraceEvent:
             depth=int(data["depth"]),
             callee=Endpoint.from_json(data["callee"]),
             caller=Endpoint.from_json(caller_data) if caller_data else None,
+            call_id=int(data["call_id"]) if data.get("call_id") is not None else None,
             args=data.get("args"),
             return_value=data.get("return_value"),
             schema_version=int(data.get("schema_version", SCHEMA_VERSION)),

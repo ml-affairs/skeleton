@@ -25,6 +25,7 @@ class TestHtmlReportWriter:
                     "qualified_name": "orders.main",
                     "arg_examples": [],
                     "return_examples": [],
+                    "callable_kind": "module_function",
                 },
                 {
                     "id": "function:checkout.CheckoutService.reserve",
@@ -36,6 +37,7 @@ class TestHtmlReportWriter:
                     "qualified_name": "checkout.CheckoutService.reserve",
                     "arg_examples": [],
                     "return_examples": [],
+                    "callable_kind": "instance_method",
                 },
             ],
             "edges": [
@@ -72,6 +74,7 @@ class TestHtmlReportWriter:
                         "file": "/example/shop/orders.py",
                         "line": 12,
                         "node_id": "function:orders.main",
+                        "callable_kind": "module_function",
                     },
                 },
                 {
@@ -85,6 +88,7 @@ class TestHtmlReportWriter:
                         "file": "/example/shop/orders.py",
                         "line": 12,
                         "node_id": "function:orders.main",
+                        "callable_kind": "module_function",
                     },
                     "callee": {
                         "module": "checkout",
@@ -95,6 +99,7 @@ class TestHtmlReportWriter:
                         "file": "/example/shop/checkout.py",
                         "line": 24,
                         "node_id": "function:checkout.CheckoutService.reserve",
+                        "callable_kind": "instance_method",
                     },
                     "args": {"order_id": {"type": "str", "value": "A-1"}},
                 },
@@ -109,6 +114,7 @@ class TestHtmlReportWriter:
                         "file": "/example/shop/orders.py",
                         "line": 12,
                         "node_id": "function:orders.main",
+                        "callable_kind": "module_function",
                     },
                     "callee": {
                         "module": "checkout",
@@ -119,6 +125,7 @@ class TestHtmlReportWriter:
                         "file": "/example/shop/checkout.py",
                         "line": 24,
                         "node_id": "function:checkout.CheckoutService.reserve",
+                        "callable_kind": "instance_method",
                     },
                     "return_value": {"type": "bool", "value": True},
                 },
@@ -136,13 +143,19 @@ class TestHtmlReportWriter:
         assert "data:image/svg+xml,%3Csvg" in html
         assert "cytoscape@3.30.4" in html
         assert "architecture-call" in html
+        assert "Actors" in html
+        assert "Callables" in html
+        assert "Evidence" in html
         assert "module shell" in html
         assert "package shell" in html
-        assert "instance shell" in html
-        assert '<span class="pill"><span class="schema method"></span>method</span>' in html
-        assert '<span class="pill"><span class="schema function"></span>function</span>' in html
+        assert "class shell" in html
+        assert "runtime instance" in html
+        assert '<span class="pill"><span class="schema method"></span>instance method</span>' in html
+        assert '<span class="pill"><span class="schema class-method"></span>class method</span>' in html
+        assert '<span class="pill"><span class="schema static-method"></span>static method</span>' in html
+        assert '<span class="pill"><span class="schema function"></span>module function</span>' in html
         assert '<span class="pill"><span class="schema private"></span>private/internal</span>' in html
-        assert '<span class="pill"><span class="schema instance"></span>instance shell</span>' in html
+        assert '<span class="pill"><span class="schema instance"></span>runtime instance</span>' in html
         assert "runtime call" in html
         assert "return value" in html
         assert "Quality Signals" in html
@@ -199,10 +212,12 @@ class TestHtmlReportWriter:
         assert "event_index: eventIndex" in html
         assert "event_order: event.order" in html
         assert "event_type: event.event_type" in html
+        assert "call_id: event.call_id ?? null" in html
         assert "file: endpoint.file || null" in html
         assert "line: endpoint.line ?? null" in html
         assert "qualified_name: endpoint.qualified_name || null" in html
         assert 'endpoint_type: endpoint.endpoint_type || "function"' in html
+        assert "callable_kind: endpoint.callable_kind || null" in html
         assert "let currentReplayMetrics = null" in html
         assert "trace_roles: selectedTraceRoles" in html
         assert "Setup before entrypoint" in html
@@ -279,19 +294,19 @@ class TestHtmlReportWriter:
         assert "function applyReplayMetrics" in html
         assert "first_seen: metric?.first_seen ?? edge.data.first_seen" in html
         assert "window.cy = cy" in html
-        assert 'node.type === "package" || node.type === "module" || node.type === "instance" ? "container" : ""' in html
+        assert 'node.type === "package" || node.type === "module" || node.type === "class" || node.type === "instance" ? "container" : ""' in html
         assert "parent: parentForFunction(node)" in html
         assert 'node[type = "package"]' in html
         assert '"compound-sizing-wrt-labels": "include"' in html
         assert '"min-width": "data(width)"' in html
         assert "Modules contain runtime instances and functions" in html
-        assert "Instances contain the methods observed on that object" in html
+        assert "Runtime instances and callables appear inside the actor that owns them" in html
         assert 'node[type = "function"]' in html
         assert '"border-style": "dashed"' in html
         assert 'node[type = "method"]' in html
         assert 'node[type = "instance"]' in html
-        assert 'node[type = "class"]' not in html
-        assert "class shell" not in html
+        assert 'node[type = "class"]' in html
+        assert "class-container" in html
         assert 'edge[type = "runtime-return"]' in html
         assert "const returnEdges" in html
         assert '"curve-style": "straight"' in html

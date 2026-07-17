@@ -85,7 +85,7 @@ class SnapshotBuilder:
                 "call_count": 0,
             }
         for symbol in static_index.symbols.values():
-            nodes[symbol.id] = {
+            symbol_node = {
                 "id": symbol.id,
                 "type": symbol.kind,
                 "label": symbol.name,
@@ -101,6 +101,9 @@ class SnapshotBuilder:
                 "is_private": symbol.is_private,
                 "visibility": "private" if symbol.is_private else "public",
             }
+            if symbol.kind == "function":
+                symbol_node["callable_kind"] = "module_function"
+            nodes[symbol.id] = symbol_node
 
         nodes["entrypoint"] = {
             "id": "entrypoint",
@@ -279,8 +282,11 @@ class SnapshotBuilder:
                 "return_examples": [],
                 "is_private": self._is_private_endpoint(endpoint),
                 "visibility": "private" if self._is_private_endpoint(endpoint) else "public",
+                "callable_kind": endpoint.callable_kind,
             },
         )
+        if endpoint.callable_kind:
+            nodes[endpoint.node_id]["callable_kind"] = endpoint.callable_kind
 
     @staticmethod
     def _touch_node(node: JsonObject, order: int) -> None:
