@@ -252,6 +252,17 @@
       grid-template-columns: repeat(2, minmax(0, auto));
       gap: 8px;
     }
+    .legend-section {
+      display: grid;
+      gap: 6px;
+    }
+    .legend-section-title {
+      color: var(--faint);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
     .pill {
       display: inline-flex;
       align-items: center;
@@ -278,6 +289,12 @@
       border-radius: 5px;
       background: rgba(20, 184, 166, 0.45);
     }
+    .schema.class {
+      color: #2dd4bf;
+      border-radius: 5px;
+      background: rgba(45, 212, 191, 0.28);
+      box-shadow: 0 0 16px rgba(45, 212, 191, 0.48);
+    }
     .schema.package {
       color: #60a5fa;
       border-radius: 5px;
@@ -294,6 +311,16 @@
       color: var(--amber);
       border-radius: 5px;
       background: rgba(245, 158, 11, 0.68);
+    }
+    .schema.class-method {
+      color: #f97316;
+      border-radius: 5px;
+      background: rgba(249, 115, 22, 0.55);
+    }
+    .schema.static-method {
+      color: #eab308;
+      border-radius: 5px;
+      background: rgba(234, 179, 8, 0.48);
     }
     .schema.function {
       color: var(--green);
@@ -1201,17 +1228,33 @@
             <div class="legend-title">Schemas</div>
             <button class="legend-toggle" id="legend-toggle" type="button">Hide</button>
           </div>
-          <div class="legend-grid">
-            <span class="pill"><span class="schema module"></span>module shell</span>
-            <span class="pill"><span class="schema package"></span>package shell</span>
-            <span class="pill"><span class="schema instance"></span>instance shell</span>
-            <span class="pill"><span class="schema method"></span>method</span>
-            <span class="pill"><span class="schema function"></span>function</span>
-            <span class="pill"><span class="schema private"></span>private/internal</span>
-            <span class="pill"><span class="schema io"></span>I/O / resource</span>
-            <span class="pill"><span class="schema external"></span>external service</span>
-            <span class="pill"><span class="schema call"></span>runtime call</span>
-            <span class="pill"><span class="schema return"></span>return value</span>
+          <div class="legend-section">
+            <div class="legend-section-title">Actors</div>
+            <div class="legend-grid">
+              <span class="pill"><span class="schema package"></span>package shell</span>
+              <span class="pill"><span class="schema module"></span>module shell</span>
+              <span class="pill"><span class="schema class"></span>class shell</span>
+              <span class="pill"><span class="schema instance"></span>runtime instance</span>
+            </div>
+          </div>
+          <div class="legend-section">
+            <div class="legend-section-title">Callables</div>
+            <div class="legend-grid">
+              <span class="pill"><span class="schema function"></span>module function</span>
+              <span class="pill"><span class="schema method"></span>instance method</span>
+              <span class="pill"><span class="schema class-method"></span>class method</span>
+              <span class="pill"><span class="schema static-method"></span>static method</span>
+            </div>
+          </div>
+          <div class="legend-section">
+            <div class="legend-section-title">Evidence</div>
+            <div class="legend-grid">
+              <span class="pill"><span class="schema private"></span>private/internal</span>
+              <span class="pill"><span class="schema io"></span>I/O / resource</span>
+              <span class="pill"><span class="schema external"></span>external service</span>
+              <span class="pill"><span class="schema call"></span>runtime call</span>
+              <span class="pill"><span class="schema return"></span>return value</span>
+            </div>
           </div>
         </div>
         <section class="replay-dock" id="replay-dock" aria-label="Execution replay controls">
@@ -1465,7 +1508,7 @@
     function isVisibleActor(node) {
       if (!node) return false;
       if (node.type === "instance" && structuredReturnInstanceIds.has(node.object_id) && !nonClusteredInstanceIds.has(node.object_id)) return false;
-      return node.type === "package" || node.type === "module" || node.type === "instance";
+      return node.type === "package" || node.type === "module" || node.type === "class" || node.type === "instance";
     }
 
     function isStructuredReturnEvent(event) {
@@ -1536,6 +1579,9 @@
       if (node.type === "instance") {
         return moduleIdForName(node.module);
       }
+      if (node.type === "class") {
+        return moduleIdForName(node.module);
+      }
       return undefined;
     }
 
@@ -1544,6 +1590,9 @@
       if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return null;
       const instanceId = instanceForEndpoint(endpoint);
       if (instanceId) return instanceId;
+      if ((endpoint.callable_kind === "class_method" || endpoint.callable_kind === "static_method") && endpoint.class_name) {
+        return `class:${endpoint.module || ""}.${endpoint.class_name}`;
+      }
       return `module:${endpoint.module || ""}`;
     }
 
@@ -1652,18 +1701,20 @@
       const ioCategory = ioCategoryFor(endpoint);
       const externalServiceCategory = externalServiceCategoryFor(endpoint);
       const traceRole = traceRoleForEndpoint(endpoint);
+      const callableKind = endpoint.callable_kind || (endpoint.instance_id ? "instance_method" : endpoint.class_name ? "class_method" : "module_function");
       const node = observedCallables.get(id) || {
         id,
         source_node_id: endpoint.node_id,
         owner,
         parent: owner,
-        type: externalServiceCategory ? "external_service" : endpoint.endpoint_type === "resource" ? "io" : endpoint.instance_id ? "method" : ioCategory ? "io" : "function",
+        type: externalServiceCategory ? "external_service" : endpoint.endpoint_type === "resource" ? "io" : callableKind !== "module_function" ? "method" : ioCategory ? "io" : "function",
         label: endpoint.function || sourceNode.label || endpoint.node_id,
         io_category: externalServiceCategory ? externalServiceCategory.type : ioCategory ? ioCategory.type : null,
         module: endpoint.module,
         class_name: endpoint.class_name,
         instance_id: endpoint.instance_id,
         function: endpoint.function,
+        callable_kind: callableKind,
         is_private: isPrivateEndpoint(endpoint),
         visibility: sourceNode.visibility || (isPrivateEndpoint(endpoint) ? "private" : "public"),
         trace_role: traceRole,
@@ -1766,7 +1817,7 @@
         return {
           data: {
             id: node.id,
-            label: node.type === "instance" ? instanceLabel(node) : moduleLabelForNode(node),
+            label: node.type === "instance" ? instanceLabel(node) : node.type === "class" ? node.label || node.class_name : moduleLabelForNode(node),
             type: node.type,
             parent: parentForActor(node),
             roles: roles.join(", "),
@@ -1788,8 +1839,9 @@
             min_height: baseHeight
           },
           classes: [
-            node.type === "package" || node.type === "module" || node.type === "instance" ? "container" : "",
+            node.type === "package" || node.type === "module" || node.type === "class" || node.type === "instance" ? "container" : "",
             node.type === "module" ? "module-container" : "",
+            node.type === "class" ? "class-container" : "",
             node.type === "instance" ? "instance-container" : "",
             roles.includes("entrypoint") ? "role-entrypoint" : "",
             traceRoleClass(traceRole),
@@ -1831,6 +1883,7 @@
             class_name: node.class_name,
             instance_id: node.instance_id,
             function: node.function,
+            callable_kind: node.callable_kind || "module_function",
             is_private: Boolean(node.is_private),
             visibility: node.visibility || (node.is_private ? "private" : "public"),
             trace_role: traceRole,
@@ -1859,6 +1912,7 @@
             "hidden",
             isIo ? "io-capsule" : "",
             isExternalService ? "external-service" : "",
+            node.callable_kind ? `callable-${node.callable_kind.replace("_", "-")}` : "",
             node.is_private && !isIo && !isExternalService ? "private-callable" : "",
             traceRoleClass(traceRole),
             isSubduedTraceRole(traceRole) ? "role-subdued" : ""
@@ -2037,6 +2091,13 @@
           "background-color": "#0f766e",
           "border-color": "#5eead4"
         } },
+        { selector: 'node[type = "class"]', style: {
+          "shape": "round-rectangle",
+          "background-color": "#115e59",
+          "border-color": "#2dd4bf",
+          "background-opacity": 0.14,
+          "font-size": 12
+        } },
         { selector: 'node[type = "instance"]', style: {
           "shape": "round-rectangle",
           "background-color": "#0e7490",
@@ -2056,6 +2117,14 @@
           "background-color": "#b45309",
           "border-color": "#fcd34d",
           "font-size": 9
+        } },
+        { selector: ".callable-class-method", style: {
+          "background-color": "#c2410c",
+          "border-color": "#fdba74"
+        } },
+        { selector: ".callable-static-method", style: {
+          "background-color": "#a16207",
+          "border-color": "#fde68a"
         } },
         { selector: 'node[type = "function"]', style: {
           "shape": "round-rectangle",
@@ -3698,7 +3767,7 @@
     function showOverview() {
       document.getElementById("detail-kind").textContent = "Architecture";
       document.getElementById("detail-title").textContent = "Runtime actors";
-      document.getElementById("detail-summary").textContent = "Modules are outer shells. Runtime instances and callables appear inside the actor that owns them. Private/internal callables use dashed outlines.";
+      document.getElementById("detail-summary").textContent = "Modules and classes are outer shells. Runtime instances and callables appear inside the actor that owns them. Private/internal callables use dashed outlines.";
       const topActors = actorNodes
         .map((node) => node.data)
         .sort((left, right) => (right.call_count + right.degree) - (left.call_count + left.degree))
@@ -3713,7 +3782,7 @@
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
           Entrypoint and service are roles on actors, not standalone actors.
-          Call edges connect functions and instance-owned methods inside their owning shells. Private/internal callables use dashed outlines and can be hidden from the graph.
+          Call edges connect module functions and methods inside their owning shells. Private/internal callables use dashed outlines and can be hidden from the graph.
         </div></div>
       `;
       bindChipClicks();
@@ -4341,6 +4410,7 @@
         event_index: eventIndex,
         event_order: event.order,
         event_type: event.event_type,
+        call_id: event.call_id ?? null,
         endpoint: skeletonReplayEndpointPayload(event.callee),
         caller: skeletonReplayEndpointPayload(event.caller)
       };
@@ -4358,7 +4428,8 @@
         line: endpoint.line ?? null,
         node_id: endpoint.node_id || null,
         class_name: endpoint.class_name || null,
-        endpoint_type: endpoint.endpoint_type || "function"
+        endpoint_type: endpoint.endpoint_type || "function",
+        callable_kind: endpoint.callable_kind || null
       };
     }
 
@@ -4437,7 +4508,7 @@
 
     function isCompactViewportAnchor(element) {
       const type = element?.data?.("type");
-      return type !== "module" && type !== "package";
+      return type !== "module" && type !== "package" && type !== "class";
     }
 
     function visibleNodeSet(selector) {
@@ -4566,8 +4637,10 @@
     function endpointKind(endpoint) {
       if (externalServiceCategoryFor(endpoint)) return "external service";
       if (endpoint.endpoint_type === "resource") return endpoint.resource_category || "resource";
-      if (endpoint.class_name) return "method";
-      return "function";
+      if (endpoint.callable_kind === "class_method") return "class method";
+      if (endpoint.callable_kind === "static_method") return "static method";
+      if (endpoint.callable_kind === "instance_method" || endpoint.class_name) return "instance method";
+      return "module function";
     }
 
     function argsTable(args) {

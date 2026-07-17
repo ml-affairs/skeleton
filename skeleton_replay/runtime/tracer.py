@@ -12,10 +12,26 @@ from pathlib import Path
 from types import FrameType
 from typing import TextIO
 
-from skeleton_replay.runtime.events import Endpoint, TraceEvent
+from skeleton_replay.runtime.events import CallableKind, Endpoint, TraceEvent
 from skeleton_replay.runtime.filters import TraceFilter
 from skeleton_replay.runtime.resources import ResourceCall, RuntimeResourceClassifier
 from skeleton_replay.safety import ValueSummariser
+
+
+@dataclass(frozen=True)
+class ActiveCall:
+    """A traced Python frame that has an emitted call identity."""
+
+    endpoint: Endpoint
+    call_id: int
+
+
+@dataclass(frozen=True)
+class ActiveResourceCall:
+    """A traced C/resource call paired to its emitted call identity."""
+
+    resource_call: ResourceCall
+    call_id: int
 
 
 @dataclass(frozen=True)
@@ -53,9 +69,9 @@ class RuntimeTracer:
         )
         self.trace_path = options.out_dir / "trace.jsonl"
         self._event_count = 0
-        self._stack: list[Endpoint] = []
-        self._frames: dict[int, Endpoint] = {}
-        self._active_resource_calls: list[ResourceCall] = []
+        self._stack: list[ActiveCall] = []
+        self._frames: dict[int, ActiveCall] = {}
+        self._active_resource_calls: list[ActiveResourceCall] = []
         self._writer: TextIO | None = None
         self._writing = False
 
@@ -94,29 +110,32 @@ class RuntimeTracer:
         if endpoint is None:
             return
 
-        caller = self._stack[-1] if self._stack else None
+        caller = self._stack[-1].endpoint if self._stack else None
         args = self.summariser.summarise_arguments(self._argument_values(frame))
+        call_id = self._event_count
         self._write_event(
             TraceEvent(
                 event_type="call",
-                order=self._event_count,
+                order=call_id,
                 timestamp=time.time(),
                 depth=len(self._stack),
                 caller=caller,
                 callee=endpoint,
+                call_id=call_id,
                 args=args,
             )
         )
-        self._frames[id(frame)] = endpoint
-        self._stack.append(endpoint)
+        active_call = ActiveCall(endpoint=endpoint, call_id=call_id)
+        self._frames[id(frame)] = active_call
+        self._stack.append(active_call)
 
     def _handle_return(self, frame: FrameType, return_value: object) -> None:
-        endpoint = self._frames.pop(id(frame), None)
-        if endpoint is None:
+        active_call = self._frames.pop(id(frame), None)
+        if active_call is None:
             return
 
-        self._pop_endpoint(endpoint)
-        caller = self._stack[-1] if self._stack else None
+        self._pop_active_call(active_call)
+        caller = self._stack[-1].endpoint if self._stack else None
         self._write_event(
             TraceEvent(
                 event_type="return",
@@ -124,7 +143,8 @@ class RuntimeTracer:
                 timestamp=time.time(),
                 depth=len(self._stack),
                 caller=caller,
-                callee=endpoint,
+                callee=active_call.endpoint,
+                call_id=active_call.call_id,
                 return_value=self.summariser.summarise_value(return_value, name="return"),
             )
         )
@@ -135,15 +155,17 @@ class RuntimeTracer:
         resource_call = self.resource_classifier.classify(c_callable)
         if resource_call is None:
             return
-        caller = self._stack[-1]
+        caller = self._stack[-1].endpoint
+        call_id = self._event_count
         written = self._write_event(
             TraceEvent(
                 event_type="call",
-                order=self._event_count,
+                order=call_id,
                 timestamp=time.time(),
                 depth=len(self._stack),
                 caller=caller,
                 callee=resource_call.endpoint,
+                call_id=call_id,
                 args={
                     "resource": {
                         "type": "resource",
@@ -154,13 +176,14 @@ class RuntimeTracer:
             )
         )
         if written:
-            self._active_resource_calls.append(resource_call)
+            self._active_resource_calls.append(ActiveResourceCall(resource_call=resource_call, call_id=call_id))
 
     def _handle_resource_return(self, c_callable: object, *, failed: bool) -> None:
-        resource_call = self._pop_resource_call(id(c_callable))
-        if resource_call is None:
+        active_resource_call = self._pop_resource_call(id(c_callable))
+        if active_resource_call is None:
             return
-        caller = self._stack[-1] if self._stack else None
+        resource_call = active_resource_call.resource_call
+        caller = self._stack[-1].endpoint if self._stack else None
         self._write_event(
             TraceEvent(
                 event_type="return",
@@ -169,6 +192,7 @@ class RuntimeTracer:
                 depth=len(self._stack),
                 caller=caller,
                 callee=resource_call.endpoint,
+                call_id=active_resource_call.call_id,
                 return_value={
                     "type": "resource_exception" if failed else "resource_return",
                     "category": resource_call.endpoint.resource_category,
@@ -203,7 +227,7 @@ class RuntimeTracer:
 
         file_path = str(Path(filename).resolve())
         module = self._module_name(frame, Path(filename))
-        class_name, instance_id = self._class_and_instance(frame, module)
+        class_name, instance_id, callable_kind = self._callable_context(frame, module)
         qualified_name = self._qualified_name(module=module, class_name=class_name, function=function)
         return Endpoint(
             module=module,
@@ -214,6 +238,7 @@ class RuntimeTracer:
             line=code.co_firstlineno,
             node_id=f"function:{qualified_name}",
             instance_id=instance_id,
+            callable_kind=callable_kind,
         )
 
     def _module_name(self, frame: FrameType, filename: Path) -> str:
@@ -223,15 +248,18 @@ class RuntimeTracer:
         return self.trace_filter.module_from_path(filename)
 
     @staticmethod
-    def _class_and_instance(frame: FrameType, module: str) -> tuple[str | None, str | None]:
+    def _callable_context(frame: FrameType, module: str) -> tuple[str | None, str | None, CallableKind]:
         if "self" in frame.f_locals:
             instance = frame.f_locals["self"]
             class_name = type(instance).__name__
-            return class_name, f"{module}.{class_name}@0x{id(instance):x}"
+            return class_name, f"{module}.{class_name}@0x{id(instance):x}", "instance_method"
         if "cls" in frame.f_locals and inspect.isclass(frame.f_locals["cls"]):
             cls = frame.f_locals["cls"]
-            return str(cls.__name__), None
-        return None, None
+            return str(cls.__name__), None, "class_method"
+        qualified_name = getattr(frame.f_code, "co_qualname", frame.f_code.co_name)
+        if isinstance(qualified_name, str) and "." in qualified_name and "<locals>" not in qualified_name:
+            return qualified_name.split(".", 1)[0], None, "static_method"
+        return None, None, "module_function"
 
     @staticmethod
     def _is_class_body(frame: FrameType) -> bool:
@@ -264,18 +292,18 @@ class RuntimeTracer:
         parts.append(function)
         return ".".join(part for part in parts if part)
 
-    def _pop_endpoint(self, endpoint: Endpoint) -> None:
-        if self._stack and self._stack[-1] == endpoint:
+    def _pop_active_call(self, active_call: ActiveCall) -> None:
+        if self._stack and self._stack[-1] == active_call:
             self._stack.pop()
             return
         for index in range(len(self._stack) - 1, -1, -1):
-            if self._stack[index] == endpoint:
+            if self._stack[index] == active_call:
                 del self._stack[index]
                 return
 
-    def _pop_resource_call(self, callable_id: int) -> ResourceCall | None:
+    def _pop_resource_call(self, callable_id: int) -> ActiveResourceCall | None:
         for index in range(len(self._active_resource_calls) - 1, -1, -1):
-            if self._active_resource_calls[index].callable_id == callable_id:
+            if self._active_resource_calls[index].resource_call.callable_id == callable_id:
                 return self._active_resource_calls.pop(index)
         return None
 
