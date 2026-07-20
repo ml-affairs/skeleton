@@ -225,8 +225,34 @@ hidden.
 
 ## Python API
 
+Use `trace()` when code is already running in your process, for example inside
+a fixture-backed test:
+
+```python
+from pathlib import Path
+
+from skeleton_replay import trace
+
+with trace(project_root=Path("."), label="Monitor") as session:
+    Monitor({}).run()
+
+print(session.result.report_path)
+print(session.result.event_count)
+```
+
+The `skeleton_trace` pytest fixture exposes the same context manager while
+preserving active fixtures and monkeypatches:
+
+```python
+def test_monitor(skeleton_trace):
+    with skeleton_trace("Monitor") as session:
+        Monitor({}).run()
+
+    assert session.result.succeeded
+```
+
 Use `TraceSession` when you want to generate Skeleton artifacts from Python
-without shelling out to the CLI:
+without shelling out to the CLI or when you want to reuse one configured session:
 
 ```python
 from pathlib import Path
@@ -243,9 +269,9 @@ print(result.workflow_path)
 ```
 
 The Python API writes the same `trace.jsonl`, `snapshot.json`, `workflow.md`,
-`session.json`, and optional `report.html` artifacts as the CLI. Unlike the CLI,
-it does not open the HTML report by default; pass `open_report=True` when that
-is wanted.
+`session.json`, quality, and optional `report.html` artifacts as the CLI. Unlike
+the CLI, it does not open the HTML report by default; pass `open_report=True`
+when that is wanted.
 See [`docs/api/python-api.md`](docs/api/python-api.md).
 
 ## What gets traced
@@ -299,7 +325,8 @@ For more detail, see [`docs/design/README.md`](docs/design/README.md).
 
 ## Current scope and next integrations
 
-Skeleton currently runs a script path or a pytest invocation:
+Skeleton currently runs a script path, a pytest invocation, or an in-process
+callable context:
 
 ```bash
 python -m skeleton_replay run scripts/replay_checkout.py

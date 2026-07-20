@@ -7,6 +7,14 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.10.0] - 2026-07-20
+
+### Added
+
+- Added public `trace(...)` and `TraceSession.trace(...)` context managers for tracing in-process callables while still generating the full Skeleton artifact set.
+- Added the `skeleton_trace` pytest fixture so scenario tests can trace code with active fixtures and monkeypatches.
+- Callable traces now default artifacts to `<project-root>/.skeleton/<label>/latest/` when no explicit output directory is configured.
+
 ## [0.9.0] - 2026-07-17
 
 ### Added

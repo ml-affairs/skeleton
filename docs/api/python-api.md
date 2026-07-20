@@ -11,10 +11,61 @@ python -m skeleton_replay run path/to/script.py
 python -m skeleton_replay pytest -- tests/test_checkout.py -q
 ```
 
-The public Python API is `TraceSession`. Most lower-level classes remain
-contributor-facing implementation details.
+The public Python API is `trace()` and `TraceSession`. Most lower-level classes
+remain contributor-facing implementation details.
 
 ## Stable Public API
+
+### `trace()`
+
+Traces Python code that is already running in the current process and writes the
+same artifact set as the CLI. This is the preferred API when pytest fixtures,
+monkeypatches, dependency injection, or an existing harness must remain active
+during the trace.
+
+```python
+from pathlib import Path
+
+from skeleton_replay import trace
+
+with trace(
+    project_root=Path("."),
+    label="Monitor",
+    include=("src/",),
+    max_events=10_000,
+) as session:
+    Monitor({}).run()
+
+print(session.result.trace_path)
+print(session.result.snapshot_path)
+print(session.result.workflow_path)
+print(session.result.session_path)
+print(session.result.report_path)
+```
+
+When `out_dir` is omitted, callable traces write to
+`<project-root>/.skeleton/<label>/latest/`. Explicit `out_dir`,
+`SKELETON_OUT_DIR`, and `SKELETON_HOME` still take precedence.
+
+If the traced block raises, Skeleton still writes the artifacts collected up to
+the exception and records the failure on `session.result`; the original
+exception is not suppressed.
+
+### `skeleton_trace`
+
+Installing Skeleton also registers a pytest fixture:
+
+```python
+def test_monitor(skeleton_trace):
+    with skeleton_trace("Monitor") as session:
+        Monitor({}).run()
+
+    assert session.result.succeeded
+```
+
+The fixture is a thin wrapper around `trace()` and preserves active pytest
+fixtures and monkeypatches because the traced code runs inside the current test
+process.
 
 ### `TraceSession`
 
@@ -58,12 +109,25 @@ print(result.target_exit_code)
 print(result.report_path)
 ```
 
+The same session can also create an in-process context manager:
+
+```python
+from skeleton_replay import TraceSession
+
+configured_session = TraceSession(project_root=".", html_enabled=False)
+
+with configured_session.trace("Monitor") as session:
+    Monitor({}).run()
+
+print(session.result.event_count)
+```
+
 Constructor fields:
 
 | Field | Purpose |
 | --- | --- |
 | `project_root` | Root used to decide which frames are project-local. |
-| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. `run_script()` defaults to `<script-parent>/.skeleton/<script-stem>/latest/`. `run_pytest()` preserves selected pytest node ids, for example `<test-dir>/.skeleton/<file-stem>/<test-node>/latest/`; whole-file and whole-directory runs use `file/latest/` and `directory/latest/` sentinels. |
+| `out_dir` | Artifact directory. Uses the same default resolution as the CLI when omitted. `run_script()` defaults to `<script-parent>/.skeleton/<script-stem>/latest/`. `run_pytest()` preserves selected pytest node ids, for example `<test-dir>/.skeleton/<file-stem>/<test-node>/latest/`; whole-file and whole-directory runs use `file/latest/` and `directory/latest/` sentinels. `trace()` defaults to `<project-root>/.skeleton/<label>/latest/`. |
 | `include` | Optional path or module patterns to include. |
 | `exclude` | Optional path or module patterns to exclude. |
 | `max_events` | Optional cap on written trace events. |
@@ -72,7 +136,8 @@ Constructor fields:
 
 ### `TraceSessionResult`
 
-Returned by `TraceSession.run_script` and `TraceSession.run_pytest`.
+Returned by `TraceSession.run_script`, `TraceSession.run_pytest`, and
+`trace(...).result`.
 
 | Field | Meaning |
 | --- | --- |
@@ -101,6 +166,8 @@ CliApplication
   -> PytestCommand
     -> TargetPytestRunner
       -> RuntimeTracer
+  -> trace()/TraceSession.trace()
+    -> RuntimeTracer
     -> SnapshotBuilder
     -> WorkflowNarrativeWriter
     -> HtmlReportWriter
@@ -169,27 +236,8 @@ dependency for script-only users.
 Installs `sys.setprofile()` and records project-local call and return events.
 Private/internal callables are captured and marked for report filtering.
 
-This is a low-level tracing boundary. It should remain importable for advanced
-users eventually, but its direct API should not be the first thing most users
-need.
-
-## Planned Callable API
-
-A second seam should run one Python callable directly:
-
-```python
-from skeleton_replay import TraceSession
-
-def checkout_scenario() -> None:
-    service = build_checkout_service()
-    service.reserve_order("A-100")
-
-TraceSession(project_root=".").run_callable(checkout_scenario)
-```
-
-This would help notebooks, tests, and programmatic documentation examples. It
-requires careful handling of `sys.path`, working directory, exceptions, and
-callable names, so it should be added deliberately with tests.
+This is a low-level tracing boundary. Prefer `trace()` for application code that
+needs a complete artifact set.
 
 ## What Is Not Public Yet
 

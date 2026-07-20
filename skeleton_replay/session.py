@@ -5,11 +5,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import TracebackType
+from typing import Literal, Self
 
 from skeleton_replay.analysis import ArchitectureQualityAnalyzer, ArchitectureQualityWriter
 from skeleton_replay.interface import ArtifactGenerationPipeline, ArtifactPaths, HtmlReportOpener, OutputPathResolver, PytestOutputPathResolver, SessionArtifactSet, SessionManifestWriter, SessionTarget
 from skeleton_replay.reporting import HtmlReportWriter, WorkflowNarrativeWriter
-from skeleton_replay.runtime import TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
+from skeleton_replay.runtime import RuntimeTracer, TargetPytestRunner, TargetScriptRunner, TraceOptions, TraceResult
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,66 @@ class TraceSessionResult:
         return self.target_exit_code == 0
 
 
+@dataclass
+class InProcessTraceSession:
+    """Context manager that traces already-running Python code and writes Skeleton artifacts."""
+
+    trace_session: TraceSession
+    label: str
+    project_root: Path
+    out_dir: Path
+    _tracer: RuntimeTracer | None = field(default=None, init=False, repr=False)
+    _result: TraceSessionResult | None = field(default=None, init=False, repr=False)
+
+    @property
+    def result(self) -> TraceSessionResult:
+        """Return generated artifacts after the context exits."""
+        if self._result is None:
+            raise RuntimeError("Skeleton trace result is available after the trace context exits")
+        return self._result
+
+    def __enter__(self) -> Self:
+        """Start tracing the current process."""
+        trace_options = TraceOptions(
+            project_root=self.project_root,
+            out_dir=self.out_dir,
+            include=self.trace_session.include,
+            exclude=self.trace_session.exclude,
+            max_events=self.trace_session.max_events,
+        )
+        tracer = RuntimeTracer(trace_options)
+        self._tracer = tracer.__enter__()
+        return self
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None) -> Literal[False]:
+        """Stop tracing, write artifacts, and preserve any target exception."""
+        if self._tracer is None:
+            raise RuntimeError("Skeleton trace context was not entered")
+        self._tracer.__exit__(exc_type, exc, traceback)
+        target_exit_code = self._target_exit_code(exc)
+        target_error = None if exc is None or isinstance(exc, SystemExit) else f"{type(exc).__name__}: {exc}"
+        trace_result = TraceResult(trace_path=self._tracer.trace_path, event_count=self._tracer.event_count, target_exit_code=target_exit_code)
+        self._result = self.trace_session._result_from_trace(
+            command="trace",
+            invocation=("skeleton_replay.trace", self.label),
+            project_root=self.project_root,
+            out_dir=self.out_dir,
+            target=SessionTarget(kind="callable", label=self.label),
+            trace_result=trace_result,
+            target_exit_code=target_exit_code,
+            target_error=target_error,
+        )
+        return False
+
+    @staticmethod
+    def _target_exit_code(exc: BaseException | None) -> int:
+        if exc is None:
+            return 0
+        if isinstance(exc, SystemExit):
+            return TraceSession._system_exit_code(exc)
+        return 1
+
+
 @dataclass(frozen=True)
 class TraceSession:
     """Run Python code under Skeleton and produce replayable architecture artifacts."""
@@ -57,6 +119,13 @@ class TraceSession:
     pytest_output_paths: PytestOutputPathResolver = field(default_factory=PytestOutputPathResolver)
     report_opener: HtmlReportOpener = field(default_factory=HtmlReportOpener)
     session_manifest_writer: SessionManifestWriter = field(default_factory=SessionManifestWriter)
+
+    def trace(self, label: str) -> InProcessTraceSession:
+        """Return a context manager for tracing already-running Python code."""
+        clean_label = self._resolved_label(label)
+        project_root = self._resolved_project_root()
+        out_dir = self.output_paths.resolve_callable(project_root=project_root, requested_out_dir=self._requested_out_dir(), label=clean_label)
+        return InProcessTraceSession(trace_session=self, label=clean_label, project_root=project_root, out_dir=out_dir)
 
     def run_script(self, script: Path | str, script_args: Sequence[str] = ()) -> TraceSessionResult:
         """Trace a Python script and return generated artifact paths and metrics."""
@@ -230,5 +299,35 @@ class TraceSession:
         return Path(self.out_dir).expanduser().resolve()
 
     @staticmethod
+    def _resolved_label(label: str) -> str:
+        clean_label = label.strip()
+        if not clean_label:
+            raise ValueError("Trace label must not be empty")
+        return clean_label
+
+    @staticmethod
     def _system_exit_code(exc: SystemExit) -> int:
         return exc.code if isinstance(exc.code, int) else 1
+
+
+def trace(
+    *,
+    project_root: Path | str,
+    label: str,
+    out_dir: Path | str | None = None,
+    include: tuple[str, ...] = (),
+    exclude: tuple[str, ...] = (),
+    max_events: int | None = None,
+    html_enabled: bool = True,
+    open_report: bool = False,
+) -> InProcessTraceSession:
+    """Return a context manager that traces code running in the current Python process."""
+    return TraceSession(
+        project_root=project_root,
+        out_dir=out_dir,
+        include=include,
+        exclude=exclude,
+        max_events=max_events,
+        html_enabled=html_enabled,
+        open_report=open_report,
+    ).trace(label)

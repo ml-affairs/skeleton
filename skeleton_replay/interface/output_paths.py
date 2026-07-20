@@ -68,6 +68,16 @@ class OutputPathResolver:
             return resolved_target.parent / ".skeleton" / self.slugger.target_slug(resolved_target.stem) / "latest"
         return self.skeleton_home / self._application_name(project_root)
 
+    def resolve_callable(self, *, project_root: Path, requested_out_dir: Path | None, label: str) -> Path:
+        """Return the output directory for one in-process callable trace."""
+        if requested_out_dir or os.environ.get("SKELETON_OUT_DIR"):
+            return self.resolve(project_root=project_root, requested_out_dir=requested_out_dir)
+        callable_slug = self.slugger.target_slug(label)
+        configured_home = self.configured_skeleton_home
+        if configured_home is not None:
+            return configured_home / self._application_name(project_root) / callable_slug / "latest"
+        return project_root.resolve() / ".skeleton" / callable_slug / "latest"
+
     @property
     def skeleton_home(self) -> Path:
         """Return the root directory used for implicit Skeleton artifacts."""

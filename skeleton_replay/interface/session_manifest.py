@@ -18,6 +18,7 @@ class SessionTarget:
 
     kind: str
     path: Path | None = None
+    label: str | None = None
     args: tuple[str, ...] = ()
 
     def to_json(self) -> JsonObject:
@@ -25,6 +26,8 @@ class SessionTarget:
         payload: JsonObject = {"kind": self.kind, "args": list(self.args)}
         if self.path is not None:
             payload["path"] = str(self.path)
+        if self.label is not None:
+            payload["label"] = self.label
         return payload
 
 

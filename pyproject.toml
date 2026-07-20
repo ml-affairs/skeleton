@@ -1,6 +1,6 @@
 [project]
 name = "skeleton-replay"
-version = "0.9.0"
+version = "0.10.0"
 description = "Replay and visualise the living architecture of a Python application."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -32,6 +32,9 @@ Issues = "https://github.com/ml-affairs/skeleton/issues"
 [project.scripts]
 skeleton = "skeleton_replay.cli:main"
 "skeleton-replay" = "skeleton_replay.cli:main"
+
+[project.entry-points.pytest11]
+skeleton_replay = "skeleton_replay.pytest_plugin"
 
 [dependency-groups]
 dev = [
