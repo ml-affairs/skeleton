@@ -34,6 +34,8 @@ class WorkflowNarrativeWriter:
         trace_event_role_by_order = {int(record.get("order", -1)): record for record in trace_event_roles}
         setup_event_groups = [group for group in list(trace_role_payload.get("setup_event_groups", [])) if isinstance(group, dict)]
         structured_return_groups = [group for group in list(snapshot.get("structured_return_groups", [])) if isinstance(group, dict)]
+        architecture_views = snapshot.get("architecture_views", {})
+        architecture_view_payload = architecture_views if isinstance(architecture_views, dict) else {}
         lines = [
             "# Skeleton Workflow",
             "",
@@ -46,6 +48,16 @@ class WorkflowNarrativeWriter:
             f"- Nodes observed: `{len(nodes)}`",
             f"- Runtime edges observed: `{len(edges)}`",
             "",
+            "## Artifact Guide",
+            "",
+            "- `report.html`: interactive replay for humans.",
+            "- `workflow.md`: compact narrative for humans and LLMs.",
+            "- `snapshot.json`: derived graph, architecture views, roles, quality inputs, and report data.",
+            "- `trace.jsonl`: raw ordered call/return evidence; use it when you need audit-level detail.",
+            "- `quality.json` and `architecture_quality.md`: machine-readable and human-readable architecture signals.",
+            "- `session.json`: stable manifest that lets IDEs and automation find the rest of the artifact set.",
+            "",
+            *self._architecture_view_section(architecture_view_payload),
             "## Actors",
             "",
             *self._actor_lines(nodes),
@@ -67,6 +79,31 @@ class WorkflowNarrativeWriter:
             "- Private methods and excluded files may be absent from this workflow by design.",
         ]
         return "\n".join(lines) + "\n"
+
+    def _architecture_view_section(self, architecture_views: JsonObject) -> list[str]:
+        views = architecture_views.get("views", {})
+        if not isinstance(views, dict) or not views:
+            return []
+        default_view = architecture_views.get("default_view", "actor")
+        lines = [
+            "## Architecture Views",
+            "",
+            f"- Default view: `{default_view}`.",
+            "- These views collapse raw calls into higher-level actors. Raw events remain available in `trace.jsonl` and the Event Timeline.",
+        ]
+        for mode in ("actor", "module", "package", "detail"):
+            view = views.get(mode)
+            if not isinstance(view, dict):
+                continue
+            summary = view.get("summary", {})
+            summary_payload = summary if isinstance(summary, dict) else {}
+            label = view.get("label", mode)
+            lines.append(
+                f"- `{mode}` ({label}): nodes=`{summary_payload.get('node_count', 0)}` edges=`{summary_payload.get('edge_count', 0)}` "
+                f"collapsed_internal_calls=`{summary_payload.get('internal_call_count', 0)}` cross_boundary_calls=`{summary_payload.get('cross_boundary_call_count', 0)}`"
+            )
+        lines.append("")
+        return lines
 
     def _actor_lines(self, nodes: list[object]) -> list[str]:
         actor_nodes = [node for node in nodes if isinstance(node, dict) and node.get("type") in {"module", "class", "function", "instance", "io", "external_service"}]

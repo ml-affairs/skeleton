@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from skeleton_replay.analysis.architecture_views import ArchitectureViewBuilder
 from skeleton_replay.analysis.static import StaticProjectScanner
 from skeleton_replay.analysis.structured_returns import StructuredReturnConfig, StructuredReturnGroupAnalyzer
 from skeleton_replay.analysis.trace_roles import TraceRoleAnalyzer
@@ -130,6 +131,7 @@ class SnapshotBuilder:
             "events": [event.to_json() for event in events],
             "trace_roles": trace_role_analysis.to_json(),
             "structured_return_groups": StructuredReturnGroupAnalyzer(config=structured_return_config).analyze(events),
+            "architecture_views": ArchitectureViewBuilder().build(events),
         }
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True), encoding="utf-8")

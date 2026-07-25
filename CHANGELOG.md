@@ -7,6 +7,23 @@ Semantic Versioning while the project is public-alpha software.
 
 ## Unreleased
 
+## [0.11.0] - 2026-07-25
+
+### Added
+
+- Added generated `architecture_views` snapshot projections for actor/class,
+  module, package, and detail views so reports and IDEs can consume higher-level
+  runtime architecture without changing raw `trace.jsonl` evidence.
+- Added progressive high-level report modes for Actor/Class, Module, Package,
+  and Detail, with Detail retaining the private/internal callable toggle.
+- Added right-click one-level drilldowns inside high-level aggregate boxes,
+  including package-to-module, module-to-class/function, and class-to-method
+  child graphs with replay-window evidence and file/database resource
+  boundaries.
+- Added a noisy large-graph fixture that exercises collapsed internal calls,
+  cross-boundary package/module edges, file/database resources, and high-level
+  report behavior.
+
 ## [0.10.0] - 2026-07-20
 
 ### Added

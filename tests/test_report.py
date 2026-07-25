@@ -168,7 +168,20 @@ class TestHtmlReportWriter:
         assert 'id="trace-window-end"' in html
         assert 'id="export-trace"' in html
         assert 'id="private-toggle"' in html
+        assert 'id="architecture-view-mode"' in html
+        assert 'id="architecture-view-mode-button"' in html
+        assert 'data-view-mode="actor">Actor/Class</button>' in html
+        assert "Architecture Views" in html
+        assert "Artifact Guide" in html
+        assert "function setArchitectureViewMode" in html
+        assert "window.SkeletonReplay.setViewMode" in html
+        assert 'selection_kind: "event"' in html
+        assert "view_mode: activeArchitectureViewMode" in html
+        assert "architecture_view" in html
         assert "function togglePrivateCalls" in html
+        assert 'if (activeArchitectureViewMode !== "detail")' in html
+        assert "function updatePrivateToggleAvailability" in html
+        assert "Private callable filtering is available in Detail view." in html
         assert "private-callable" in html
         assert "shouldSuppressPrivateElement" in html
         assert "Export the exact trace events visible in the selected execution window as JSON for LLM review" in html
@@ -316,7 +329,22 @@ class TestHtmlReportWriter:
         assert '"line-style": "solid"' in html
         assert '"line-style": "dashed"' in html
         assert "renderedNodeIds.has(source)" in html
-        assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges]" in html
+        assert "elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges, ...aggregateGraphNodes, ...aggregateGraphEdges, ...drilldownGraphNodes, ...drilldownGraphEdges]" in html
+        assert "function toggleArchitectureViewMenu" in html
+        assert "function syncArchitectureViewMenu" in html
+        assert "architectureViews.public_views" in html
+        assert 'edge[type = "aggregate-call"]' in html
+        assert '"width": "mapData(weight, 1, 16, 3, 16)"' in html
+        assert "function applyArchitectureGraphVisibility" in html
+        assert "function aggregateVisibleElementIdsAt" in html
+        assert "function eventOrdersTouchWindow" in html
+        assert "function revealAggregateElement" in html
+        assert "applyArchitectureGraphVisibility(current)" in html
+        assert "activeAggregateElements.forEach((element)" in html
+        assert "function highlightAggregateEvent" in html
+        assert "function packageScopeForAggregateMode" in html
+        assert "function aggregateVisibilityKey" in html
+        assert "aggregate-${visibility}-${mode}" in html
         assert "return:${targetNode}->${sourceNode}" in html
         assert 'element.addClass("unseen hidden").removeClass("current focus pulse viewport-anchor")' in html
         assert 'cy.elements().addClass("unseen")' not in html

@@ -786,6 +786,108 @@
       background: rgba(51, 65, 85, 0.92);
       box-shadow: inset 0 0 18px rgba(148, 163, 184, 0.12);
     }
+    .private-toggle:disabled {
+      opacity: 0.46;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .view-mode-select {
+      position: relative;
+      flex: 0 0 auto;
+    }
+    .view-mode-button {
+      min-height: 34px;
+      border: 1px solid rgba(94, 234, 212, 0.26);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: var(--ink);
+      background: rgba(2, 6, 23, 0.82);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      min-width: 126px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .view-mode-button::after {
+      content: "";
+      float: right;
+      width: 7px;
+      height: 7px;
+      margin-top: 4px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      opacity: 0.78;
+    }
+    .view-mode-button:focus {
+      outline: none;
+      border-color: rgba(94, 234, 212, 0.72);
+      box-shadow: 0 0 0 3px rgba(56, 220, 226, 0.12);
+    }
+    .view-mode-menu {
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 8px);
+      z-index: 34;
+      min-width: 154px;
+      display: none;
+      padding: 6px;
+      border: 1px solid rgba(94, 234, 212, 0.32);
+      border-radius: 10px;
+      background: rgba(2, 6, 23, 0.96);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42), 0 0 22px rgba(56, 220, 226, 0.16);
+    }
+    .view-mode-select.is-open .view-mode-menu {
+      display: grid;
+      gap: 4px;
+    }
+    .view-mode-option {
+      border: 0;
+      border-radius: 7px;
+      padding: 8px 10px;
+      color: var(--ink);
+      background: transparent;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+    }
+    .view-mode-option:hover,
+    .view-mode-option.is-active {
+      color: #061014;
+      background: var(--cyan);
+    }
+    .drilldown-menu {
+      position: absolute;
+      z-index: 38;
+      min-width: 188px;
+      border: 1px solid rgba(94, 234, 212, 0.32);
+      border-radius: 8px;
+      padding: 5px;
+      background: rgba(2, 6, 23, 0.96);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42), 0 0 22px rgba(56, 220, 226, 0.16);
+    }
+    .drilldown-menu button {
+      width: 100%;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--ink);
+      background: transparent;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+    }
+    .drilldown-menu button:hover,
+    .drilldown-menu button:focus-visible {
+      color: #061014;
+      background: var(--cyan);
+      outline: none;
+    }
     .trace-range-fields {
       display: flex;
       align-items: center;
@@ -1222,6 +1324,9 @@
           <div class="resize-handle corner" data-handle="bottom-right" aria-hidden="true"></div>
         </div>
         <div class="hover-tooltip hidden" id="hover-tooltip" role="status" aria-live="polite"></div>
+        <div class="drilldown-menu hidden" id="drilldown-menu" role="menu">
+          <button id="drilldown-menu-action" type="button" role="menuitem">Expand one level below</button>
+        </div>
         <button class="legend-show hidden" id="legend-show" type="button">Legend</button>
         <div class="legend" id="legend">
           <div class="legend-header">
@@ -1282,6 +1387,15 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path><path d="M5 17v4"></path><path d="M19 17v4"></path></svg>
             </button>
             <button class="private-toggle" id="private-toggle" type="button" aria-pressed="false" title="Hide or show private/internal callable nodes and their direct runtime edges">Hide private</button>
+            <div class="view-mode-select" id="architecture-view-mode" aria-label="Architecture view mode">
+              <button class="view-mode-button" id="architecture-view-mode-button" type="button" aria-haspopup="listbox" aria-expanded="false" title="Choose the architecture abstraction level">Actor/Class</button>
+              <div class="view-mode-menu" id="architecture-view-mode-menu" role="listbox" aria-label="Architecture view mode options">
+                <button class="view-mode-option is-active" type="button" role="option" aria-selected="true" data-view-mode="actor">Actor/Class</button>
+                <button class="view-mode-option" type="button" role="option" aria-selected="false" data-view-mode="module">Module</button>
+                <button class="view-mode-option" type="button" role="option" aria-selected="false" data-view-mode="package">Package</button>
+                <button class="view-mode-option" type="button" role="option" aria-selected="false" data-view-mode="detail">Detail</button>
+              </div>
+            </div>
             <div class="trace-range-fields" aria-label="Selected trace event range">
               <label for="trace-window-start-input">Start <input id="trace-window-start-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
               <label for="trace-window-end-input">End <input id="trace-window-end-input" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
@@ -1334,6 +1448,15 @@
     const quality = snapshot.quality || { summary: {}, findings: [] };
     const rawNodes = new Map((snapshot.nodes || []).map((node) => [node.id, node]));
     const events = snapshot.events || [];
+    const eventIndexByOrder = new Map(events.map((event, index) => [Number(event.order), index]));
+    const architectureViews = snapshot.architecture_views || { default_view: "detail", views: {} };
+    const architectureDrilldowns = architectureViews.drilldowns || {};
+    const architectureViewModes = ["actor", "module", "package", "detail"];
+    const architectureViewLabels = {actor: "Actor/Class", module: "Module", package: "Package", detail: "Detail"};
+    let activeArchitectureViewMode = architectureViews.default_view || "actor";
+    let laidOutArchitectureViewMode = null;
+    let expandedDrilldown = null;
+    let drilldownMenuTarget = null;
     window.SkeletonReplay = window.SkeletonReplay || {};
     window.SkeletonReplay.currentSelection = null;
     window.SkeletonReplay.onSelectionChanged = typeof window.SkeletonReplay.onSelectionChanged === "function"
@@ -1793,7 +1916,7 @@
             min_width: baseWidth,
             min_height: baseHeight
           },
-          classes: "container package-container unseen hidden"
+          classes: "detail-view container package-container unseen hidden"
         };
       });
 
@@ -1846,6 +1969,7 @@
             roles.includes("entrypoint") ? "role-entrypoint" : "",
             traceRoleClass(traceRole),
             isSubduedTraceRole(traceRole) ? "role-subdued" : "",
+            "detail-view",
             "unseen",
             "hidden"
           ].filter(Boolean).join(" ")
@@ -1915,7 +2039,8 @@
             node.callable_kind ? `callable-${node.callable_kind.replace("_", "-")}` : "",
             node.is_private && !isIo && !isExternalService ? "private-callable" : "",
             traceRoleClass(traceRole),
-            isSubduedTraceRole(traceRole) ? "role-subdued" : ""
+            isSubduedTraceRole(traceRole) ? "role-subdued" : "",
+            "detail-view"
           ].filter(Boolean).join(" ")
         };
       });
@@ -1996,7 +2121,7 @@
         first_seen: edge.first_seen,
         last_seen: edge.last_seen
       },
-      classes: ["unseen", "hidden", edgeTouchesPrivateCallable(edge.source, edge.target) ? "private-edge" : ""].filter(Boolean).join(" ")
+      classes: ["detail-view", "unseen", "hidden", edgeTouchesPrivateCallable(edge.source, edge.target) ? "private-edge" : ""].filter(Boolean).join(" ")
     }));
 
     const returnEdgeCounts = new Map();
@@ -2031,15 +2156,187 @@
         first_seen: edge.first_seen,
         last_seen: edge.last_seen
       },
-      classes: ["unseen", "hidden", edgeTouchesPrivateCallable(edge.source, edge.target) ? "private-edge" : ""].filter(Boolean).join(" ")
+      classes: ["detail-view", "unseen", "hidden", edgeTouchesPrivateCallable(edge.source, edge.target) ? "private-edge" : ""].filter(Boolean).join(" ")
     }));
+
+    function aggregateNodeElementId(visibility, mode, nodeId) {
+      return `aggregate:${visibility}:${mode}:${nodeId}`;
+    }
+
+    function aggregateEdgeElementId(visibility, mode, edgeId) {
+      return `aggregate-edge:${visibility}:${mode}:${edgeId}`;
+    }
+
+    function drilldownNodeElementId(mode, parentId, childId) {
+      return `drilldown:${mode}:${parentId}:${childId}`;
+    }
+
+    function drilldownEdgeElementId(mode, parentId, edgeId) {
+      return `drilldown-edge:${mode}:${parentId}:${edgeId}`;
+    }
+
+    function packageScopeForAggregateMode(moduleName) {
+      const parts = String(moduleName || "").split(".").filter(Boolean);
+      if (!parts.length) return "application";
+      if (parts.length > 1) return parts.slice(0, -1).join(".");
+      return parts[0];
+    }
+
+    function aggregateScopeForEndpoint(endpoint, mode) {
+      if (!endpoint) return "entrypoint";
+      if (endpoint.endpoint_type === "resource" || externalServiceCategoryFor(endpoint)) return endpoint.node_id;
+      if (mode === "package") return `package:${packageScopeForAggregateMode(endpoint.module)}`;
+      if (mode === "module" || !endpoint.class_name) return `module:${endpoint.module || ""}`;
+      return `class:${endpoint.module || ""}.${endpoint.class_name}`;
+    }
+
+    function aggregateNodeIdForEndpoint(endpoint, mode) {
+      return aggregateNodeElementId(aggregateVisibilityKey(), mode, aggregateScopeForEndpoint(endpoint, mode));
+    }
+
+    const aggregateGraphNodes = [];
+    const aggregateGraphEdges = [];
+    for (const [visibility, views] of [["all", architectureViews.views || {}], ["public", architectureViews.public_views || architectureViews.views || {}]]) {
+      for (const mode of architectureViewModes.filter((candidate) => candidate !== "detail")) {
+        const view = views?.[mode];
+        if (!view) continue;
+        for (const node of view.nodes || []) {
+          const callCount = Number(node.call_count || 0);
+          const internalCount = Number(node.internal_call_count || 0);
+          const width = Math.max(150, Math.min(300, String(node.label || node.id).length * 9 + 72));
+          const height = 72;
+          aggregateGraphNodes.push({
+            data: {
+              id: aggregateNodeElementId(visibility, mode, node.id),
+              original_id: node.id,
+              label: node.label || node.id,
+              type: "aggregate-node",
+              view_mode: mode,
+              aggregate_visibility: visibility,
+              scope_type: node.scope_type || mode,
+              scope: node.scope || node.id,
+              call_count: callCount,
+              internal_call_count: internalCount,
+              first_seen: node.first_seen,
+              last_seen: node.last_seen,
+              raw_event_orders: node.raw_event_orders || [],
+              size: 46 + Math.min(38, callCount * 4 + internalCount * 1.5),
+              width,
+              height,
+              base_width: width,
+              base_height: height,
+              manual_width: 0,
+              manual_height: 0,
+              min_width: width,
+              min_height: height
+            },
+            classes: `aggregate-view aggregate-${visibility}-${mode} hidden unseen`
+          });
+        }
+        for (const edge of view.edges || []) {
+          aggregateGraphEdges.push({
+            data: {
+              id: aggregateEdgeElementId(visibility, mode, edge.id),
+              original_id: edge.id,
+              source: aggregateNodeElementId(visibility, mode, edge.source),
+              target: aggregateNodeElementId(visibility, mode, edge.target),
+              type: "aggregate-call",
+              view_mode: mode,
+              aggregate_visibility: visibility,
+              weight: Number(edge.call_count || 1),
+              first_seen: edge.first_seen,
+              last_seen: edge.last_seen,
+              representative_event_order: edge.representative_event_order,
+              raw_event_orders: edge.raw_event_orders || []
+            },
+            classes: `aggregate-view aggregate-${visibility}-${mode} hidden unseen`
+          });
+        }
+      }
+    }
+
+    const drilldownGraphNodes = [];
+    const drilldownGraphEdges = [];
+    for (const mode of architectureViewModes.filter((candidate) => candidate !== "detail")) {
+      const modeDrilldowns = architectureDrilldowns?.[mode] || {};
+      for (const [parentOriginalId, drilldown] of Object.entries(modeDrilldowns)) {
+        const parentElementId = aggregateNodeElementId("all", mode, parentOriginalId);
+        for (const node of drilldown.nodes || []) {
+          const endpoint = node.representative_endpoint || {};
+          const label = node.label || node.id;
+          const isResource = node.scope_type === "resource" || endpoint.endpoint_type === "resource";
+          const width = isResource ? ioNodeWidth(label) : Math.max(78, Math.min(210, String(label).length * 7 + 34));
+          const height = isResource ? 70 : 32;
+          drilldownGraphNodes.push({
+            data: {
+              id: drilldownNodeElementId(mode, parentOriginalId, node.id),
+              original_id: node.id,
+              parent: parentElementId,
+              label,
+              type: isResource ? "drilldown-resource" : "drilldown-node",
+              scope_type: node.scope_type,
+              scope: node.scope || node.id,
+              drilldown_mode: mode,
+              drilldown_parent_original_id: parentOriginalId,
+              call_count: Number(node.call_count || 0),
+              internal_call_count: Number(node.internal_call_count || 0),
+              first_seen: node.first_seen,
+              last_seen: node.last_seen,
+              raw_event_orders: node.raw_event_orders || [],
+              representative_endpoint: endpoint,
+              module: node.module || endpoint.module,
+              class_name: node.class_name || endpoint.class_name,
+              function: node.function || endpoint.function,
+              qualified_name: endpoint.qualified_name || node.scope,
+              file: node.file || endpoint.file,
+              line: node.line ?? endpoint.line,
+              callable_kind: endpoint.callable_kind || null,
+              endpoint_type: endpoint.endpoint_type || (isResource ? "resource" : "function"),
+              resource_category: endpoint.resource_category || null,
+              io_category: endpoint.resource_category || null,
+              size: isResource ? 52 : 28 + Math.min(18, Number(node.call_count || 0) * 3 + Number(node.internal_call_count || 0)),
+              width,
+              height,
+              callable_width: width,
+              callable_height: height,
+              callable_label_width: width - 14,
+              io_width: width,
+              io_height: height,
+              io_label_width: width - 22
+            },
+            classes: `drilldown-view drilldown-${mode} hidden unseen`
+          });
+        }
+        for (const edge of drilldown.edges || []) {
+          drilldownGraphEdges.push({
+            data: {
+              id: drilldownEdgeElementId(mode, parentOriginalId, edge.id),
+              original_id: edge.id,
+              source: drilldownNodeElementId(mode, parentOriginalId, edge.source),
+              target: drilldownNodeElementId(mode, parentOriginalId, edge.target),
+              type: "drilldown-call",
+              drilldown_mode: mode,
+              drilldown_parent_original_id: parentOriginalId,
+              weight: Number(edge.call_count || 1),
+              first_seen: edge.first_seen,
+              last_seen: edge.last_seen,
+              representative_event_order: edge.representative_event_order,
+              representative_caller: edge.representative_caller || null,
+              representative_callee: edge.representative_callee || null,
+              raw_event_orders: edge.raw_event_orders || []
+            },
+            classes: `drilldown-view drilldown-${mode} hidden unseen`
+          });
+        }
+      }
+    }
 
     document.getElementById("actor-count").textContent = String(actorNodes.length);
     document.getElementById("edge-count").textContent = String(callEdges.length);
 
     const cy = cytoscape({
       container: document.getElementById("cy"),
-      elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges],
+      elements: [...actorNodes, ...methodNodes, ...callEdges, ...returnEdges, ...aggregateGraphNodes, ...aggregateGraphEdges, ...drilldownGraphNodes, ...drilldownGraphEdges],
       style: [
         { selector: "node", style: {
           "label": "data(label)",
@@ -2208,6 +2505,93 @@
           "target-arrow-color": "#38dce2",
           "opacity": 0.72
         } },
+        { selector: 'node[type = "aggregate-node"]', style: {
+          "shape": "round-rectangle",
+          "background-color": "#102033",
+          "border-color": "#38dce2",
+          "border-width": 2,
+          "width": "data(width)",
+          "height": "data(height)",
+          "label": "data(label)",
+          "font-size": 13,
+          "font-weight": 800,
+          "text-max-width": "data(width)",
+          "text-wrap": "wrap",
+          "color": "#f8fafc"
+        } },
+        { selector: ".drilldown-expanded-parent", style: {
+          "background-opacity": 0.22,
+          "border-width": 3,
+          "compound-sizing-wrt-labels": "include",
+          "padding": 34
+        } },
+        { selector: 'node[type = "aggregate-node"][scope_type = "class"]', style: {
+          "border-color": "#fb7185"
+        } },
+        { selector: 'node[type = "aggregate-node"][scope_type = "package"]', style: {
+          "border-color": "#fbbf24"
+        } },
+        { selector: 'edge[type = "aggregate-call"]', style: {
+          "curve-style": "bezier",
+          "line-color": "#38dce2",
+          "target-arrow-color": "#38dce2",
+          "width": "mapData(weight, 1, 16, 3, 16)",
+          "opacity": 0.86,
+          "arrow-scale": "mapData(weight, 1, 16, 1.0, 1.8)"
+        } },
+        { selector: 'node[type = "drilldown-node"]', style: {
+          "shape": "round-rectangle",
+          "width": "data(width)",
+          "height": "data(height)",
+          "text-max-width": "data(callable_label_width)",
+          "background-color": "#14532d",
+          "border-color": "#86efac",
+          "border-width": 2,
+          "font-size": 9,
+          "font-weight": 800,
+          "color": "#f8fafc"
+        } },
+        { selector: 'node[type = "drilldown-node"][scope_type = "module"]', style: {
+          "background-color": "#0f766e",
+          "border-color": "#5eead4",
+          "font-size": 10
+        } },
+        { selector: 'node[type = "drilldown-node"][scope_type = "class"]', style: {
+          "background-color": "#115e59",
+          "border-color": "#2dd4bf",
+          "font-size": 10
+        } },
+        { selector: 'node[type = "drilldown-node"][scope_type = "method"]', style: {
+          "background-color": "#b45309",
+          "border-color": "#fcd34d"
+        } },
+        { selector: 'node[type = "drilldown-resource"]', style: {
+          "shape": "barrel",
+          "width": "data(io_width)",
+          "height": "data(io_height)",
+          "background-color": "#1f6f8b",
+          "background-opacity": 0.94,
+          "border-color": "#9fd7e9",
+          "border-width": 3,
+          "font-size": 10,
+          "font-weight": 850,
+          "color": "#ffffff",
+          "text-max-width": "data(io_label_width)",
+          "text-outline-width": 2,
+          "text-outline-color": "#0f172a"
+        } },
+        { selector: 'node[type = "drilldown-resource"][io_category = "file"]', style: {
+          "background-color": "#4f2a88",
+          "border-color": "#d8c8ff"
+        } },
+        { selector: 'edge[type = "drilldown-call"]', style: {
+          "curve-style": "straight",
+          "line-color": "#a7f3d0",
+          "target-arrow-color": "#a7f3d0",
+          "width": "mapData(weight, 1, 16, 2, 10)",
+          "opacity": 0.84,
+          "arrow-scale": "mapData(weight, 1, 16, 0.9, 1.5)"
+        } },
         { selector: 'edge[type = "runtime-call"]', style: {
           "curve-style": "straight",
           "line-style": "solid",
@@ -2320,6 +2704,7 @@
     });
 
     cy.on("tap", "node", (event) => selectNode(event.target.id()));
+    cy.on("cxttap", "node", (event) => openDrilldownContextMenu(event.target, event.renderedPosition));
     cy.on("mouseover", "edge", (event) => showHoverTooltipForEdge(event.target, event.renderedPosition));
     cy.on("mousemove", "edge", (event) => moveHoverTooltip(event.renderedPosition));
     cy.on("mouseout", "edge", hideHoverTooltip);
@@ -2346,6 +2731,15 @@
       hideHoverTooltip();
     });
     const cyElement = document.getElementById("cy");
+    cyElement.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      const rect = cyElement.getBoundingClientRect();
+      const rendered = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const node = draggableNodeAtRenderedPoint(rendered);
+      if (node && !node.empty()) {
+        openDrilldownContextMenu(node, rendered);
+      }
+    });
     cyElement.addEventListener("pointerdown", startManualNodeMove);
     document.addEventListener("pointermove", updateManualNodeMove);
     document.addEventListener("pointerup", endManualNodeMove);
@@ -2377,6 +2771,21 @@
     document.getElementById("play").addEventListener("click", togglePlay);
     document.getElementById("export-trace").addEventListener("click", exportTraceWindow);
     document.getElementById("private-toggle").addEventListener("click", togglePrivateCalls);
+    document.getElementById("drilldown-menu-action").addEventListener("click", activateDrilldownMenuAction);
+    document.getElementById("architecture-view-mode-button").addEventListener("click", toggleArchitectureViewMenu);
+    for (const option of document.querySelectorAll(".view-mode-option")) {
+      option.addEventListener("click", () => setArchitectureViewMode(option.getAttribute("data-view-mode")));
+    }
+    document.addEventListener("click", (event) => {
+      if (!document.getElementById("architecture-view-mode").contains(event.target)) closeArchitectureViewMenu();
+      if (!document.getElementById("drilldown-menu").contains(event.target)) closeDrilldownContextMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeArchitectureViewMenu();
+        closeDrilldownContextMenu();
+      }
+    });
     document.getElementById("replay-dock-toggle").addEventListener("click", toggleReplayDock);
     document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
     document.getElementById("heatmap-toggle").addEventListener("click", toggleHeatmap);
@@ -2416,9 +2825,234 @@
     const manuallyPositionedNodeIds = new Set();
     let nextRevealSequence = 0;
     document.getElementById("counter").textContent = events.length ? `${current + 1} / ${events.length}` : `0 / ${events.length}`;
+    syncArchitectureViewMenu();
+    updatePrivateToggleAvailability();
+    window.SkeletonReplay.setViewMode = setArchitectureViewMode;
     renderStructuredReturnSummary();
     showOverview();
     renderEvent();
+
+    function drilldownForAggregateNode(node) {
+      if (!node || node.empty() || !isAggregateArchitectureMode()) return null;
+      const data = node.data();
+      if (data.type !== "aggregate-node" || data.aggregate_visibility !== "all") return null;
+      if (data.view_mode !== activeArchitectureViewMode) return null;
+      const mode = data.view_mode;
+      const parentOriginalId = data.original_id;
+      const drilldown = architectureDrilldowns?.[mode]?.[parentOriginalId];
+      if (!drilldown || !Array.isArray(drilldown.nodes) || !drilldown.nodes.length) return null;
+      return { drilldown, mode, parentOriginalId, parentElementId: node.id() };
+    }
+
+    function openDrilldownContextMenu(node, renderedPosition) {
+      const target = drilldownForAggregateNode(node);
+      if (!target) {
+        closeDrilldownContextMenu();
+        return;
+      }
+      drilldownMenuTarget = target;
+      const menu = document.getElementById("drilldown-menu");
+      const action = document.getElementById("drilldown-menu-action");
+      action.textContent = isExpandedDrilldownTarget(target) ? "Collapse expanded level" : "Expand one level below";
+      menu.classList.remove("hidden");
+      const stageRect = document.querySelector(".stage").getBoundingClientRect();
+      const cyRect = cyElement.getBoundingClientRect();
+      const point = renderedPosition || node.renderedPosition();
+      const x = cyRect.left - stageRect.left + Number(point?.x || 0) + 8;
+      const y = cyRect.top - stageRect.top + Number(point?.y || 0) + 8;
+      const maxLeft = Math.max(8, stageRect.width - menu.offsetWidth - 8);
+      const maxTop = Math.max(8, stageRect.height - menu.offsetHeight - 8);
+      menu.style.left = `${Math.min(Math.max(8, x), maxLeft)}px`;
+      menu.style.top = `${Math.min(Math.max(8, y), maxTop)}px`;
+    }
+
+    function closeDrilldownContextMenu() {
+      drilldownMenuTarget = null;
+      document.getElementById("drilldown-menu").classList.add("hidden");
+    }
+
+    function activateDrilldownMenuAction() {
+      if (!drilldownMenuTarget) return;
+      const target = drilldownMenuTarget;
+      const parent = cy.getElementById(target.parentElementId);
+      if (isExpandedDrilldownTarget(target)) {
+        collapseExpandedDrilldown();
+      } else {
+        expandDrilldownForNode(parent);
+      }
+      closeDrilldownContextMenu();
+    }
+
+    function isExpandedDrilldownTarget(target) {
+      return Boolean(expandedDrilldown
+        && target
+        && expandedDrilldown.mode === target.mode
+        && expandedDrilldown.parentOriginalId === target.parentOriginalId
+        && expandedDrilldown.parentElementId === target.parentElementId);
+    }
+
+    function expandDrilldownForNode(node) {
+      const target = drilldownForAggregateNode(node);
+      if (!target) return;
+      if (isExpandedDrilldownTarget(target)) {
+        syncExpandedDrilldownVisibility(current);
+        return;
+      }
+      collapseExpandedDrilldown();
+      expandedDrilldown = {
+        mode: target.mode,
+        parentOriginalId: target.parentOriginalId,
+        parentElementId: target.parentElementId
+      };
+      node.addClass("drilldown-expanded-parent");
+      selectedContainerId = target.parentElementId;
+      hoveredContainerId = null;
+      syncExpandedDrilldownVisibility(current);
+      maybeRenderResizeControls();
+      renderResizeHandles();
+    }
+
+    function collapseExpandedDrilldown() {
+      const state = expandedDrilldown;
+      if (!state) return;
+      drilldownElementsFor(state).addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+      const parent = cy.getElementById(state.parentElementId);
+      if (parent && !parent.empty()) {
+        parent.removeClass("drilldown-expanded-parent");
+        parent.data({
+          manual_width: 0,
+          manual_height: 0,
+          width: Number(parent.data("base_width") || parent.data("width") || containerDefaultMinWidth),
+          height: Number(parent.data("base_height") || parent.data("height") || containerDefaultMinHeight),
+          min_width: Number(parent.data("base_width") || parent.data("min_width") || containerDefaultMinWidth),
+          min_height: Number(parent.data("base_height") || parent.data("min_height") || containerDefaultMinHeight)
+        });
+        applyContainerSizeLimits(parent);
+      }
+      if (selectedContainerId === state.parentElementId) selectedContainerId = null;
+      expandedDrilldown = null;
+      maybeRenderResizeControls();
+      renderResizeHandles();
+    }
+
+    function drilldownElementsFor(state) {
+      if (!state) return cy.collection();
+      return cy.elements(".drilldown-view").filter((element) => element.data("drilldown_mode") === state.mode && element.data("drilldown_parent_original_id") === state.parentOriginalId);
+    }
+
+    function syncExpandedDrilldownVisibility(index) {
+      if (!expandedDrilldown) return;
+      if (expandedDrilldown.mode !== activeArchitectureViewMode) {
+        collapseExpandedDrilldown();
+        return;
+      }
+      const parent = cy.getElementById(expandedDrilldown.parentElementId);
+      const elements = drilldownElementsFor(expandedDrilldown);
+      if (!parent || parent.empty() || parent.hasClass("hidden") || parent.hasClass("unseen")) {
+        elements.addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+        return;
+      }
+      const visibleIds = drilldownVisibleElementIdsAt(expandedDrilldown, traceWindowStart, index);
+      elements.forEach((element) => {
+        if (!visibleIds.has(element.id())) {
+          element.addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+        }
+      });
+      for (const id of visibleIds) {
+        revealDrilldownElement(id);
+      }
+      layoutExpandedDrilldown(expandedDrilldown);
+    }
+
+    function drilldownVisibleElementIdsAt(state, startIndex, endIndex) {
+      const visibleIds = new Set();
+      const elements = drilldownElementsFor(state);
+      elements.nodes().forEach((element) => {
+        if (eventOrdersTouchWindow(element.data("raw_event_orders"), startIndex, endIndex)) {
+          visibleIds.add(element.id());
+        }
+      });
+      elements.edges().forEach((element) => {
+        if (!eventOrdersTouchWindow(element.data("raw_event_orders"), startIndex, endIndex)) return;
+        visibleIds.add(element.id());
+        visibleIds.add(element.data("source"));
+        visibleIds.add(element.data("target"));
+      });
+      return visibleIds;
+    }
+
+    function revealDrilldownElement(id) {
+      if (!id) return null;
+      const element = cy.getElementById(id);
+      if (!element || element.empty()) return null;
+      if (element.isNode && element.isNode() && !revealedElementIds.has(id)) {
+        revealedElementIds.add(id);
+        revealSequence.set(id, nextRevealSequence);
+        nextRevealSequence += 1;
+      }
+      element.removeClass("unseen hidden");
+      return element;
+    }
+
+    function layoutExpandedDrilldown(state) {
+      const parent = cy.getElementById(state.parentElementId);
+      if (!parent || parent.empty()) return;
+      const visibleChildren = drilldownElementsFor(state).nodes().filter((node) => !node.hasClass("hidden") && !node.hasClass("unseen"));
+      if (!visibleChildren.length) {
+        applyContainerSizeLimits(parent);
+        return;
+      }
+      packSiblingGroup(parent.id(), visibleChildren.toArray ? visibleChildren.toArray() : Array.from(visibleChildren));
+      applyContainerSizeLimits(parent);
+    }
+
+    function includedDrilldownResource(endpoint) {
+      return endpoint?.endpoint_type === "resource" && ["file", "db"].includes(endpoint.resource_category);
+    }
+
+    function endpointBelongsToDrilldownParent(endpoint, state) {
+      return Boolean(endpoint?.endpoint_type === "function" && aggregateScopeForEndpoint(endpoint, state.mode) === state.parentOriginalId);
+    }
+
+    function drilldownChildOriginalIdForEndpoint(endpoint, state) {
+      if (!endpoint) return null;
+      if (includedDrilldownResource(endpoint)) return endpoint.node_id;
+      if (!endpointBelongsToDrilldownParent(endpoint, state)) return null;
+      if (state.mode === "package") return moduleIdForName(endpoint.module || "");
+      if (state.mode === "module") {
+        if (endpoint.class_name) return `class:${endpoint.module || ""}.${endpoint.class_name}`;
+        return endpoint.node_id;
+      }
+      if (state.mode === "actor" && endpoint.class_name) return endpoint.node_id;
+      return null;
+    }
+
+    function drilldownElementIdsForEvent(event, state) {
+      if (!event || !state) return [];
+      const sourceBelongs = endpointBelongsToDrilldownParent(event.caller, state);
+      const targetBelongs = endpointBelongsToDrilldownParent(event.callee, state);
+      const resourceTarget = event.event_type === "call" && sourceBelongs && includedDrilldownResource(event.callee);
+      const sourceOriginalId = sourceBelongs ? drilldownChildOriginalIdForEndpoint(event.caller, state) : null;
+      const targetOriginalId = targetBelongs ? drilldownChildOriginalIdForEndpoint(event.callee, state) : resourceTarget ? event.callee.node_id : null;
+      const ids = [];
+      if (sourceOriginalId) ids.push(drilldownNodeElementId(state.mode, state.parentOriginalId, sourceOriginalId));
+      if (targetOriginalId) ids.push(drilldownNodeElementId(state.mode, state.parentOriginalId, targetOriginalId));
+      if (event.event_type === "call" && sourceOriginalId && targetOriginalId && sourceOriginalId !== targetOriginalId) {
+        ids.push(drilldownEdgeElementId(state.mode, state.parentOriginalId, `${sourceOriginalId}->${targetOriginalId}`));
+      }
+      return ids;
+    }
+
+    function highlightExpandedDrilldownEvent(event) {
+      if (!expandedDrilldown || expandedDrilldown.mode !== activeArchitectureViewMode) return false;
+      const ids = drilldownElementIdsForEvent(event, expandedDrilldown);
+      let marked = false;
+      for (const id of ids) {
+        const element = markCurrentElement(id);
+        marked = Boolean(element) || marked;
+      }
+      return marked;
+    }
 
     function selectNode(id) {
       stopPlay();
@@ -3764,6 +4398,215 @@
       return Number(currentReplayMetrics.actors.get(ownerId)?.call_count || 0);
     }
 
+    function activeArchitectureView() {
+      const views = architectureViews.views || {};
+      return views[activeArchitectureViewMode] || views.actor || views.detail || null;
+    }
+
+    function isAggregateArchitectureMode() {
+      return activeArchitectureViewMode !== "detail";
+    }
+
+    function setArchitectureViewMode(mode) {
+      if (!architectureViewModes.includes(mode)) return;
+      if (mode !== activeArchitectureViewMode) {
+        collapseExpandedDrilldown();
+      }
+      activeArchitectureViewMode = mode;
+      syncArchitectureViewMenu();
+      updatePrivateToggleAvailability();
+      renderEvent();
+      showOverview();
+      publishArchitectureViewSelection(mode);
+    }
+
+    function applyArchitectureGraphVisibility(index) {
+      cy.elements(".aggregate-view").addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+      cy.elements(".drilldown-view").addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+      if (!isAggregateArchitectureMode()) {
+        return;
+      }
+      cy.elements(".detail-view").addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+      const activeAggregateElements = cy.elements(`.aggregate-all-${activeArchitectureViewMode}`);
+      const visibleIds = aggregateVisibleElementIdsAt(traceWindowStart, index);
+      activeAggregateElements.forEach((element) => {
+        if (!visibleIds.has(element.id())) {
+          element.addClass("hidden unseen").removeClass("current focus pulse viewport-anchor");
+        }
+      });
+      for (const id of visibleIds) {
+        revealAggregateElement(id);
+      }
+      syncExpandedDrilldownVisibility(index);
+    }
+
+    function aggregateVisibleElementIdsAt(startIndex, endIndex) {
+      const visibility = "all";
+      const visibleIds = new Set();
+      const activeAggregateEdges = cy.edges(`.aggregate-${visibility}-${activeArchitectureViewMode}`);
+      const activeAggregateNodes = cy.nodes(`.aggregate-${visibility}-${activeArchitectureViewMode}`);
+      activeAggregateNodes.forEach((node) => {
+        if (eventOrdersTouchWindow(node.data("raw_event_orders"), startIndex, endIndex)) {
+          visibleIds.add(node.id());
+        }
+      });
+      activeAggregateEdges.forEach((edge) => {
+        if (!eventOrdersTouchWindow(edge.data("raw_event_orders"), startIndex, endIndex)) return;
+        visibleIds.add(edge.id());
+        visibleIds.add(edge.data("source"));
+        visibleIds.add(edge.data("target"));
+      });
+      return visibleIds;
+    }
+
+    function eventOrdersTouchWindow(rawOrders, startIndex, endIndex) {
+      if (!Array.isArray(rawOrders)) return false;
+      return rawOrders.some((order) => {
+        const eventIndex = eventIndexForOrder(order);
+        return eventIndex >= startIndex && eventIndex <= endIndex;
+      });
+    }
+
+    function eventIndexForOrder(order) {
+      return eventIndexByOrder.get(Number(order)) ?? -1;
+    }
+
+    function revealAggregateElement(id) {
+      if (!id) return null;
+      const element = cy.getElementById(id);
+      if (!element || element.empty()) return null;
+      if (element.isNode && element.isNode()) {
+        if (!revealedElementIds.has(id)) {
+          placeNewElement(element);
+          revealedElementIds.add(id);
+          revealSequence.set(id, nextRevealSequence);
+          nextRevealSequence += 1;
+        }
+      }
+      element.removeClass("unseen hidden");
+      return element;
+    }
+
+    function highlightAggregateEvent(event) {
+      if (!isAggregateArchitectureMode() || !event) return;
+      if (highlightExpandedDrilldownEvent(event)) return;
+      const targetId = aggregateNodeIdForEndpoint(event.callee, activeArchitectureViewMode);
+      const sourceScope = event.caller ? aggregateScopeForEndpoint(event.caller, activeArchitectureViewMode) : "entrypoint";
+      const targetScope = aggregateScopeForEndpoint(event.callee, activeArchitectureViewMode);
+      const sourceId = aggregateNodeElementId("all", activeArchitectureViewMode, sourceScope);
+      markCurrentElement(sourceId);
+      markCurrentElement(targetId);
+      if (event.event_type === "call" && sourceScope !== targetScope) {
+        markCurrentElement(aggregateEdgeElementId("all", activeArchitectureViewMode, `${sourceScope}->${targetScope}`));
+      }
+    }
+
+    function aggregateVisibilityKey() {
+      return "all";
+    }
+
+    function updatePrivateToggleAvailability() {
+      const toggle = document.getElementById("private-toggle");
+      const enabled = activeArchitectureViewMode === "detail";
+      toggle.disabled = !enabled;
+      toggle.setAttribute("aria-disabled", String(!enabled));
+      toggle.title = enabled ? "Hide or show private/internal callable nodes and their direct runtime edges" : "Private callable filtering is available in Detail view.";
+    }
+
+    function toggleArchitectureViewMenu() {
+      const root = document.getElementById("architecture-view-mode");
+      const button = document.getElementById("architecture-view-mode-button");
+      const isOpen = !root.classList.contains("is-open");
+      root.classList.toggle("is-open", isOpen);
+      button.setAttribute("aria-expanded", String(isOpen));
+    }
+
+    function closeArchitectureViewMenu() {
+      const root = document.getElementById("architecture-view-mode");
+      const button = document.getElementById("architecture-view-mode-button");
+      root.classList.remove("is-open");
+      button.setAttribute("aria-expanded", "false");
+    }
+
+    function syncArchitectureViewMenu() {
+      const button = document.getElementById("architecture-view-mode-button");
+      button.textContent = architectureViewLabels[activeArchitectureViewMode] || activeArchitectureViewMode;
+      for (const option of document.querySelectorAll(".view-mode-option")) {
+        const selected = option.getAttribute("data-view-mode") === activeArchitectureViewMode;
+        option.classList.toggle("is-active", selected);
+        option.setAttribute("aria-selected", String(selected));
+      }
+      closeArchitectureViewMenu();
+    }
+
+    function publishArchitectureViewSelection(mode) {
+      const view = activeArchitectureView();
+      if (!view) return;
+      const firstEdge = Array.isArray(view.edges) ? view.edges[0] : null;
+      const firstNode = Array.isArray(view.nodes) ? view.nodes[0] : null;
+      const payload = {
+        schema_version: 1,
+        selection_kind: firstEdge ? "aggregate_edge" : "aggregate_node",
+        view_mode: mode,
+        event_index: 0,
+        event_order: firstEdge?.representative_event_order ?? firstNode?.first_seen ?? 0,
+        event_type: "aggregate",
+        call_id: null,
+        endpoint: skeletonReplayEndpointPayload(firstEdge?.representative_callee || firstNode?.representative_endpoint),
+        caller: skeletonReplayEndpointPayload(firstEdge?.representative_caller)
+      };
+      window.SkeletonReplay.currentSelection = payload;
+      window.SkeletonReplay.onSelectionChanged(payload);
+    }
+
+    function architectureViewCards() {
+      const view = activeArchitectureView();
+      if (!view) return '<div class="empty">No architecture views were generated for this snapshot.</div>';
+      const summary = view.summary || {};
+      const nodes = Array.isArray(view.nodes) ? view.nodes.slice(0, 8) : [];
+      const edges = Array.isArray(view.edges) ? view.edges.slice(0, 8) : [];
+      const nodeCards = nodes.map((node) => `
+        <button class="chip" data-aggregate-event="${escapeAttr(node.first_seen ?? "")}">
+          ${escapeHtml(node.label || node.id)} · calls ${escapeHtml(node.call_count || 0)} · internal ${escapeHtml(node.internal_call_count || 0)}
+        </button>
+      `).join("");
+      const edgeCards = edges.map((edge) => `
+        <button class="chip" data-aggregate-event="${escapeAttr(edge.representative_event_order ?? "")}">
+          ${escapeHtml(edge.source || "")} -> ${escapeHtml(edge.target || "")} · calls ${escapeHtml(edge.call_count || 0)}
+        </button>
+      `).join("");
+      return `
+        <div class="section">
+          <h3>Architecture Views</h3>
+          <div class="node-kind">Current view: <strong>${escapeHtml(view.label || activeArchitectureViewMode)}</strong>. Same-owner calls are summarized as collapsed internal calls; raw evidence remains in the timeline and trace.jsonl.</div>
+          <div class="kv">
+            <div>nodes</div><div>${escapeHtml(summary.node_count || 0)}</div>
+            <div>edges</div><div>${escapeHtml(summary.edge_count || 0)}</div>
+            <div>collapsed internal calls</div><div>${escapeHtml(summary.internal_call_count || 0)}</div>
+            <div>cross-boundary calls</div><div>${escapeHtml(summary.cross_boundary_call_count || 0)}</div>
+          </div>
+          <h3>Top Actor/Class</h3>
+          <div class="chips">${nodeCards || '<span class="empty">No aggregate actor/classes observed.</span>'}</div>
+          <h3>Cross-boundary Calls</h3>
+          <div class="chips">${edgeCards || '<span class="empty">No cross-boundary calls observed in this view.</span>'}</div>
+        </div>
+      `;
+    }
+
+    function artifactGuideCards() {
+      return `
+        <div class="section">
+          <h3>Artifact Guide</h3>
+          <div class="node-kind"><strong>report.html</strong> is the interactive human replay.</div>
+          <div class="node-kind"><strong>workflow.md</strong> is the compact narrative for humans and LLMs.</div>
+          <div class="node-kind"><strong>snapshot.json</strong> is the derived graph, architecture views, roles, and report data.</div>
+          <div class="node-kind"><strong>trace.jsonl</strong> is the raw ordered call/return evidence for audit-level detail.</div>
+          <div class="node-kind"><strong>quality.json</strong> and <strong>architecture_quality.md</strong> are architecture quality signals.</div>
+          <div class="node-kind"><strong>session.json</strong> is the manifest IDEs and automation use to find the artifact set.</div>
+        </div>
+      `;
+    }
+
     function showOverview() {
       document.getElementById("detail-kind").textContent = "Architecture";
       document.getElementById("detail-title").textContent = "Runtime actors";
@@ -3775,9 +4618,11 @@
         .map((node) => `<button class="chip" data-node="${escapeAttr(node.id)}">${escapeHtml(node.label)} · calls ${node.call_count}</button>`)
         .join("");
       document.getElementById("details").innerHTML = `
+        ${architectureViewCards()}
         <div class="section"><h3>Most Active Actors</h3><div class="chips">${topActors || '<span class="empty">No runtime actors observed.</span>'}</div></div>
         <div class="section"><h3>Quality Signals</h3>${qualitySignals()}</div>
         ${setupEventGroupCards()}
+        ${artifactGuideCards()}
         <div class="section"><h3>How To Read This</h3><div class="node-kind">
           Node size combines observed call count, in-degree, out-degree, and approximate LOC.
           Edge width represents observed runtime call count.
@@ -3786,6 +4631,21 @@
         </div></div>
       `;
       bindChipClicks();
+      bindAggregateClicks();
+    }
+
+    function bindAggregateClicks() {
+      for (const chip of document.querySelectorAll("[data-aggregate-event]")) {
+        chip.addEventListener("click", () => {
+          const order = Number(chip.getAttribute("data-aggregate-event"));
+          if (!Number.isFinite(order)) return;
+          const index = events.findIndex((event) => Number(event.order) === order);
+          if (index >= 0) {
+            current = index;
+            renderEvent();
+          }
+        });
+      }
     }
 
     function setupEventGroupCards() {
@@ -4207,6 +5067,10 @@
     }
 
     function togglePrivateCalls() {
+      if (activeArchitectureViewMode !== "detail") {
+        updatePrivateToggleAvailability();
+        return;
+      }
       privateCallsHidden = !privateCallsHidden;
       const toggle = document.getElementById("private-toggle");
       toggle.classList.toggle("is-active", privateCallsHidden);
@@ -4233,6 +5097,10 @@
         schema_version: 1,
         kind: "skeleton_trace_window",
         project_root: snapshot.project_root || "",
+        architecture_view: {
+          mode: activeArchitectureViewMode,
+          view: activeArchitectureView()
+        },
         selected_window: {
           start_event_index: start,
           end_event_index: end,
@@ -4378,6 +5246,7 @@
       syncVisibilityToReplay(current);
       currentReplayMetrics = replayMetricsAt(current);
       applyReplayMetrics(currentReplayMetrics);
+      applyArchitectureGraphVisibility(current);
       resolveVisibleSiblingOverlaps();
       renderModuleHeatmap(current);
       const sourceNode = visualCallableId(event.caller);
@@ -4386,12 +5255,16 @@
       const sourceInstance = instanceForEndpoint(event.caller);
       const targetInstance = instanceForEndpoint(event.callee);
       const focusAnchor = visibleFocusAnchorForEvent(event, current, sourceNode, targetNode, runtimeEdge, sourceOwner, targetOwner);
-      if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
-      if (targetOwner) cy.getElementById(targetOwner).addClass("current");
-      for (const focusId of focusAnchor.ids) markViewportAnchor(focusId);
-      if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
-      if (targetInstance) cy.getElementById(targetInstance).addClass("current");
-      if (focusAnchor.includeEdge) markCurrentElement(runtimeEdge?.id());
+      if (isAggregateArchitectureMode()) {
+        highlightAggregateEvent(event);
+      } else {
+        if (sourceOwner) cy.getElementById(sourceOwner).addClass("current");
+        if (targetOwner) cy.getElementById(targetOwner).addClass("current");
+        for (const focusId of focusAnchor.ids) markViewportAnchor(focusId);
+        if (sourceInstance) cy.getElementById(sourceInstance).addClass("current");
+        if (targetInstance) cy.getElementById(targetInstance).addClass("current");
+        if (focusAnchor.includeEdge) markCurrentElement(runtimeEdge?.id());
+      }
       renderTraceWindow();
       document.getElementById("timeline").value = String(current);
       document.getElementById("counter").textContent = `${current + 1} / ${events.length} · ${traceWindowStart + 1}-${traceWindowEnd + 1}`;
@@ -4410,6 +5283,8 @@
         event_index: eventIndex,
         event_order: event.order,
         event_type: event.event_type,
+        view_mode: activeArchitectureViewMode,
+        selection_kind: "event",
         call_id: event.call_id ?? null,
         endpoint: skeletonReplayEndpointPayload(event.callee),
         caller: skeletonReplayEndpointPayload(event.caller)

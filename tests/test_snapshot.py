@@ -150,3 +150,58 @@ class TestSnapshotBuilder:
         assert nodes["external_service:network:external.service"]["type"] == "external_service"
         assert nodes["external_service:network:external.service"]["endpoint_type"] == "external_service"
         assert nodes["external_service:network:external.service"]["resource_category"] == "network"
+
+    def test_builds_high_level_architecture_views_for_noisy_etl_fixture(self, tmp_path: Path) -> None:
+        # Given
+        project_root = Path("tests/fixtures/sample_large_graph").resolve()
+        out_dir = tmp_path / ".skeleton" / "sample_large_graph"
+        result = TargetScriptRunner().run(
+            project_root / "app.py",
+            [],
+            TraceOptions(project_root=project_root, out_dir=out_dir),
+        )
+
+        # When
+        snapshot = SnapshotBuilder(project_root).build(result.trace_path, out_dir / "snapshot.json")
+        architecture_views = snapshot["architecture_views"]
+        actor_view = architecture_views["views"]["actor"]
+        module_view = architecture_views["views"]["module"]
+        package_view = architecture_views["views"]["package"]
+        public_package_view = architecture_views["public_views"]["package"]
+        detail_view = architecture_views["views"]["detail"]
+        actor_nodes = {node["id"]: node for node in actor_view["nodes"]}
+        actor_edges = {(edge["source"], edge["target"]): edge for edge in actor_view["edges"]}
+        detail_nodes = {node["id"] for node in detail_view["nodes"]}
+
+        # Then
+        assert architecture_views["default_view"] == "actor"
+        assert "function:etl.transform.rules.CustomerRules._weighted" in detail_nodes
+        assert "class:etl.transform.rules.CustomerRules" in actor_nodes
+        assert actor_nodes["class:etl.transform.rules.CustomerRules"]["internal_call_count"] > 0
+        assert actor_nodes["class:etl.transform.rules.CustomerRules"]["top_collapsed_internal_calls"]
+        assert ("module:app", "class:etl.extract.pipeline.CustomerExtractor") in actor_edges
+        assert actor_edges[("module:app", "class:etl.extract.pipeline.CustomerExtractor")]["call_count"] == 2
+        assert ("module:app", "class:etl.transform.pipeline.CustomerTransformer") in actor_edges
+        assert actor_edges[("module:app", "class:etl.transform.pipeline.CustomerTransformer")]["call_count"] == 2
+        assert ("module:app", "class:warehouse.load.pipeline.WarehouseLoader") in actor_edges
+        assert actor_edges[("class:warehouse.load.pipeline.WarehouseLoader", "class:warehouse.persistence.writer.BatchWriter")]["call_count"] == 4
+        assert actor_view["summary"]["node_count"] < detail_view["summary"]["node_count"]
+        assert module_view["summary"]["internal_call_count"] > 0
+        assert {node["id"] for node in package_view["nodes"]} >= {
+            "package:etl.extract",
+            "package:etl.transform",
+            "package:warehouse.data",
+            "package:warehouse.load",
+            "package:warehouse.persistence",
+            "package:warehouse.audit",
+            "resource:file:resource.filesystem",
+            "resource:db:resource.database",
+        }
+        assert "resource:stdout:resource.stdout" not in {node["id"] for node in package_view["nodes"]}
+        assert {edge["call_count"] for edge in package_view["edges"]} >= {2, 4}
+        assert {(edge["source"], edge["target"], edge["call_count"]) for edge in package_view["edges"] if edge["target"].startswith("resource:")} >= {
+            ("package:warehouse.data", "resource:file:resource.filesystem", 3),
+            ("package:warehouse.data", "resource:db:resource.database", 5),
+        }
+        assert public_package_view["summary"]["internal_call_count"] < package_view["summary"]["internal_call_count"]
+        assert package_view["summary"]["edge_count"] <= module_view["summary"]["edge_count"]
